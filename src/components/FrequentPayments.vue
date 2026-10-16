@@ -14,6 +14,7 @@ import {
   Receipt,
   Wallet,
   PiggyBank,
+  X,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, today, frequencyToWeekly } from "@/lib/finance";
@@ -267,28 +268,29 @@ function dueStatus(nextDueDate?: string): {
       </button>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <dialog
+    <!-- Add/Edit Drawer -->
+    <div
       v-if="editingPayment"
-      class="modal-backdrop"
-      open
+      class="drawer-backdrop"
       @click.self="editingPayment = null"
     >
-      <div class="modal-dialog">
-        <div class="modal-header">
+      <div class="bottom-drawer" role="dialog" aria-modal="true">
+        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
+        <div class="drawer-header">
           <h3>
             {{ editingPayment === "new" ? "Add Frequent Payment" : "Edit Frequent Payment" }}
           </h3>
           <button
             class="icon-button"
             type="button"
+            aria-label="Close"
             @click="editingPayment = null"
           >
-            ✕
+            <X :size="18" />
           </button>
         </div>
 
-        <form @submit.prevent="saveForm">
+        <form class="drawer-content" @submit.prevent="saveForm">
           <label>
             Payment Name
             <input
@@ -371,7 +373,7 @@ function dueStatus(nextDueDate?: string): {
           </div>
         </form>
       </div>
-    </dialog>
+    </div>
   </section>
 </template>
 
@@ -590,41 +592,73 @@ function dueStatus(nextDueDate?: string): {
   color: #8da398;
 }
 
-.modal-backdrop {
+.drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(13, 36, 30, 0.55);
+  backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
-  z-index: 100;
-  border: 0;
-  width: 100vw;
-  height: 100vh;
+  padding: 0;
+  z-index: 1000;
 }
 
-.modal-dialog {
+.bottom-drawer {
   background: #fff;
-  border-radius: 20px;
-  padding: 22px;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  display: grid;
-  gap: 16px;
+  width: 100vw;
+  max-width: 100vw;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  display: flex;
+  flex-direction: column;
+  max-height: 92dvh;
+  overflow: hidden;
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.modal-header {
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.drawer-handle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  cursor: grab;
+}
+
+.drawer-handle {
+  width: 44px;
+  height: 5px;
+  background: #d2ded7;
+  border-radius: 10px;
+}
+
+.drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 22px 14px;
+  border-bottom: 1px solid #edf2ef;
 }
 
-.modal-header h3 {
+.drawer-header h3 {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
+}
+
+.drawer-content {
+  padding: 20px 22px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  display: grid;
+  gap: 16px;
 }
 
 .form-pair {

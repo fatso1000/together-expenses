@@ -55,8 +55,19 @@ function dateLabel(date: string) {
     <li v-for="expense in expenses" :key="expense.id">
       <CategoryIcon :category="expense.category" />
       <div class="expense-description">
-        <strong>{{ expense.merchant }}</strong
-        ><span
+        <div class="expense-title-row">
+          <strong>{{ expense.merchant }}</strong>
+          <button
+            type="button"
+            class="account-tag"
+            :class="expense.accountId === 'nz' ? 'nz' : 'global'"
+            :title="`Click to switch to ${expense.accountId === 'nz' ? 'Global Account' : 'NZ Account (Savings)'}`"
+            @click.stop="store.toggleExpenseAccount(expense.id)"
+          >
+            {{ expense.accountId === "nz" ? "🏦 NZ Savings" : "💳 Global" }}
+          </button>
+        </div>
+        <span
           >{{ expense.category }} <span aria-hidden="true">·</span>
           <template v-if="expense.items?.length"
             >{{ expense.items.length }}
@@ -110,3 +121,42 @@ function dateLabel(date: string) {
     </li>
   </ul>
 </template>
+
+<style scoped>
+.expense-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.account-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  background: #edf5f0;
+  color: #27523f;
+  border-color: #cde0d5;
+}
+
+.account-tag:hover {
+  background: #dfeee4;
+}
+
+.account-tag.nz {
+  background: #fbf5e6;
+  color: #8c5b1b;
+  border-color: #ebdcb9;
+}
+
+.account-tag.nz:hover {
+  background: #f5eccf;
+}
+</style>

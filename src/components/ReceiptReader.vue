@@ -50,7 +50,16 @@ async function scan() {
       },
       crop,
     );
-    if (!signal.aborted) emit("result", parseReceipt(text), preview.value);
+    if (!signal.aborted) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        emit("result", parseReceipt(text), reader.result as string);
+      };
+      reader.onerror = () => {
+        emit("result", parseReceipt(text), preview.value);
+      };
+      reader.readAsDataURL(file);
+    }
   } catch (reason) {
     if (!signal.aborted)
       failure.value =

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { shallowRef, computed, onMounted, useTemplateRef } from "vue";
 import { X, ClipboardList } from "lucide-vue-next";
-import { categories, type Currency, type ExpenseDraft } from "@/lib/types";
+import { categories, type Currency, type ExpenseDraft, type AccountId } from "@/lib/types";
 import { parseBulk } from "@/lib/bulk";
 import { money, today } from "@/lib/finance";
 import { useExpenses, friendlyError } from "@/stores/expenses";
@@ -10,6 +10,7 @@ const store = useExpenses();
 const dialog = useTemplateRef<HTMLDialogElement>("dialog");
 const text = shallowRef("");
 const currency = shallowRef<Currency>("NZD");
+const accountId = shallowRef<AccountId>("global");
 const rows = shallowRef<ExpenseDraft[]>([]);
 const failure = shallowRef("");
 const busy = shallowRef(false);
@@ -22,7 +23,8 @@ function preview() {
   failure.value = "";
   confirmed.value = false;
   try {
-    rows.value = parseBulk(text.value, currency.value);
+    const parsed = parseBulk(text.value, currency.value);
+    rows.value = parsed.map((item) => ({ ...item, accountId: accountId.value }));
   } catch (reason) {
     failure.value = friendlyError(reason);
   }
@@ -45,6 +47,9 @@ async function submit() {
     class="expense-dialog purchase-dialog"
     @cancel.prevent="!busy && emit('close')"
   >
+    <div class="drawer-handle-bar" aria-hidden="true">
+      <div class="drawer-handle" />
+    </div>
     <div class="section-heading">
       <h2><ClipboardList :size="20" />Add several expenses</h2>
       <button
@@ -56,8 +61,15 @@ async function submit() {
         <X />
       </button>
     </div>
-    <template v-if="!rows.length"
-      ><label
+    <template v-if="!rows.length">
+      <label>
+        Paid From Account
+        <select v-model="accountId" :disabled="busy">
+          <option value="global">Global Account (Everyday)</option>
+          <option value="nz">NZ Account (Savings · e.g. petrol, rent)</option>
+        </select>
+      </label>
+      <label
         >One expense per line<textarea
           v-model="text"
           rows="7"

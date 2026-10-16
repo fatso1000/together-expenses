@@ -226,3 +226,31 @@ test("calculateCategoryBudgetStatus computes category-by-category limit progress
   assert.equal(status[1].status, "near");
 });
 
+test("expenses attached to NZ account discount exclusively from nz savings without affecting global capital baseline", () => {
+  const accounts = {
+    globalInitialNZD: 500000, // $5,000 initial global
+    nzInitialNZD: 100000,      // $1,000 initial nz
+  };
+  const savings = [
+    { id: "s1", amount: 150000, date: "2026-10-10", note: "Salary", createdAt: 1 }, // $1,500 deposited
+  ];
+  // $400 Rent and $80 Petrol paid from NZ savings
+  const expenses = [
+    { ...expense(40000, "Rent"), accountId: "nz" as const },
+    { ...expense(8000, "Petrol"), accountId: "nz" as const },
+    { ...expense(12000, "Groceries"), accountId: "global" as const }, // $120 global spend
+  ];
+
+  const balances = calculateAccountBalances(accounts, expenses, savings);
+  assert.equal(balances.globalSpent, 12000); // only $120
+  assert.equal(balances.nzSpent, 48000);     // $480 ($400 + $80)
+  assert.equal(balances.globalBalance, 488000); // 500,000 - 12,000
+  assert.equal(balances.nzBalance, 202000);     // 100,000 + 150,000 - 48,000
+
+  // Baseline comparison for global capital should use globalSpent ($120), NOT all-time spend ($600)
+  const comparison = compareSpendWithInitial(balances.globalSpent, accounts.globalInitialNZD);
+  assert.equal(comparison.isOverInitial, false);
+  assert.equal(comparison.remaining, 488000);
+  assert.equal(comparison.spentPercent, 2.4);
+});
+

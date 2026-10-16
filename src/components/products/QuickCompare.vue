@@ -186,6 +186,9 @@ function reset() {
     class="expense-dialog purchase-dialog"
     @cancel.prevent="emit('close')"
   >
+    <div class="drawer-handle-bar" aria-hidden="true">
+      <div class="drawer-handle" />
+    </div>
     <div class="section-heading">
       <h2>Check a price</h2>
       <button

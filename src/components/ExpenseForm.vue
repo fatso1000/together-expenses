@@ -17,6 +17,12 @@ import {
   Plus,
   ChevronDown,
   ChevronUp,
+  Wallet,
+  PiggyBank,
+  ZoomIn,
+  ZoomOut,
+  Copy,
+  Check,
 } from "lucide-vue-next";
 import {
   type Expense,
@@ -82,11 +88,40 @@ const reviewed = shallowRef(false);
 const receiptNote = shallowRef("");
 
 // Quick receipt preview dock state
-const previewTab = shallowRef<"transcript" | "image">("transcript");
+const previewTab = shallowRef<"transcript" | "image">("image");
 const dockOpen = shallowRef(false);
+const isZoomed = shallowRef(false);
+const copySuccess = shallowRef(false);
+const dockRef = useTemplateRef<HTMLElement>("dockRef");
+
+function toggleDock() {
+  dockOpen.value = !dockOpen.value;
+  if (dockOpen.value) {
+    setTimeout(() => {
+      dockRef.value?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
+}
 
 // Inline category creator modal state
 const showCategoryManager = shallowRef(false);
+const categoryCreateMode = shallowRef(false);
+
+function openCategoryManager(startInCreate = false) {
+  categoryCreateMode.value = startInCreate;
+  showCategoryManager.value = true;
+}
+
+async function copyTranscript() {
+  if (!receipt.value?.text) return;
+  try {
+    await navigator.clipboard.writeText(receipt.value.text);
+    copySuccess.value = true;
+    setTimeout(() => {
+      copySuccess.value = false;
+    }, 2000);
+  } catch {}
+}
 
 function readLines(): PurchaseItem[] {
   return lines.value.map((item) => {
@@ -194,6 +229,7 @@ function applyReceipt(value: ReceiptSuggestion, imageUrl?: string) {
     discount: item.discount ? (item.discount / 100).toFixed(2) : "",
   }));
   discount.value = "";
+  mode.value = value.items.length ? "items" : "quick";
 }
 
 function onCategoryCreated(categoryName: string) {
@@ -279,7 +315,7 @@ async function submit() {
           type="button"
           class="receipt-quick-pill"
           :class="{ active: dockOpen }"
-          @click="dockOpen = !dockOpen"
+          @click="toggleDock"
         >
           <FileText :size="14" />
           <span>Receipt preview</span>
@@ -300,264 +336,460 @@ async function submit() {
 
     <!-- Scrollable Drawer Content -->
     <div class="drawer-body">
-      <!-- Mode Tabs -->
-      <div class="entry-tabs" aria-label="Entry method">
-        <button
-          type="button"
-          :aria-pressed="mode === 'quick'"
-          @click="mode = 'quick'"
-        >
-          <Zap :size="17" />Quick
-        </button>
-        <button
-          type="button"
-          :aria-pressed="mode === 'items'"
-          @click="mode = 'items'"
-        >
-          <ListPlus :size="17" />Items
-        </button>
-        <button
-          type="button"
-          :aria-pressed="mode === 'receipt'"
-          @click="mode = 'receipt'"
-        >
-          <ScanLine :size="17" />Receipt
-        </button>
-      </div>
-
-      <!-- Quick Receipt Preview Dock (Sticky / Collapsible) -->
-      <section
-        v-if="receipt || receiptImage"
-        class="quick-receipt-dock"
-        :class="{ expanded: dockOpen }"
-      >
-        <div class="dock-header">
-          <div class="dock-tabs">
+      <div class="drawer-layout-columns">
+        <!-- LEFT COLUMN: Form controls -->
+        <div class="drawer-col-form">
+          <!-- Mode Tabs -->
+          <div class="entry-tabs" aria-label="Entry method">
             <button
               type="button"
-              class="dock-tab"
-              :class="{ selected: previewTab === 'transcript' }"
-              @click="
-                previewTab = 'transcript';
-                dockOpen = true;
-              "
+              :aria-pressed="mode === 'quick'"
+              @click="mode = 'quick'"
             >
-              <FileText :size="14" />Transcript
+              <Zap :size="17" />Quick
             </button>
             <button
-              v-if="receiptImage"
               type="button"
-              class="dock-tab"
-              :class="{ selected: previewTab === 'image' }"
-              @click="
-                previewTab = 'image';
-                dockOpen = true;
-              "
+              :aria-pressed="mode === 'items'"
+              @click="mode = 'items'"
             >
-              <ImageIcon :size="14" />Receipt Photo
+              <ListPlus :size="17" />Items
+            </button>
+            <button
+              type="button"
+              :aria-pressed="mode === 'receipt'"
+              @click="mode = 'receipt'"
+            >
+              <ScanLine :size="17" />Receipt
             </button>
           </div>
-          <button
-            type="button"
-            class="text-button dock-toggle"
-            @click="dockOpen = !dockOpen"
+
+          <!-- Mobile Quick Receipt Preview Dock -->
+          <section
+            v-if="receipt || receiptImage"
+            ref="dockRef"
+            class="quick-receipt-dock mobile-only-dock"
+            :class="{ expanded: dockOpen }"
           >
-            {{ dockOpen ? "Hide preview" : "Show preview" }}
-          </button>
-        </div>
+            <div class="dock-header">
+              <div class="dock-tabs">
+                <button
+                  type="button"
+                  class="dock-tab"
+                  :class="{ selected: previewTab === 'transcript' }"
+                  @click="
+                    previewTab = 'transcript';
+                    dockOpen = true;
+                  "
+                >
+                  <FileText :size="14" />Transcript
+                </button>
+                <button
+                  v-if="receiptImage"
+                  type="button"
+                  class="dock-tab"
+                  :class="{ selected: previewTab === 'image' }"
+                  @click="
+                    previewTab = 'image';
+                    dockOpen = true;
+                  "
+                >
+                  <ImageIcon :size="14" />Receipt Photo
+                </button>
+              </div>
+              <div class="dock-actions">
+                <button
+                  v-if="previewTab === 'image'"
+                  type="button"
+                  class="preview-action-btn"
+                  @click="isZoomed = !isZoomed"
+                >
+                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
+                  <span>{{ isZoomed ? "Zoom out" : "Zoom in" }}</span>
+                </button>
+                <button
+                  v-if="previewTab === 'transcript'"
+                  type="button"
+                  class="preview-action-btn"
+                  @click="copyTranscript"
+                >
+                  <component :is="copySuccess ? Check : Copy" :size="14" />
+                  <span>{{ copySuccess ? "Copied" : "Copy" }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="text-button dock-toggle"
+                  @click="dockOpen = !dockOpen"
+                >
+                  {{ dockOpen ? "Hide" : "Show" }}
+                </button>
+              </div>
+            </div>
 
-        <div v-if="dockOpen" class="dock-view">
-          <div v-if="previewTab === 'transcript'" class="dock-text-scroll">
-            <pre>{{ receipt?.text || "No transcript available." }}</pre>
-          </div>
-          <div v-else-if="previewTab === 'image' && receiptImage" class="dock-img-stage">
-            <img :src="receiptImage" alt="Scanned receipt preview" />
-          </div>
-        </div>
-      </section>
+            <div v-if="dockOpen" class="dock-view">
+              <div
+                v-if="previewTab === 'transcript'"
+                class="dock-text-scroll"
+                title="Click to copy transcript"
+                @click="copyTranscript"
+              >
+                <pre>{{ receipt?.text || "No transcript available." }}</pre>
+              </div>
+              <div
+                v-else-if="previewTab === 'image' && receiptImage"
+                class="dock-img-stage"
+                :class="{ 'is-zoomed': isZoomed }"
+                title="Click image to zoom in/out"
+                @click="isZoomed = !isZoomed"
+              >
+                <img
+                  :src="receiptImage"
+                  alt="Scanned receipt preview"
+                  :class="{ zoomed: isZoomed }"
+                />
+              </div>
+            </div>
+          </section>
 
-      <!-- Receipt Reader (Scanner) -->
-      <ReceiptReader v-if="mode === 'receipt'" @result="applyReceipt" />
-
-      <!-- Form Inputs -->
-      <form @submit.prevent="submit">
-        <label>
-          Shop / title
-          <input
-            v-model="form.merchant"
-            list="saved-shops"
-            maxlength="100"
-            placeholder="e.g. New World"
-            required
-          />
-        </label>
-        <datalist id="saved-shops">
-          <option
-            v-for="shop in store.shops"
-            :key="shop.id"
-            :value="shop.name"
-          />
-        </datalist>
-
-        <div class="form-pair">
-          <label>
-            Date
-            <input
-              v-model="form.date"
-              type="date"
-              :max="today()"
-              min="2000-01-01"
-              required
-            />
-          </label>
-          <label>
-            Paid From Account
-            <select v-model="form.accountId">
-              <option value="global">Global Account (Everyday)</option>
-              <option value="nz">NZ Account (Savings)</option>
-            </select>
-          </label>
-        </div>
-
-        <!-- Category Picker with Custom Categories -->
-        <fieldset class="category-picker">
-          <div class="category-picker-header">
-            <legend>Category</legend>
-            <button
-              type="button"
-              class="text-button new-cat-link"
-              @click="showCategoryManager = true"
-            >
-              <Plus :size="14" />Manage categories
-            </button>
-          </div>
-
-          <div class="category-options">
-            <button
-              v-for="catDef in store.categoryDefinitions"
-              :key="catDef.id"
-              type="button"
-              :aria-pressed="form.category === catDef.name"
-              @click="form.category = catDef.name"
-            >
-              <CategoryIcon :category="catDef.name" :size="20" />
-              <span>{{ catDef.name }}</span>
-            </button>
-            <button
-              type="button"
-              class="add-category-btn"
-              title="Add custom category"
-              @click="showCategoryManager = true"
-            >
-              <Plus :size="20" />
-              <span>Custom</span>
-            </button>
-          </div>
-        </fieldset>
-
-        <!-- Itemized Items Editor -->
-        <template v-if="mode !== 'quick'">
-          <ItemEditor
-            v-model:items="lines"
-            :products="store.products"
-            :expenses="store.expenses"
-            :exclude-expense-id="expense?.id"
+          <!-- Receipt Reader (Scanner) in main column on small screen / when in receipt mode -->
+          <ReceiptReader
+            v-if="mode === 'receipt'"
+            class="mobile-receipt-reader"
+            @result="applyReceipt"
           />
 
-          <!-- Streamlined Receipt Discount Input -->
-          <div v-if="lines.length" class="discount-container">
-            <label class="discount-field">
-              Receipt discount · NZD (optional)
+          <!-- Form Inputs -->
+          <form @submit.prevent="submit">
+            <label>
+              Shop / title
               <input
-                v-model="discount"
+                v-model="form.merchant"
+                list="saved-shops"
+                maxlength="100"
+                placeholder="e.g. New World"
+                required
+              />
+            </label>
+            <datalist id="saved-shops">
+              <option
+                v-for="shop in store.shops"
+                :key="shop.id"
+                :value="shop.name"
+              />
+            </datalist>
+
+            <label>
+              Date
+              <input
+                v-model="form.date"
+                type="date"
+                :max="today()"
+                min="2000-01-01"
+                required
+              />
+            </label>
+
+            <!-- Prominent Account Selector (Global vs NZ Savings) -->
+            <div class="account-selector-group">
+              <span class="account-group-label">Paid From Account</span>
+              <div
+                class="account-toggle-grid"
+                role="radiogroup"
+                aria-label="Paid From Account"
+              >
+                <button
+                  type="button"
+                  class="account-toggle-card"
+                  :class="{ selected: form.accountId === 'global' }"
+                  :aria-checked="form.accountId === 'global'"
+                  role="radio"
+                  @click="form.accountId = 'global'"
+                >
+                  <div class="account-toggle-icon global-icon">
+                    <Wallet :size="18" />
+                  </div>
+                  <div class="account-toggle-info">
+                    <strong>Global Account</strong>
+                    <small>Everyday capital & weekly limit</small>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="account-toggle-card"
+                  :class="{ selected: form.accountId === 'nz' }"
+                  :aria-checked="form.accountId === 'nz'"
+                  role="radio"
+                  @click="form.accountId = 'nz'"
+                >
+                  <div class="account-toggle-icon nz-icon">
+                    <PiggyBank :size="18" />
+                  </div>
+                  <div class="account-toggle-info">
+                    <strong>NZ Account</strong>
+                    <small>Salary savings (rent, petrol)</small>
+                  </div>
+                </button>
+              </div>
+              <p class="account-badge-hint" :class="form.accountId">
+                <span v-if="form.accountId === 'nz'">
+                  🏦 Deducted from NZ salary savings. Does not count against Global Capital baseline.
+                </span>
+                <span v-else>
+                  💳 Deducted from everyday Global Capital baseline.
+                </span>
+              </p>
+            </div>
+
+            <!-- Category Picker with Custom Categories -->
+            <fieldset class="category-picker">
+              <div class="category-picker-header">
+                <legend>Category</legend>
+                <button
+                  type="button"
+                  class="text-button new-cat-link"
+                  @click="openCategoryManager(true)"
+                >
+                  <Plus :size="14" />New category
+                </button>
+              </div>
+
+              <div class="category-options">
+                <button
+                  v-for="catDef in store.categoryDefinitions"
+                  :key="catDef.id"
+                  type="button"
+                  :aria-pressed="form.category === catDef.name"
+                  @click="form.category = catDef.name"
+                >
+                  <CategoryIcon :category="catDef.name" :size="20" />
+                  <span>{{ catDef.name }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="add-category-btn"
+                  title="Add custom category"
+                  @click="openCategoryManager(true)"
+                >
+                  <Plus :size="20" />
+                  <span>+ New</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <!-- Itemized Items Editor -->
+            <template v-if="mode !== 'quick'">
+              <ItemEditor
+                v-model:items="lines"
+                :products="store.products"
+                :expenses="store.expenses"
+                :exclude-expense-id="expense?.id"
+              />
+
+              <!-- Streamlined Receipt Discount Input -->
+              <div v-if="lines.length" class="discount-container">
+                <label class="discount-field">
+                  Receipt discount · NZD (optional)
+                  <input
+                    v-model="discount"
+                    inputmode="decimal"
+                    placeholder="0.00"
+                  />
+                  <small class="muted">
+                    Subtracted from the item total (e.g. 5.00 saves $5).
+                  </small>
+                </label>
+              </div>
+            </template>
+
+            <!-- Quick Amount Input -->
+            <label v-if="!itemized && mode !== 'items'">
+              Total · {{ form.currency }}
+              <input
+                v-model="form.amount"
+                class="amount-input"
                 inputmode="decimal"
                 placeholder="0.00"
+                required
               />
-              <small class="muted">
-                Subtracted from the item total (e.g. 5.00 saves $5).
-              </small>
             </label>
-          </div>
-        </template>
 
-        <!-- Quick Amount Input -->
-        <label v-if="!itemized && mode !== 'items'">
-          Total · {{ form.currency }}
-          <input
-            v-model="form.amount"
-            class="amount-input"
-            inputmode="decimal"
-            placeholder="0.00"
-            required
-          />
-        </label>
+            <!-- Itemized Total Breakdown -->
+            <div v-else-if="itemized" class="purchase-total-breakdown">
+              <div v-if="discountCents() > 0" class="subtotal-row">
+                <span>Items subtotal</span>
+                <span>{{ money(itemsTotal(readLines()), form.currency) }}</span>
+              </div>
+              <div v-if="discountCents() > 0" class="discount-row">
+                <span>Receipt discount</span>
+                <span>-{{ money(discountCents(), form.currency) }}</span>
+              </div>
+              <div class="purchase-total">
+                <span>Total</span>
+                <strong>{{
+                  calculated === null
+                    ? "Check items"
+                    : money(calculated, form.currency)
+                }}</strong>
+              </div>
+            </div>
 
-        <!-- Itemized Total Breakdown -->
-        <div v-else-if="itemized" class="purchase-total-breakdown">
-          <div v-if="discountCents() > 0" class="subtotal-row">
-            <span>Items subtotal</span>
-            <span>{{ money(itemsTotal(readLines()), form.currency) }}</span>
-          </div>
-          <div v-if="discountCents() > 0" class="discount-row">
-            <span>Receipt discount</span>
-            <span>-{{ money(discountCents(), form.currency) }}</span>
-          </div>
-          <div class="purchase-total">
-            <span>Total</span>
-            <strong>{{
-              calculated === null
-                ? "Check items"
-                : money(calculated, form.currency)
-            }}</strong>
-          </div>
+            <!-- Receipt Review Section -->
+            <div v-if="receipt" class="receipt-review">
+              <p v-if="receiptNote" class="small">{{ receiptNote }}</p>
+              <p v-if="receipt.amount !== null">
+                Receipt total:
+                <strong>{{ money(receipt.amount, form.currency) }}</strong>
+              </p>
+              <p v-if="totalMismatch" class="error-note">
+                Items do not match the receipt total. Check missing items or discount.
+              </p>
+              <p v-if="!receipt.date" class="small">
+                Date not detected — check the date above.
+              </p>
+              <label class="check">
+                <input v-model="reviewed" type="checkbox" />
+                I checked the shop, date, items and total
+              </label>
+            </div>
+
+            <details>
+              <summary>Note</summary>
+              <textarea
+                v-model="form.note"
+                maxlength="500"
+                rows="2"
+                aria-label="Note"
+              />
+            </details>
+
+            <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+
+            <div class="save-bar">
+              <button class="primary wide" :disabled="busy">
+                {{ busy ? "Saving…" : expense ? "Save changes" : "Save expense" }}
+              </button>
+            </div>
+          </form>
         </div>
 
-        <!-- Receipt Review Section -->
-        <div v-if="receipt" class="receipt-review">
-          <p v-if="receiptNote" class="small">{{ receiptNote }}</p>
-          <p v-if="receipt.amount !== null">
-            Receipt total:
-            <strong>{{ money(receipt.amount, form.currency) }}</strong>
-          </p>
-          <p v-if="totalMismatch" class="error-note">
-            Items do not match the receipt total. Check missing items or discount.
-          </p>
-          <p v-if="!receipt.date" class="small">
-            Date not detected — check the date above.
-          </p>
-          <label class="check">
-            <input v-model="reviewed" type="checkbox" />
-            I checked the shop, date, items and total
-          </label>
-        </div>
+        <!-- RIGHT COLUMN: Receipt Photo & Transcript Stage (Desktop / Wide Screen) -->
+        <aside class="drawer-col-preview desktop-preview-pane">
+          <!-- When Receipt or Photo Exists -->
+          <div v-if="receipt || receiptImage" class="preview-stage-container">
+            <div class="preview-stage-header">
+              <div class="preview-stage-tabs">
+                <button
+                  v-if="receiptImage"
+                  type="button"
+                  class="preview-tab-btn"
+                  :class="{ active: previewTab === 'image' }"
+                  @click="previewTab = 'image'"
+                >
+                  <ImageIcon :size="15" />
+                  <span>Receipt Photo</span>
+                </button>
+                <button
+                  type="button"
+                  class="preview-tab-btn"
+                  :class="{ active: previewTab === 'transcript' }"
+                  @click="previewTab = 'transcript'"
+                >
+                  <FileText :size="15" />
+                  <span>Text Transcript</span>
+                </button>
+              </div>
 
-        <details>
-          <summary>Note</summary>
-          <textarea
-            v-model="form.note"
-            maxlength="500"
-            rows="2"
-            aria-label="Note"
-          />
-        </details>
+              <div class="preview-stage-controls">
+                <button
+                  v-if="previewTab === 'image'"
+                  type="button"
+                  class="control-pill"
+                  :title="isZoomed ? 'Zoom out' : 'Zoom in'"
+                  @click="isZoomed = !isZoomed"
+                >
+                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
+                  <span>{{ isZoomed ? "Zoom out" : "Zoom in" }}</span>
+                </button>
+                <button
+                  v-if="previewTab === 'transcript'"
+                  type="button"
+                  class="control-pill"
+                  title="Copy transcript text to clipboard"
+                  @click="copyTranscript"
+                >
+                  <component :is="copySuccess ? Check : Copy" :size="14" />
+                  <span>{{ copySuccess ? "Copied!" : "Copy" }}</span>
+                </button>
+              </div>
+            </div>
 
-        <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+            <!-- Photo Viewer -->
+            <div
+              v-if="previewTab === 'image' && receiptImage"
+              class="preview-image-scroll"
+              :class="{ 'is-zoomed': isZoomed }"
+              title="Click photo to zoom in or out"
+              @click="isZoomed = !isZoomed"
+            >
+              <img
+                :src="receiptImage"
+                alt="Scanned receipt photo preview"
+                :class="{ 'zoomed-img': isZoomed }"
+              />
+              <span class="preview-zoom-tip">
+                {{ isZoomed ? "Click to zoom out" : "Click image to zoom in" }}
+              </span>
+            </div>
 
-        <div class="save-bar">
-          <button class="primary wide" :disabled="busy">
-            {{ busy ? "Saving…" : expense ? "Save changes" : "Save expense" }}
-          </button>
-        </div>
-      </form>
+            <!-- Transcript Viewer -->
+            <div
+              v-else-if="previewTab === 'transcript'"
+              class="preview-transcript-scroll"
+              title="Click to copy transcript"
+              @click="copyTranscript"
+            >
+              <pre>{{ receipt?.text || "No transcript available." }}</pre>
+            </div>
+          </div>
+
+          <!-- When in Receipt Scan Mode on Desktop -->
+          <div v-else-if="mode === 'receipt'" class="preview-reader-card">
+            <ReceiptReader @result="applyReceipt" />
+          </div>
+
+          <!-- Empty Preview Prompt on Desktop -->
+          <div v-else class="preview-placeholder-card">
+            <div class="placeholder-icon-wrap">
+              <ScanLine :size="38" />
+            </div>
+            <h3>Receipt & Transcript Preview</h3>
+            <p>
+              Scan or upload a paper receipt to compare line items side-by-side with your form inputs.
+            </p>
+            <button
+              type="button"
+              class="secondary prompt-scan-btn"
+              @click="mode = 'receipt'"
+            >
+              <ScanLine :size="16" />
+              <span>Scan receipt now</span>
+            </button>
+          </div>
+        </aside>
+      </div>
     </div>
 
-    <!-- Inline Category Manager Modal/Overlay -->
+    <!-- Inline Category Manager Bottom Drawer -->
     <div
       v-if="showCategoryManager"
       class="inline-modal-backdrop"
       @click.self="showCategoryManager = false"
     >
       <div class="inline-modal">
+        <div class="drawer-handle-bar" aria-hidden="true">
+          <div class="drawer-handle" />
+        </div>
         <div class="inline-modal-header">
           <h3>Custom Categories</h3>
           <button
@@ -570,6 +802,7 @@ async function submit() {
           </button>
         </div>
         <CategoryManager
+          :start-in-create-mode="categoryCreateMode"
           @close="showCategoryManager = false"
           @created="onCategoryCreated"
         />
@@ -585,14 +818,14 @@ async function submit() {
   bottom: 0;
   left: 0;
   right: 0;
-  margin: auto auto 0 auto;
-  width: min(800px, 100vw);
+  margin: auto 0 0 0;
+  width: 100vw;
   max-width: 100vw;
   height: 94dvh;
   max-height: 94dvh;
   background: #ffffff;
   border: 0;
-  border-radius: 26px 26px 0 0;
+  border-radius: 24px 24px 0 0;
   padding: 0;
   box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
   display: flex;
@@ -679,12 +912,31 @@ async function submit() {
   flex: 1;
   overflow-y: auto;
   padding: 18px 22px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* Two-column layout */
+.drawer-layout-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drawer-col-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
-/* Quick Receipt Dock */
+.mobile-only-dock {
+  display: block;
+}
+
+.desktop-preview-pane {
+  display: none;
+}
+
+/* Mobile Quick Receipt Dock */
 .quick-receipt-dock {
   background: #f4f8f5;
   border: 1px solid #dbe6de;
@@ -724,14 +976,38 @@ async function submit() {
   color: #ffffff;
 }
 
+.dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #c9d8ce;
+  color: #274b3d;
+  cursor: pointer;
+}
+
 .dock-toggle {
   font-size: 12px;
 }
 
 .dock-view {
   padding: 12px;
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
+}
+
+.dock-text-scroll {
+  cursor: copy;
 }
 
 .dock-text-scroll pre {
@@ -743,6 +1019,18 @@ async function submit() {
   color: #243d36;
 }
 
+.dock-img-stage {
+  cursor: zoom-in;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.dock-img-stage.is-zoomed {
+  cursor: zoom-out;
+  overflow: auto;
+}
+
 .dock-img-stage img {
   display: block;
   max-width: 100%;
@@ -750,6 +1038,113 @@ async function submit() {
   margin: 0 auto;
   border-radius: 8px;
   object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.dock-img-stage img.zoomed {
+  max-width: none;
+  max-height: none;
+  width: 220%;
+  cursor: zoom-out;
+}
+
+/* Account Selector */
+.account-selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.account-group-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c4435;
+}
+
+.account-toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.account-toggle-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f8faf8;
+  border: 1.5px solid #dce6df;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.account-toggle-card:hover {
+  background: #f0f6f2;
+  border-color: #b5cebf;
+}
+
+.account-toggle-card.selected {
+  background: #eef6f0;
+  border-color: #1e5239;
+  box-shadow: 0 2px 8px rgba(30, 82, 57, 0.12);
+}
+
+.account-toggle-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.global-icon {
+  background: #e6f0eb;
+  color: #153d35;
+}
+
+.nz-icon {
+  background: #f5eedc;
+  color: #8c5b1b;
+}
+
+.account-toggle-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account-toggle-info strong {
+  font-size: 13px;
+  color: #1c352b;
+}
+
+.account-toggle-info small {
+  font-size: 11px;
+  color: #63776d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-badge-hint {
+  margin: 0;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f2f7f4;
+  color: #3f6050;
+  border-left: 3px solid #1e5239;
+}
+
+.account-badge-hint.nz {
+  background: #faf4e8;
+  color: #7d5015;
+  border-left-color: #c48c31;
 }
 
 /* Categories & Custom Button */
@@ -824,32 +1219,27 @@ async function submit() {
   font-weight: 500;
 }
 
-.currency-hint {
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 8px;
-}
-
-/* Inline Modal for Category Manager */
+/* Inline Bottom Drawer for Category Manager */
 .inline-modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(13, 36, 30, 0.6);
   z-index: 1100;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
 }
 
 .inline-modal {
   background: #ffffff;
-  border-radius: 20px;
-  padding: 20px;
-  width: min(540px, 100%);
+  border-radius: 24px 24px 0 0;
+  padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
+  width: 100vw;
+  max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .inline-modal-header {
@@ -862,5 +1252,219 @@ async function submit() {
 .inline-modal-header h3 {
   margin: 0;
   font-size: 18px;
+}
+
+/* Desktop Dual-Column Layout (>= 900px) */
+@media (min-width: 900px) {
+  .drawer-body {
+    padding: 20px 32px calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .drawer-layout-columns {
+    display: grid;
+    grid-template-columns: minmax(460px, 1.15fr) minmax(380px, 0.85fr);
+    gap: 32px;
+    align-items: start;
+  }
+
+  .mobile-only-dock {
+    display: none !important;
+  }
+
+  .mobile-receipt-reader {
+    display: none !important;
+  }
+
+  .desktop-preview-pane {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    max-height: calc(94dvh - 120px);
+    background: #f7faf8;
+    border: 1px solid #d8e5dc;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(21, 61, 53, 0.05);
+  }
+
+  .preview-stage-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 500px;
+  }
+
+  .preview-stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #edf4ef;
+    border-bottom: 1px solid #dce8df;
+  }
+
+  .preview-stage-tabs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .preview-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    background: transparent;
+    color: #4a6356;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .preview-tab-btn.active {
+    background: #153d35;
+    color: #ffffff;
+  }
+
+  .preview-stage-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .control-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    background: #ffffff;
+    border: 1px solid #c9d8ce;
+    color: #274b3d;
+    cursor: pointer;
+  }
+
+  .control-pill:hover {
+    background: #f0f7f2;
+  }
+
+  .preview-image-scroll {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: zoom-in;
+    background: #232c28;
+    min-height: 440px;
+  }
+
+  .preview-image-scroll.is-zoomed {
+    cursor: zoom-out;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .preview-image-scroll img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(94dvh - 220px);
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease;
+  }
+
+  .preview-image-scroll img.zoomed-img {
+    max-width: none;
+    max-height: none;
+    width: 220%;
+    cursor: zoom-out;
+  }
+
+  .preview-zoom-tip {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  .preview-transcript-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px;
+    background: #ffffff;
+    cursor: copy;
+  }
+
+  .preview-transcript-scroll pre {
+    margin: 0;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: #203a30;
+  }
+
+  .preview-placeholder-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px 32px;
+    gap: 14px;
+    height: 100%;
+    min-height: 440px;
+  }
+
+  .placeholder-icon-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: #e7f2eb;
+    color: #1e5239;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .preview-placeholder-card h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1b3a2e;
+  }
+
+  .preview-placeholder-card p {
+    margin: 0;
+    font-size: 13px;
+    color: #63786d;
+    max-width: 300px;
+    line-height: 1.4;
+  }
+
+  .prompt-scan-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .preview-reader-card {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+  }
 }
 </style>

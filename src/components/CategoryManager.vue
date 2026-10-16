@@ -106,7 +106,13 @@ const curatedColors = [
   "#718469", // Gray-green
 ];
 
+const props = defineProps<{
+  startInCreateMode?: boolean;
+}>();
+
 const editing = ref<CategoryDefinition | null>(null);
+const isCreating = ref(props.startInCreateMode ?? false);
+const showEditor = computed(() => editing.value !== null || isCreating.value);
 const name = ref("");
 const selectedIcon = ref("Tag");
 const selectedColor = ref("#3b7a57");
@@ -116,6 +122,7 @@ const busy = ref(false);
 const removingId = ref("");
 
 function startNew() {
+  isCreating.value = true;
   editing.value = null;
   name.value = "";
   selectedIcon.value = "Tag";
@@ -125,6 +132,7 @@ function startNew() {
 }
 
 function startEdit(cat: CategoryDefinition) {
+  isCreating.value = false;
   editing.value = cat;
   name.value = cat.name;
   selectedIcon.value = cat.icon;
@@ -134,6 +142,7 @@ function startEdit(cat: CategoryDefinition) {
 }
 
 function cancelEdit() {
+  isCreating.value = false;
   editing.value = null;
   name.value = "";
   error.value = "";
@@ -212,7 +221,7 @@ async function remove(id: string) {
         </p>
       </div>
       <button
-        v-if="!editing && name === ''"
+        v-if="!showEditor"
         class="secondary compact-btn"
         type="button"
         @click="startNew"
@@ -222,7 +231,7 @@ async function remove(id: string) {
     </div>
 
     <!-- Category Editor Form -->
-    <div v-if="editing !== null || name !== ''" class="category-editor-panel">
+    <div v-if="showEditor" class="category-editor-panel">
       <h4>{{ editing ? "Edit category" : "New category" }}</h4>
 
       <form @submit.prevent="save">

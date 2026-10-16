@@ -14,6 +14,7 @@ import {
   Plus,
   Receipt,
   PiggyBank,
+  X,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, parseOptionalMoney, today } from "@/lib/finance";
@@ -274,6 +275,16 @@ async function removeLimit() {
         </div>
       </div>
 
+      <!-- Account Spending Breakdown -->
+      <div v-if="store.weekTotal > 0" class="weekly-account-breakdown">
+        <span class="breakdown-tag global-tag">
+          💳 Global: <strong>{{ store.displayMoney(store.weekGlobalTotal) }}</strong>
+        </span>
+        <span class="breakdown-tag nz-tag">
+          🏦 NZ Savings: <strong>{{ store.displayMoney(store.weekNZTotal) }}</strong>
+        </span>
+      </div>
+
       <!-- Enhanced Gauge Progress Bar -->
       <div class="progress-container">
         <div class="progress-track">
@@ -369,22 +380,22 @@ async function removeLimit() {
       </button>
     </div>
 
-    <!-- Configure Budget & Salary Modal -->
-    <dialog
+    <!-- Configure Budget & Salary Drawer -->
+    <div
       v-if="editing"
-      class="modal-backdrop"
-      open
+      class="drawer-backdrop"
       @click.self="editing = false"
     >
-      <div class="modal-dialog">
-        <div class="modal-header">
+      <div class="bottom-drawer" role="dialog" aria-modal="true">
+        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
+        <div class="drawer-header">
           <h3>Configure Weekly Budget & Salary</h3>
-          <button class="icon-button" type="button" @click="editing = false">
-            ✕
+          <button class="icon-button" type="button" aria-label="Close" @click="editing = false">
+            <X :size="18" />
           </button>
         </div>
 
-        <div class="budget-modal-body">
+        <div class="drawer-body budget-modal-body">
           <!-- Weekly Salary Input -->
           <label>
             Weekly Average Salary · NZD (can change anytime)
@@ -500,7 +511,7 @@ async function removeLimit() {
           </div>
         </div>
       </div>
-    </dialog>
+    </div>
   </section>
 </template>
 
@@ -939,43 +950,98 @@ async function removeLimit() {
   border-radius: 14px;
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+.weekly-account-breakdown {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  z-index: 100;
-  border: 0;
-  width: 100vw;
-  height: 100vh;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: #f1f6f3;
+  border-radius: 10px;
+  border: 1px solid #dbe6df;
+  font-size: 12px;
 }
 
-.modal-dialog {
+.breakdown-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.breakdown-tag.global-tag {
+  color: #1e5239;
+}
+
+.breakdown-tag.nz-tag {
+  color: #2b5585;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 36, 30, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  z-index: 1000;
+}
+
+.bottom-drawer {
   background: #fff;
-  border-radius: 20px;
-  padding: 22px;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  display: grid;
-  gap: 14px;
-  max-height: 90vh;
-  overflow-y: auto;
+  width: 100vw;
+  max-width: 100vw;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  display: flex;
+  flex-direction: column;
+  max-height: 92dvh;
+  overflow: hidden;
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.modal-header {
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.drawer-handle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  cursor: grab;
+}
+
+.drawer-handle {
+  width: 44px;
+  height: 5px;
+  background: #d2ded7;
+  border-radius: 10px;
+}
+
+.drawer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 22px 14px;
+  border-bottom: 1px solid #edf2ef;
 }
 
-.modal-header h3 {
+.drawer-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
+}
+
+.budget-drawer-body {
+  padding: 20px 22px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
 }
 
 .budget-modal-body {

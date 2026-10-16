@@ -17,6 +17,7 @@ const store = useExpenses();
 const bulk = shallowRef(false);
 const search = shallowRef("");
 const category = shallowRef("");
+const account = shallowRef<"" | "global" | "nz">("");
 const period = shallowRef<"week" | "month" | "all">("month");
 const sortBy = shallowRef<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">(
   "date-desc",
@@ -36,10 +37,18 @@ const periodExpenses = computed(() => {
 const filtered = computed(() => {
   const query = search.value.trim().toLowerCase();
   const selectedCat = category.value;
+  const selectedAccount = account.value;
 
   const result = periodExpenses.value.filter((item) => {
     const matchesCategory = !selectedCat || item.category === selectedCat;
     if (!matchesCategory) return false;
+
+    const matchesAccount =
+      !selectedAccount ||
+      (selectedAccount === "nz"
+        ? item.accountId === "nz"
+        : item.accountId !== "nz");
+    if (!matchesAccount) return false;
 
     if (!query) return true;
     const searchable = `${item.merchant} ${item.note} ${(item.items ?? []).map((line) => line.title).join(" ")}`.toLowerCase();
@@ -63,12 +72,18 @@ const filtered = computed(() => {
 });
 
 const hasActiveFilters = computed(
-  () => search.value || category.value || period.value !== "month" || sortBy.value !== "date-desc",
+  () =>
+    search.value ||
+    category.value ||
+    account.value ||
+    period.value !== "month" ||
+    sortBy.value !== "date-desc",
 );
 
 function resetFilters() {
   search.value = "";
   category.value = "";
+  account.value = "";
   period.value = "month";
   sortBy.value = "date-desc";
 }
@@ -154,6 +169,16 @@ function exportCsv() {
           >
             {{ item }}
           </option>
+        </select>
+      </label>
+
+      <!-- Account Filter -->
+      <label class="account-select-label">
+        <span class="sr-only">Account</span>
+        <select v-model="account" aria-label="Filter by account">
+          <option value="">All accounts</option>
+          <option value="global">💳 Global Account</option>
+          <option value="nz">🏦 NZ Account (Savings)</option>
         </select>
       </label>
 
@@ -260,6 +285,7 @@ function exportCsv() {
 }
 
 .category-select-label,
+.account-select-label,
 .sort-select-label {
   flex: 1;
   min-width: 140px;

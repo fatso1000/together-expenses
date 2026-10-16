@@ -123,6 +123,14 @@ export const useExpenses = defineStore("expenses", () => {
       (item) => item.date >= weekStart.value && item.date <= weekEnd.value,
     ),
   );
+  const weekGlobalExpenses = computed(() =>
+    weekExpenses.value.filter((item) => item.accountId !== "nz"),
+  );
+  const weekNZExpenses = computed(() =>
+    weekExpenses.value.filter((item) => item.accountId === "nz"),
+  );
+  const weekGlobalTotal = computed(() => total(weekGlobalExpenses.value));
+  const weekNZTotal = computed(() => total(weekNZExpenses.value));
 
   // Financial Accounts & Balances
   const accounts = computed<FinancialAccounts>(
@@ -179,7 +187,7 @@ export const useExpenses = defineStore("expenses", () => {
   );
 
   const allTimeBaselineComparison = computed(() =>
-    compareSpendWithInitial(allTimeTotal.value, initialGlobalNZD.value),
+    compareSpendWithInitial(balances.value.globalSpent, initialGlobalNZD.value),
   );
   const monthBaselineComparison = computed(() =>
     compareSpendWithInitial(monthTotal.value, initialGlobalNZD.value),
@@ -684,6 +692,21 @@ export const useExpenses = defineStore("expenses", () => {
     message.value = "Savings record removed";
   }
 
+  async function toggleExpenseAccount(expenseId: string) {
+    await change((current) => {
+      const item = current.expenses.find((e) => e.id === expenseId);
+      if (item) {
+        item.accountId = item.accountId === "nz" ? "global" : "nz";
+        item.updatedAt = Date.now();
+      }
+    });
+    const updated = data.value.expenses.find((e) => e.id === expenseId);
+    message.value =
+      updated?.accountId === "nz"
+        ? "Moved to NZ Account (Savings)"
+        : "Moved to Global Account";
+  }
+
   function openExpense(
     mode: "quick" | "items" | "receipt" = "quick",
     source?: Expense,
@@ -710,6 +733,10 @@ export const useExpenses = defineStore("expenses", () => {
     weekEnd,
     weekTotal,
     weekExpenses,
+    weekGlobalExpenses,
+    weekNZExpenses,
+    weekGlobalTotal,
+    weekNZTotal,
     displayMoney,
     rates,
     products,
@@ -738,6 +765,7 @@ export const useExpenses = defineStore("expenses", () => {
     saveExpense,
     savePurchases,
     removeExpense,
+    toggleExpenseAccount,
     restore,
     clearAll,
     undoDelete,
@@ -749,6 +777,7 @@ export const useExpenses = defineStore("expenses", () => {
     categoryLimits,
     frequentPayments,
     savingsRecords,
+    balances,
     globalBalance,
     nzBalance,
     totalMoney,

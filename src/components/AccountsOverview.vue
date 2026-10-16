@@ -11,19 +11,32 @@ import {
   Settings,
   AlertCircle,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  History,
+  X,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, today } from "@/lib/finance";
+import type { SavingsRecord } from "@/lib/types";
 
 defineProps<{ compact?: boolean }>();
 
 const store = useExpenses();
 const showDepositModal = shallowRef(false);
+const showManageDepositsModal = shallowRef(false);
+const editingDepositId = shallowRef<string | null>(null);
 const depositAmount = shallowRef("");
 const depositDate = shallowRef(today());
 const depositNote = shallowRef("");
 const depositBusy = shallowRef(false);
 const depositError = shallowRef("");
+
+const sortedSavingsRecords = computed(() =>
+  [...store.savingsRecords].sort(
+    (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
+  ),
+);
 
 const hasInitialFunds = computed(
   () => store.initialGlobalNZD > 0 || (store.accounts.nzInitialNZD ?? 0) > 0,
@@ -31,7 +44,7 @@ const hasInitialFunds = computed(
 
 const spendComparison = computed(() => {
   const initial = store.initialGlobalNZD;
-  const spent = store.allTimeTotal;
+  const spent = store.balances.globalSpent;
   if (!initial) {
     return {
       hasBaseline: false,
@@ -50,8 +63,8 @@ const spendComparison = computed(() => {
     diff,
     percent,
     label: isOver
-      ? `Spent ${store.displayMoney(diff)} more than initial funds (${percent}%)`
-      : `Spent ${store.displayMoney(spent)} of ${store.displayMoney(initial)} (${percent}% · ${store.displayMoney(diff)} remaining)`,
+      ? `Global everyday spending exceeds initial capital by ${store.displayMoney(diff)} (${percent}%)`
+      : `Spent ${store.displayMoney(spent)} of ${store.displayMoney(initial)} initial funds (${percent}% · ${store.displayMoney(diff)} remaining)`,
   };
 });
 
@@ -70,13 +83,48 @@ const netWorthComparison = computed(() => {
   };
 });
 
-async function recordDeposit() {
+function openAddDeposit() {
+  editingDepositId.value = null;
+  depositAmount.value = "";
+  depositDate.value = today();
+  depositNote.value = "";
+  depositError.value = "";
+  showDepositModal.value = true;
+}
+
+function openEditDeposit(record: SavingsRecord) {
+  editingDepositId.value = record.id;
+  depositAmount.value = (record.amount / 100).toFixed(2);
+  depositDate.value = record.date;
+  depositNote.value = record.note || "";
+  depositError.value = "";
+  showDepositModal.value = true;
+}
+
+async function deleteDeposit(record: SavingsRecord) {
+  if (
+    !confirm(
+      `Remove savings deposit of ${store.displayMoney(record.amount)} from ${record.date}?`,
+    )
+  )
+    return;
+  depositBusy.value = true;
+  try {
+    await store.removeSavingsRecord(record.id);
+  } catch (reason) {
+    alert(friendlyError(reason));
+  } finally {
+    depositBusy.value = false;
+  }
+}
+
+async function saveDeposit() {
   depositBusy.value = true;
   depositError.value = "";
   try {
     const cents = parseMoney(depositAmount.value);
     await store.saveSavingsRecord({
-      id: crypto.randomUUID(),
+      id: editingDepositId.value || crypto.randomUUID(),
       amount: cents,
       date: depositDate.value || today(),
       note: depositNote.value.trim() || "Salary savings deposit",
@@ -84,6 +132,7 @@ async function recordDeposit() {
     });
     depositAmount.value = "";
     depositNote.value = "";
+    editingDepositId.value = null;
     showDepositModal.value = false;
   } catch (reason) {
     depositError.value = friendlyError(reason);
@@ -111,9 +160,18 @@ async function recordDeposit() {
         <button
           class="secondary btn-sm"
           type="button"
-          @click="showDepositModal = true"
+          @click="openAddDeposit"
         >
           <Plus :size="15" />Add savings
+        </button>
+        <button
+          v-if="store.savingsRecords.length"
+          class="secondary btn-sm"
+          type="button"
+          title="Manage savings deposits"
+          @click="showManageDepositsModal = true"
+        >
+          <History :size="15" />Deposits
         </button>
         <RouterLink to="/settings" class="icon-button" aria-label="Configure accounts">
           <Settings :size="17" />
@@ -179,6 +237,10 @@ async function recordDeposit() {
             <span class="stat-label">Current balance</span>
             <strong class="account-amount">{{ store.displayMoney(store.globalBalance) }}</strong>
           </div>
+          <div class="account-initial-row">
+            <span class="muted small">Everyday spent:</span>
+            <span class="small font-mono">{{ store.displayMoney(store.balances.globalSpent) }}</span>
+          </div>
           <div v-if="store.initialGlobalNZD" class="account-initial-row">
             <span class="muted small">Initial baseline:</span>
             <span class="small font-mono">
@@ -207,33 +269,44 @@ async function recordDeposit() {
             <strong class="account-amount nz-amount">{{ store.displayMoney(store.nzBalance) }}</strong>
           </div>
           <div class="account-initial-row">
+            <span class="muted small">Spent from savings:</span>
+            <span class="small font-mono">{{ store.displayMoney(store.balances.nzSpent) }}</span>
+          </div>
+          <div class="account-initial-row">
             <span class="muted small">Savings deposits:</span>
-            <span class="small font-mono">{{ store.savingsRecords.length }} recorded</span>
+            <button
+              type="button"
+              class="text-button small font-mono link-manage-deposits"
+              @click="showManageDepositsModal = true"
+            >
+              {{ store.savingsRecords.length }} recorded · Manage
+            </button>
           </div>
         </div>
       </article>
     </div>
 
-    <!-- Add Savings Deposit Modal -->
-    <dialog
+    <!-- Add / Edit Savings Deposit Drawer -->
+    <div
       v-if="showDepositModal"
-      class="modal-backdrop"
-      open
+      class="drawer-backdrop"
       @click.self="showDepositModal = false"
     >
-      <div class="modal-dialog">
-        <div class="modal-header">
-          <h3>Record Salary / Savings Deposit</h3>
+      <div class="bottom-drawer" role="dialog" aria-modal="true">
+        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
+        <div class="drawer-header">
+          <h3>{{ editingDepositId ? "Edit Savings Deposit" : "Record Salary / Savings Deposit" }}</h3>
           <button
             class="icon-button"
             type="button"
+            aria-label="Close"
             @click="showDepositModal = false"
           >
-            ✕
+            <X :size="18" />
           </button>
         </div>
 
-        <form @submit.prevent="recordDeposit">
+        <form class="drawer-content" @submit.prevent="saveDeposit">
           <label>
             Deposit Amount · NZD
             <input
@@ -262,7 +335,9 @@ async function recordDeposit() {
           <p v-if="depositError" class="error-note" role="alert">{{ depositError }}</p>
 
           <div class="entry-actions">
-            <button class="primary" :disabled="depositBusy">Save Deposit</button>
+            <button class="primary" :disabled="depositBusy">
+              {{ editingDepositId ? "Update Deposit" : "Save Deposit" }}
+            </button>
             <button
               type="button"
               class="secondary"
@@ -273,7 +348,81 @@ async function recordDeposit() {
           </div>
         </form>
       </div>
-    </dialog>
+    </div>
+
+    <!-- Manage Savings Deposits Drawer -->
+    <div
+      v-if="showManageDepositsModal"
+      class="drawer-backdrop"
+      @click.self="showManageDepositsModal = false"
+    >
+      <div class="bottom-drawer" role="dialog" aria-modal="true">
+        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h3>Salary Savings Deposits</h3>
+            <span class="small muted">{{ store.savingsRecords.length }} deposits recorded</span>
+          </div>
+          <div class="row-actions">
+            <button class="secondary btn-sm" type="button" @click="openAddDeposit">
+              <Plus :size="14" />New deposit
+            </button>
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Close"
+              @click="showManageDepositsModal = false"
+            >
+              <X :size="18" />
+            </button>
+          </div>
+        </div>
+
+        <div class="drawer-content deposits-list-stage">
+          <div v-if="!store.savingsRecords.length" class="empty-deposits">
+            <PiggyBank :size="32" />
+            <p>No savings deposits recorded yet.</p>
+            <button class="secondary btn-sm" type="button" @click="openAddDeposit">
+              <Plus :size="15" />Record first deposit
+            </button>
+          </div>
+          <ul v-else class="deposits-list">
+            <li
+              v-for="deposit in sortedSavingsRecords"
+              :key="deposit.id"
+              class="deposit-item"
+            >
+              <div class="deposit-meta">
+                <strong>{{ store.displayMoney(deposit.amount) }}</strong>
+                <span class="small muted">
+                  {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
+                </span>
+              </div>
+              <div class="deposit-actions">
+                <button
+                  class="icon-button"
+                  type="button"
+                  title="Edit deposit"
+                  aria-label="Edit deposit"
+                  @click="openEditDeposit(deposit)"
+                >
+                  <Pencil :size="15" />
+                </button>
+                <button
+                  class="icon-button"
+                  type="button"
+                  title="Delete deposit"
+                  aria-label="Delete deposit"
+                  @click="deleteDeposit(deposit)"
+                >
+                  <Trash2 :size="15" />
+                </button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -490,40 +639,134 @@ async function recordDeposit() {
   border-top: 1px dashed #e1e8e4;
 }
 
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 100;
-  border: 0;
-  width: 100vw;
-  height: 100vh;
+.link-manage-deposits {
+  padding: 0;
+  color: #1e5239;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-.modal-dialog {
-  background: #fff;
-  border-radius: 20px;
-  padding: 22px;
-  width: 100%;
-  max-width: 440px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+/* Full Width Bottom Drawer Styles */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 36, 30, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.bottom-drawer {
+  background: #ffffff;
+  width: 100vw;
+  max-width: 100vw;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  display: flex;
+  flex-direction: column;
+  max-height: 92dvh;
+  overflow: hidden;
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.drawer-handle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  cursor: grab;
+}
+
+.drawer-handle {
+  width: 44px;
+  height: 5px;
+  background: #d2ded7;
+  border-radius: 10px;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 22px 14px;
+  border-bottom: 1px solid #edf2ef;
+}
+
+.drawer-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.drawer-title-group {
+  display: grid;
+  gap: 2px;
+}
+
+.drawer-content {
+  padding: 20px 22px calc(24px + env(safe-area-inset-bottom));
+  overflow-y: auto;
   display: grid;
   gap: 16px;
 }
 
-.modal-header {
+.deposits-list-stage {
+  padding: 14px 22px calc(24px + env(safe-area-inset-bottom));
+}
+
+.empty-deposits {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 10px;
+  color: #63776d;
+}
+
+.deposits-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.deposit-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px 16px;
+  background: #f8faf9;
+  border: 1px solid #e1e8e4;
+  border-radius: 12px;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+.deposit-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.deposit-meta strong {
+  font-size: 16px;
+  color: #1e5239;
+  font-variant-numeric: tabular-nums;
+}
+
+.deposit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>

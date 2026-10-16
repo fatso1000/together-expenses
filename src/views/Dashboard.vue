@@ -40,15 +40,12 @@ const isOverWeeklyLimit = computed(
   <!-- Accounts & Total Money Overview -->
   <AccountsOverview />
 
-  <!-- Prominent Top Limit Alert when Exceeded -->
-  <div v-if="isOverWeeklyLimit" class="top-limit-alert" role="alert">
-    <AlertCircle :size="22" class="alert-icon" />
-    <div class="alert-body">
-      <strong>Weekly limit exceeded by {{ store.displayMoney(store.weekTotal - store.weeklyLimit) }}</strong>
-      <p class="small">
-        You've spent {{ store.displayMoney(store.weekTotal) }} of your {{ store.displayMoney(store.weeklyLimit) }} weekly limit for {{ store.weekStart }}–{{ store.weekEnd }}.
-      </p>
-    </div>
+  <!-- Compact Weekly Limit Alert when Exceeded -->
+  <div v-if="isOverWeeklyLimit" class="compact-limit-alert" role="alert">
+    <AlertCircle :size="16" class="alert-icon" />
+    <span>
+      Weekly limit exceeded by <strong>{{ store.displayMoney(store.weekTotal - store.weeklyLimit) }}</strong>
+    </span>
   </div>
 
   <!-- Weekly limit & structured budgets prominent position -->
@@ -98,34 +95,25 @@ const isOverWeeklyLimit = computed(
 </template>
 
 <style scoped>
-.top-limit-alert {
+.compact-limit-alert {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  background: #fdf0ee;
-  border: 2px solid #ea7e6f;
-  border-radius: 16px;
-  color: #8c2a1c;
-  box-shadow: 0 4px 16px rgba(160, 62, 48, 0.15);
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fdf2f0;
+  border: 1px solid #f0a89d;
+  border-radius: 10px;
+  color: #9a2b1c;
+  font-size: 13px;
 }
 
-.top-limit-alert .alert-icon {
+.compact-limit-alert .alert-icon {
   flex-shrink: 0;
-  color: #a03e30;
+  color: #bf3f2e;
 }
 
-.alert-body {
-  display: grid;
-  gap: 2px;
-}
-
-.alert-body strong {
-  font-size: 15px;
-}
-
-.alert-body p {
-  color: #7d3326;
-  margin: 0;
+.compact-limit-alert strong {
+  font-weight: 700;
+  color: #832012;
 }
 </style>
