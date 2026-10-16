@@ -1,4 +1,13 @@
-import type { Expense, Category, Currency } from "@/lib/types";
+import type {
+  Expense,
+  Category,
+  Currency,
+  PaymentFrequency,
+  FrequentPayment,
+  FinancialAccounts,
+  SavingsRecord,
+  CategoryLimit,
+} from "@/lib/types";
 import { categories } from "@/lib/types";
 
 export function today(): string {
@@ -61,6 +70,140 @@ export function previousMonth(month: string): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export function frequencyToWeekly(
+  amount: number,
+  frequency: PaymentFrequency,
+): number {
+  if (frequency === "weekly") return amount;
+  if (frequency === "fortnightly") return Math.round(amount / 2);
+  if (frequency === "monthly") return Math.round((amount * 12) / 52);
+  if (frequency === "yearly") return Math.round(amount / 52);
+  return amount;
+}
+
+export function frequencyToMonthly(
+  amount: number,
+  frequency: PaymentFrequency,
+): number {
+  if (frequency === "monthly") return amount;
+  if (frequency === "weekly") return Math.round((amount * 52) / 12);
+  if (frequency === "fortnightly") return Math.round((amount * 26) / 12);
+  if (frequency === "yearly") return Math.round(amount / 12);
+  return amount;
+}
+
+export function totalFrequentWeekly(payments: FrequentPayment[]): number {
+  return payments
+    .filter((p) => p.active)
+    .reduce((sum, p) => sum + frequencyToWeekly(p.amount, p.frequency), 0);
+}
+
+export function totalFrequentMonthly(payments: FrequentPayment[]): number {
+  return payments
+    .filter((p) => p.active)
+    .reduce((sum, p) => sum + frequencyToMonthly(p.amount, p.frequency), 0);
+}
+
+export function calculateAccountBalances(
+  accounts: FinancialAccounts,
+  expenses: Expense[],
+  savings: SavingsRecord[] = [],
+): {
+  globalBalance: number;
+  nzBalance: number;
+  totalMoney: number;
+  globalSpent: number;
+  nzSpent: number;
+  totalSavings: number;
+} {
+  const globalInitial = accounts.globalInitialNZD ?? 0;
+  const nzInitial = accounts.nzInitialNZD ?? 0;
+
+  let globalSpent = 0;
+  let nzSpent = 0;
+
+  for (const exp of expenses) {
+    if (exp.currency !== "NZD") continue;
+    if (exp.accountId === "nz") {
+      nzSpent += exp.amount;
+    } else {
+      globalSpent += exp.amount;
+    }
+  }
+
+  const totalSavings = savings.reduce((acc, s) => acc + s.amount, 0);
+  const globalBalance = globalInitial - globalSpent;
+  const nzBalance = nzInitial + totalSavings - nzSpent;
+  const totalMoney = globalBalance + nzBalance;
+
+  return {
+    globalBalance,
+    nzBalance,
+    totalMoney,
+    globalSpent,
+    nzSpent,
+    totalSavings,
+  };
+}
+
+export function compareSpendWithInitial(
+  spentAmount: number,
+  initialGlobalNZD: number,
+): {
+  difference: number;
+  spentPercent: number;
+  isOverInitial: boolean;
+  remaining: number;
+} {
+  const remaining = initialGlobalNZD - spentAmount;
+  const difference = spentAmount - initialGlobalNZD;
+  const spentPercent =
+    initialGlobalNZD > 0 ? (spentAmount / initialGlobalNZD) * 100 : 0;
+  const isOverInitial = spentAmount > initialGlobalNZD;
+
+  return {
+    difference,
+    spentPercent,
+    isOverInitial,
+    remaining,
+  };
+}
+
+export function calculateCategoryBudgetStatus(
+  categoryLimits: CategoryLimit[],
+  expenses: Expense[],
+): {
+  category: string;
+  limit: number;
+  spent: number;
+  remaining: number;
+  percent: number;
+  status: "under" | "near" | "over";
+}[] {
+  return categoryLimits.map((item) => {
+    const spent = total(
+      expenses.filter(
+        (e) =>
+          e.currency === "NZD" &&
+          e.category.toLowerCase() === item.category.toLowerCase(),
+      ),
+    );
+    const percent = item.amount > 0 ? (spent / item.amount) * 100 : 0;
+    const remaining = Math.max(0, item.amount - spent);
+    const status: "under" | "near" | "over" =
+      percent >= 100 ? "over" : percent >= 80 ? "near" : "under";
+
+    return {
+      category: item.category,
+      limit: item.amount,
+      spent,
+      remaining,
+      percent,
+      status,
+    };
+  });
+}
+
 export function csv(expenses: Expense[]): string {
   function cell(value: string): string {
     // Spreadsheet applications can execute cells starting with formula characters.
@@ -72,6 +215,7 @@ export function csv(expenses: Expense[]): string {
       "Date",
       "Merchant",
       "Category",
+      "Account",
       "Amount",
       "Currency",
       "Note",
@@ -84,10 +228,13 @@ export function csv(expenses: Expense[]): string {
       expense.adjustment && expense.adjustment < 0
         ? Math.abs(expense.adjustment)
         : (expense.adjustment ?? 0);
+    const accountLabel =
+      expense.accountId === "nz" ? "NZ Account" : "Global Account";
     rows.push([
       expense.date,
       expense.merchant,
       expense.category,
+      accountLabel,
       (expense.amount / 100).toFixed(2),
       expense.currency,
       expense.note,
@@ -127,3 +274,4 @@ export function signedMoney(value: string): number {
   const absolute = normalized.replace(/^[+-]/, "");
   return (negative ? -1 : 1) * parseMoney(absolute);
 }
+

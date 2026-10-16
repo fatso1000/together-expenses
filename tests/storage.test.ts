@@ -99,3 +99,91 @@ test("custom categories parse cleanly and expenses with custom categories are ac
     ),
   );
 });
+
+test("v4 backups support accounts, salary, category limits, frequent payments, and savings records", () => {
+  const fp = {
+    id: "fp-1",
+    name: "Electricity",
+    amount: 15000,
+    frequency: "monthly" as const,
+    category: "Bills",
+    accountId: "global" as const,
+    nextDueDate: "2026-11-01",
+    note: "Power bill",
+    active: true,
+    createdAt: 100,
+    updatedAt: 100,
+  };
+  const savings = {
+    id: "sav-1",
+    amount: 50000,
+    date: "2026-10-15",
+    note: "Weekly salary transfer",
+    createdAt: 100,
+  };
+  const rawV4 = {
+    version: 4,
+    expenses: [
+      {
+        ...expense,
+        accountId: "global",
+      },
+    ],
+    shops: [],
+    limits: [],
+    products: [],
+    weeklyLimit: 80000,
+    categoryLimits: [
+      { category: "Rent", amount: 40000 },
+      { category: "Groceries", amount: 20000 },
+    ],
+    accounts: {
+      globalInitialUSD: 500000,
+      globalInitialNZD: 820000,
+      globalManualNZD: false,
+      nzInitialNZD: 250000,
+    },
+    salary: {
+      weeklyAverageNZD: 120000,
+    },
+    frequentPayments: [fp],
+    savingsRecords: [savings],
+  };
+
+  const parsed = parseBackup(JSON.stringify(rawV4));
+  assert.equal(parsed.version, 4);
+  assert.equal(parsed.accounts?.globalInitialUSD, 500000);
+  assert.equal(parsed.accounts?.globalInitialNZD, 820000);
+  assert.equal(parsed.accounts?.nzInitialNZD, 250000);
+  assert.equal(parsed.salary?.weeklyAverageNZD, 120000);
+  assert.equal(parsed.categoryLimits?.length, 2);
+  assert.equal(parsed.categoryLimits?.[0].category, "Rent");
+  assert.equal(parsed.frequentPayments?.length, 1);
+  assert.equal(parsed.frequentPayments?.[0].name, "Electricity");
+  assert.equal(parsed.savingsRecords?.length, 1);
+  assert.equal(parsed.savingsRecords?.[0].amount, 50000);
+  assert.equal(parsed.expenses[0].accountId, "global");
+
+  // Invalid frequent payment frequency
+  assert.throws(() =>
+    parseBackup(
+      JSON.stringify({
+        ...rawV4,
+        frequentPayments: [{ ...fp, frequency: "daily" }],
+      }),
+    ),
+  );
+  // Duplicate category limits
+  assert.throws(() =>
+    parseBackup(
+      JSON.stringify({
+        ...rawV4,
+        categoryLimits: [
+          { category: "Rent", amount: 40000 },
+          { category: "rent", amount: 50000 },
+        ],
+      }),
+    ),
+  );
+});
+

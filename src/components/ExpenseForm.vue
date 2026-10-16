@@ -22,6 +22,7 @@ import {
   type Expense,
   type ItemInput,
   type PurchaseItem,
+  type AccountId,
 } from "@/lib/types";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, signedMoney, today, money } from "@/lib/finance";
@@ -50,6 +51,7 @@ const form = reactive({
   category: source?.category ?? "Groceries",
   date: props.expense?.date ?? today(),
   note: source?.note ?? "",
+  accountId: (source?.accountId ?? "global") as AccountId,
 });
 
 const lines = ref<ItemInput[]>(
@@ -408,9 +410,13 @@ async function submit() {
               required
             />
           </label>
-          <div class="currency-hint">
-            <span class="small muted">All amounts in NZD</span>
-          </div>
+          <label>
+            Paid From Account
+            <select v-model="form.accountId">
+              <option value="global">Global Account (Everyday)</option>
+              <option value="nz">NZ Account (Savings)</option>
+            </select>
+          </label>
         </div>
 
         <!-- Category Picker with Custom Categories -->

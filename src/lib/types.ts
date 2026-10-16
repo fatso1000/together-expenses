@@ -27,6 +27,58 @@ export interface CategoryDefinition {
   isDefault?: boolean;
 }
 export type Currency = "NZD" | "USD";
+export type AccountId = "global" | "nz";
+
+export interface AccountDefinition {
+  id: AccountId;
+  name: string;
+  currency: Currency;
+  type: "spending" | "savings";
+  description: string;
+}
+
+export interface FinancialAccounts {
+  globalInitialUSD?: number;
+  globalInitialNZD: number;
+  globalManualNZD?: boolean;
+  nzInitialNZD: number;
+  updatedAt?: number;
+}
+
+export interface SalaryConfig {
+  weeklyAverageNZD: number;
+  updatedAt?: number;
+}
+
+export interface CategoryLimit {
+  category: string;
+  amount: number;
+}
+
+export type PaymentFrequency = "weekly" | "fortnightly" | "monthly" | "yearly";
+
+export interface FrequentPayment {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: PaymentFrequency;
+  category: Category;
+  accountId: AccountId;
+  nextDueDate?: string;
+  note?: string;
+  active: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SavingsRecord {
+  id: string;
+  amount: number;
+  date: string;
+  note?: string;
+  createdAt: number;
+}
+
 export interface ExpenseDraft {
   items?: PurchaseItem[];
   adjustment?: number;
@@ -36,6 +88,7 @@ export interface ExpenseDraft {
   merchant: string;
   note: string;
   date: string;
+  accountId?: AccountId;
 }
 export interface Expense extends ExpenseDraft {
   id: string;
@@ -78,13 +131,18 @@ export interface MonthlyLimit {
   amount: number;
 }
 export interface AppData {
-  version: 3;
+  version: 4;
   products: Product[];
   weeklyLimit: number;
+  categoryLimits?: CategoryLimit[];
   expenses: Expense[];
   shops: Shop[];
   limits: MonthlyLimit[];
   customCategories?: CategoryDefinition[];
+  accounts?: FinancialAccounts;
+  salary?: SalaryConfig;
+  frequentPayments?: FrequentPayment[];
+  savingsRecords?: SavingsRecord[];
 }
 export interface ItemInput {
   productId?: string;
@@ -96,3 +154,4 @@ export interface ItemInput {
   price: string;
   quantity: string;
 }
+

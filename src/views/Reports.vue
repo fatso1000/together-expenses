@@ -1,12 +1,29 @@
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
-import { Download, Calendar, Target } from "lucide-vue-next";
+import {
+  Download,
+  Calendar,
+  Target,
+  Wallet,
+  PiggyBank,
+  TrendingDown,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  PieChart,
+  LineChart,
+  Layers,
+  ArrowRightLeft,
+} from "lucide-vue-next";
 import { useExpenses } from "@/stores/expenses";
-import { total, money, csv, downloadFile } from "@/lib/finance";
-import CategoryBreakdown from "@/components/CategoryBreakdown.vue";
+import { total, money, csv, downloadFile, compareSpendWithInitial } from "@/lib/finance";
+import CategoryDonutChart from "@/components/reports/CategoryDonutChart.vue";
+import SpendTrajectoryChart from "@/components/reports/SpendTrajectoryChart.vue";
+import BudgetVarianceChart from "@/components/reports/BudgetVarianceChart.vue";
+import AccountCashflowChart from "@/components/reports/AccountCashflowChart.vue";
 
 const store = useExpenses();
-const mode = shallowRef<"week" | "month" | "year" | "custom">("month");
+const mode = shallowRef<"week" | "month" | "year" | "all" | "custom">("month");
 const from = shallowRef(`${store.month}-01`);
 const to = shallowRef(new Date().toLocaleDateString("en-CA"));
 
@@ -17,6 +34,9 @@ const rows = computed(() =>
     }
     if (mode.value === "year") {
       return item.date.startsWith(store.month.slice(0, 4));
+    }
+    if (mode.value === "all") {
+      return true;
     }
     if (mode.value === "custom") {
       return item.date >= from.value && item.date <= to.value;
@@ -31,6 +51,18 @@ const average = computed(() =>
 );
 const largest = computed(
   () => [...rows.value].sort((a, b) => b.amount - a.amount)[0],
+);
+
+// Initial Global Baseline comparison for this specific period
+const initialGlobalNZD = computed(() => store.initialGlobalNZD);
+const initialGlobalUSD = computed(() => store.initialGlobalUSD);
+
+const periodBaselineComparison = computed(() =>
+  compareSpendWithInitial(sum.value, initialGlobalNZD.value),
+);
+
+const allTimeBaselineComparison = computed(() =>
+  compareSpendWithInitial(store.allTimeTotal, initialGlobalNZD.value),
 );
 
 // Daily spending for the current week (7 days: Monday to Sunday)
@@ -77,25 +109,35 @@ const max = computed(() =>
   Math.max(1, ...monthly.value.map((item) => item.amount)),
 );
 
+// Multiplier for category budgets in this view
+const budgetMultiplier = computed(() => {
+  if (mode.value === "week") return 1;
+  if (mode.value === "month") return 4.33; // 52 / 12
+  if (mode.value === "year") return 52;
+  return 1;
+});
+
 function exportCsv() {
   const filename =
     mode.value === "week"
       ? `report-week-${store.weekStart}.csv`
       : mode.value === "year"
         ? `report-year-${store.month.slice(0, 4)}.csv`
-        : mode.value === "custom"
-          ? `report-${from.value}-to-${to.value}.csv`
-          : `report-month-${store.month}.csv`;
+        : mode.value === "all"
+          ? "report-all-time.csv"
+          : mode.value === "custom"
+            ? `report-${from.value}-to-${to.value}.csv`
+            : `report-month-${store.month}.csv`;
 
   downloadFile(filename, csv(rows.value), "text/csv;charset=utf-8");
 }
 </script>
 
 <template>
-  <section class="panel report-filters">
+  <section class="panel report-filters" aria-label="Report timeframe controls">
     <div class="segmented" aria-label="Report period">
       <button
-        v-for="period in ['week', 'month', 'year', 'custom'] as const"
+        v-for="period in ['week', 'month', 'year', 'all', 'custom'] as const"
         :key="period"
         :class="{ selected: mode === period }"
         @click="mode = period"
@@ -107,7 +149,9 @@ function exportCsv() {
               ? "Monthly"
               : period === "year"
                 ? "Yearly"
-                : "Custom dates"
+                : period === "all"
+                  ? "All Time"
+                  : "Custom dates"
         }}
       </button>
     </div>
@@ -134,6 +178,75 @@ function exportCsv() {
     </button>
   </section>
 
+  <!-- Initial Global Money Baseline Analysis Hub -->
+  <section v-if="initialGlobalNZD > 0" class="panel baseline-hub-panel">
+    <div class="section-heading">
+      <div class="heading-with-icon">
+        <Wallet :size="20" class="hub-icon" />
+        <div>
+          <h2>Initial Global Capital Comparison</h2>
+          <p class="small muted">
+            Starting money: {{ store.displayMoney(initialGlobalNZD) }}
+            <template v-if="initialGlobalUSD">
+              (${{ (initialGlobalUSD / 100).toFixed(2) }} USD)
+            </template>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="baseline-comparison-grid">
+      <!-- Period Spend vs Initial Capital -->
+      <article
+        class="comparison-card"
+        :class="{ 'card-over': periodBaselineComparison.isOverInitial, 'card-under': !periodBaselineComparison.isOverInitial }"
+      >
+        <div class="comp-header">
+          <span class="small font-medium">Selected Period vs Initial Funds</span>
+          <span class="comp-badge">
+            {{ Math.round(periodBaselineComparison.spentPercent) }}% of starting money
+          </span>
+        </div>
+        <div class="comp-body">
+          <strong class="comp-number">{{ store.displayMoney(sum) }} spent</strong>
+          <p class="small">
+            <template v-if="!periodBaselineComparison.isOverInitial">
+              Spent less than starting funds · {{ store.displayMoney(periodBaselineComparison.remaining) }} remaining runway
+            </template>
+            <template v-else>
+              Exceeded starting funds by {{ store.displayMoney(periodBaselineComparison.difference) }}
+            </template>
+          </p>
+        </div>
+      </article>
+
+      <!-- All-Time Spend vs Initial Capital -->
+      <article
+        class="comparison-card"
+        :class="{ 'card-over': allTimeBaselineComparison.isOverInitial, 'card-under': !allTimeBaselineComparison.isOverInitial }"
+      >
+        <div class="comp-header">
+          <span class="small font-medium">All-Time Spend vs Initial Funds</span>
+          <span class="comp-badge">
+            {{ Math.round(allTimeBaselineComparison.spentPercent) }}% all-time
+          </span>
+        </div>
+        <div class="comp-body">
+          <strong class="comp-number">{{ store.displayMoney(store.allTimeTotal) }} spent</strong>
+          <p class="small">
+            <template v-if="!allTimeBaselineComparison.isOverInitial">
+              Total spent is LESS than initial global money ({{ store.displayMoney(allTimeBaselineComparison.remaining) }} balance)
+            </template>
+            <template v-else>
+              Total spent is MORE than initial global money (+{{ store.displayMoney(allTimeBaselineComparison.difference) }})
+            </template>
+          </p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- Executive Summary Stats -->
   <div class="report-stats">
     <article class="panel">
       <span class="muted">Total spending</span>
@@ -152,75 +265,64 @@ function exportCsv() {
     </article>
   </div>
 
-  <!-- Weekly spending breakdown chart -->
-  <section v-if="mode === 'week'" class="panel">
-    <div class="section-heading">
-      <div>
-        <h2>Weekly spending by day</h2>
-        <p>{{ store.weekStart }} to {{ store.weekEnd }} · {{ store.currency }}</p>
-      </div>
-      <div v-if="store.weeklyLimit" class="limit-status-chip">
-        <Target :size="14" />
-        <span>{{ limitProgress }}% of limit</span>
-      </div>
-    </div>
-
-    <div class="week-chart">
-      <div v-for="day in weekDays" :key="day.date" class="week-bar-col">
-        <span class="week-bar-value">{{ store.displayMoney(day.amount) }}</span>
-        <div class="week-bar-space">
-          <div
-            class="week-bar-fill"
-            :style="{ height: `${Math.max(day.amount ? 4 : 0, (day.amount / maxWeekDay) * 100)}%` }"
-            :title="`${day.label} (${day.date}): ${store.displayMoney(day.amount)}`"
-          />
-        </div>
-        <span class="week-bar-label">{{ day.label }}</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Yearly view chart -->
-  <section v-if="mode === 'year'" class="panel">
-    <div class="section-heading">
-      <div>
-        <h2>Your year in view</h2>
-        <p>{{ store.month.slice(0, 4) }} · {{ store.currency }}</p>
-      </div>
-    </div>
-    <div class="year-chart">
-      <div v-for="item in monthly" :key="item.label">
-        <div class="year-bar-space">
-          <div
-            :style="{ height: `${(item.amount / max) * 100}%` }"
-            :title="store.displayMoney(item.amount)"
-          />
-        </div>
-        <span>{{ item.label }}</span>
-        <span class="sr-only">{{ store.displayMoney(item.amount) }}</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Category breakdown -->
+  <!-- Chart 1: Spending Trajectory & Cumulative Line -->
   <section class="panel">
     <div class="section-heading">
-      <div>
-        <h2>Spending by category</h2>
-        <p>
-          {{
-            mode === "week"
-              ? `${store.weekStart} to ${store.weekEnd}`
-              : mode === "custom"
-                ? `${from} to ${to}`
-                : mode === "year"
-                  ? store.month.slice(0, 4)
-                  : store.month
-          }}
-        </p>
+      <div class="heading-with-icon">
+        <LineChart :size="18" />
+        <div>
+          <h2>Spending Progression & Trajectory</h2>
+          <p class="small muted">Daily transaction amounts and cumulative spending trend</p>
+        </div>
       </div>
     </div>
-    <CategoryBreakdown :expenses="rows" :currency="store.currency" />
+    <SpendTrajectoryChart :expenses="rows" />
+  </section>
+
+  <!-- Chart 2: Interactive Donut Category Breakdown -->
+  <section class="panel">
+    <div class="section-heading">
+      <div class="heading-with-icon">
+        <PieChart :size="18" />
+        <div>
+          <h2>Category Distribution</h2>
+          <p class="small muted">Proportionate breakdown across expense buckets</p>
+        </div>
+      </div>
+    </div>
+    <CategoryDonutChart :expenses="rows" :currency="store.currency" />
+  </section>
+
+  <!-- Chart 3: Structured Budget Variance Analysis -->
+  <section v-if="store.categoryLimits.length" class="panel">
+    <div class="section-heading">
+      <div class="heading-with-icon">
+        <Layers :size="18" />
+        <div>
+          <h2>Budget vs. Actual Variance</h2>
+          <p class="small muted">Comparing allocated category limits against actual spend</p>
+        </div>
+      </div>
+    </div>
+    <BudgetVarianceChart
+      :expenses="rows"
+      :multiplier="budgetMultiplier"
+      :period-title="mode"
+    />
+  </section>
+
+  <!-- Chart 4: Dual Account Cashflow & Net Position -->
+  <section class="panel">
+    <div class="section-heading">
+      <div class="heading-with-icon">
+        <ArrowRightLeft :size="18" />
+        <div>
+          <h2>Account Cashflow & Net Position</h2>
+          <p class="small muted">Global Account everyday outflows vs NZ Account salary savings</p>
+        </div>
+      </div>
+    </div>
+    <AccountCashflowChart :expenses="rows" />
   </section>
 </template>
 
@@ -262,57 +364,77 @@ function exportCsv() {
   color: #21533b;
 }
 
-.week-chart {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  height: 180px;
-  align-items: end;
-  padding: 18px 0 6px;
-}
-
-.week-bar-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  gap: 6px;
-}
-
-.week-bar-value {
-  font-size: 10px;
-  font-weight: 600;
-  color: #556c62;
-  white-space: nowrap;
-}
-
-.week-bar-space {
-  flex: 1;
-  width: 100%;
-  max-width: 38px;
-  background: #edf2ee;
-  border-radius: 8px;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-}
-
-.week-bar-fill {
-  width: 100%;
-  background: #153d35;
-  border-radius: 8px 8px 0 0;
-  transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.week-bar-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #3b5046;
-}
-
 .export-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.heading-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hub-icon {
+  color: #153d35;
+}
+
+.baseline-hub-panel {
+  display: grid;
+  gap: 14px;
+  background: #f5f9f7;
+  border: 1px solid #d2e4db;
+}
+
+.baseline-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.comparison-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.comparison-card.card-under {
+  background: #edf7f0;
+  border: 1px solid #bce1ca;
+  color: #174d31;
+}
+
+.comparison-card.card-over {
+  background: #fdf3f1;
+  border: 1px solid #f6c8c1;
+  color: #8c2a1c;
+}
+
+.comp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.comp-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.comp-number {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+
+.comp-body p {
+  margin: 2px 0 0;
 }
 </style>

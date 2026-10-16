@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, shallowRef, ref } from "vue";
 import {
   Target,
   Pencil,
@@ -9,15 +9,27 @@ import {
   AlertCircle,
   TrendingUp,
   Calendar,
+  Layers,
+  Banknote,
+  Plus,
+  Receipt,
+  PiggyBank,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, today } from "@/lib/finance";
+import type { CategoryLimit } from "@/lib/types";
+import CategoryIcon from "@/components/CategoryIcon.vue";
 
 const store = useExpenses();
 const editing = shallowRef(false);
+const editMode = shallowRef<"structured" | "quick">("structured");
 const amount = shallowRef("");
+const salaryAmount = shallowRef("");
 const error = shallowRef("");
 const busy = shallowRef(false);
+
+// Local state for structured category limits editing
+const localCategoryLimits = ref<CategoryLimit[]>([]);
 
 const progress = computed(() =>
   store.weeklyLimit
@@ -49,16 +61,108 @@ const dailyAllowance = computed(() => {
   return Math.round(diff.value / daysRemaining.value);
 });
 
-function edit() {
+// Salary vs Limit Analysis
+const weeklySalary = computed(() => store.salary.weeklyAverageNZD ?? 0);
+const targetSavings = computed(() =>
+  weeklySalary.value > store.weeklyLimit
+    ? weeklySalary.value - store.weeklyLimit
+    : 0,
+);
+const projectedSavings = computed(() =>
+  weeklySalary.value > store.weekTotal
+    ? weeklySalary.value - store.weekTotal
+    : 0,
+);
+const savingsRate = computed(() =>
+  weeklySalary.value > 0
+    ? Math.round((targetSavings.value / weeklySalary.value) * 100)
+    : 0,
+);
+
+// Structured budget sum
+const structuredTotal = computed(() =>
+  localCategoryLimits.value.reduce((acc, l) => acc + l.amount, 0),
+);
+
+function openEdit() {
   amount.value = store.weeklyLimit ? (store.weeklyLimit / 100).toFixed(2) : "";
+  salaryAmount.value = weeklySalary.value
+    ? (weeklySalary.value / 100).toFixed(2)
+    : "";
+
+  // Populate local category limits
+  if (store.categoryLimits.length) {
+    localCategoryLimits.value = store.categoryLimits.map((l) => ({ ...l }));
+  } else {
+    // Default starting categories if none configured
+    localCategoryLimits.value = [
+      { category: "Rent", amount: 35000 },
+      { category: "Groceries", amount: 15000 },
+      { category: "Bills", amount: 8000 },
+      { category: "Shopping", amount: 7000 },
+      { category: "Other", amount: 5000 },
+    ];
+  }
   editing.value = true;
 }
 
-async function save(remove = false) {
+function addCategoryRow() {
+  const availableCats = store.allCategories.filter(
+    (c) => !localCategoryLimits.value.some((l) => l.category.toLowerCase() === c.toLowerCase()),
+  );
+  const nextCat = availableCats[0] ?? "Other";
+  localCategoryLimits.value.push({ category: nextCat, amount: 5000 });
+}
+
+function removeCategoryRow(index: number) {
+  localCategoryLimits.value.splice(index, 1);
+}
+
+async function saveBudget() {
   busy.value = true;
   error.value = "";
   try {
-    await store.saveLimit(remove ? null : parseMoney(amount.value));
+    // Save Salary if provided
+    if (salaryAmount.value.trim()) {
+      const salCents = parseMoney(salaryAmount.value);
+      await store.saveSalary(salCents);
+    } else {
+      await store.saveSalary(0);
+    }
+
+    if (editMode.value === "structured") {
+      // Clean and validate category limits
+      const validLimits: CategoryLimit[] = [];
+      for (const lim of localCategoryLimits.value) {
+        if (!lim.category.trim()) continue;
+        if (lim.amount > 0) {
+          validLimits.push({
+            category: lim.category.trim(),
+            amount: lim.amount,
+          });
+        }
+      }
+      await store.saveCategoryLimits(validLimits, true);
+    } else {
+      // Quick amount
+      const totalCents = parseMoney(amount.value);
+      await store.saveLimit(totalCents);
+    }
+    editing.value = false;
+  } catch (reason) {
+    error.value = friendlyError(reason);
+  } finally {
+    busy.value = false;
+  }
+}
+
+async function removeLimit() {
+  if (!confirm("Remove the weekly limit and structured budgets?")) return;
+  busy.value = true;
+  error.value = "";
+  try {
+    await store.saveLimit(null);
+    await store.saveCategoryLimits([], false);
     editing.value = false;
   } catch (reason) {
     error.value = friendlyError(reason);
@@ -90,21 +194,22 @@ async function save(remove = false) {
         </div>
       </div>
 
-      <div v-if="store.weeklyLimit" class="row-actions">
+      <div class="row-actions">
         <button
-          class="icon-button"
-          aria-label="Edit weekly limit"
+          class="secondary btn-sm"
+          aria-label="Edit weekly limit & salary"
           type="button"
-          @click="edit"
+          @click="openEdit"
         >
-          <Pencil :size="17" />
+          <Pencil :size="15" />Configure budget
         </button>
         <button
+          v-if="store.weeklyLimit"
           class="icon-button"
           aria-label="Remove weekly limit"
           type="button"
           :disabled="busy"
-          @click="save(true)"
+          @click="removeLimit"
         >
           <Trash2 :size="17" />
         </button>
@@ -138,6 +243,25 @@ async function save(remove = false) {
         </template>
       </div>
 
+      <!-- Weekly Salary vs Budget vs Spend Stats -->
+      <div v-if="weeklySalary > 0" class="salary-comparison-strip">
+        <div class="salary-stat-col">
+          <span class="stat-micro-label">Weekly Salary</span>
+          <strong class="salary-amount">{{ store.displayMoney(weeklySalary) }}</strong>
+        </div>
+        <div class="salary-stat-col">
+          <span class="stat-micro-label">Weekly Limit</span>
+          <strong class="limit-target-amount">{{ store.displayMoney(store.weeklyLimit) }}</strong>
+        </div>
+        <div class="salary-stat-col">
+          <span class="stat-micro-label">Target Savings</span>
+          <strong class="savings-amount">
+            {{ store.displayMoney(targetSavings) }}
+            <span class="rate-badge">{{ savingsRate }}%</span>
+          </strong>
+        </div>
+      </div>
+
       <!-- Hero Spending Numbers -->
       <div class="limit-hero-numbers">
         <div class="spent-stat">
@@ -163,6 +287,56 @@ async function save(remove = false) {
             :style="{ width: `${Math.min(100, progress)}%` }"
           />
           <div class="threshold-marker marker-80" title="80% Warning threshold" />
+        </div>
+      </div>
+
+      <!-- Structured Category Budgets Breakdown (if configured) -->
+      <div v-if="store.categoryBudgetProgress.length" class="structured-budget-section">
+        <div class="structured-header">
+          <span class="structured-title">
+            <Layers :size="15" /> Structured Category Limits
+          </span>
+          <span v-if="store.frequentWeeklyCommitment > 0" class="frequent-pill">
+            <Receipt :size="12" /> {{ store.displayMoney(store.frequentWeeklyCommitment) }}/wk in frequent bills
+          </span>
+        </div>
+
+        <div class="category-budget-grid">
+          <div
+            v-for="cat in store.categoryBudgetProgress"
+            :key="cat.category"
+            class="cat-budget-card"
+            :data-status="cat.status"
+          >
+            <div class="cat-budget-header">
+              <div class="cat-tag">
+                <CategoryIcon :category="cat.category" />
+                <span class="cat-name">{{ cat.category }}</span>
+              </div>
+              <span class="cat-fraction">
+                {{ store.displayMoney(cat.spent) }} / {{ store.displayMoney(cat.limit) }}
+              </span>
+            </div>
+
+            <div class="cat-progress-track">
+              <div
+                class="cat-progress-fill"
+                :data-status="cat.status"
+                :style="{ width: `${Math.min(100, cat.percent)}%` }"
+              />
+            </div>
+
+            <div class="cat-footer">
+              <span class="cat-percent small muted">{{ Math.round(cat.percent) }}%</span>
+              <span class="cat-rem small" :class="{ 'rem-over': cat.status === 'over' }">
+                {{
+                  cat.status === "over"
+                    ? `+${store.displayMoney(cat.spent - cat.limit)} over`
+                    : `${store.displayMoney(cat.remaining)} left`
+                }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -192,35 +366,145 @@ async function save(remove = false) {
     <!-- Empty State: No Limit Set -->
     <div v-else-if="!editing" class="no-limit-banner">
       <div class="no-limit-info">
-        <p>Set a weekly spending target to stay on top of daily expenses.</p>
+        <p>Set a structured weekly limit and salary to manage category spending.</p>
       </div>
-      <button class="primary" type="button" @click="edit">
-        <Target :size="17" />Set weekly limit
+      <button class="primary" type="button" @click="openEdit">
+        <Target :size="17" />Set weekly limit & budget
       </button>
     </div>
 
-    <!-- Edit/Set Limit Form -->
-    <form v-if="editing" class="limit-form" @submit.prevent="save()">
-      <label>
-        Weekly limit · NZD
-        <input
-          v-model="amount"
-          inputmode="decimal"
-          required
-          placeholder="e.g. 350.00"
-          autofocus
-        />
-      </label>
-      <p class="small muted">Applies every Monday–Sunday week.</p>
-      <div class="entry-actions">
-        <button class="primary" :disabled="busy">Save limit</button>
-        <button type="button" class="secondary" @click="editing = false">
-          Cancel
-        </button>
-      </div>
-    </form>
+    <!-- Configure Budget & Salary Modal -->
+    <dialog
+      v-if="editing"
+      class="modal-backdrop"
+      open
+      @click.self="editing = false"
+    >
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Configure Weekly Budget & Salary</h3>
+          <button class="icon-button" type="button" @click="editing = false">
+            ✕
+          </button>
+        </div>
 
-    <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+        <div class="budget-modal-body">
+          <!-- Weekly Salary Input -->
+          <label>
+            Weekly Average Salary · NZD (can change anytime)
+            <input
+              v-model="salaryAmount"
+              inputmode="decimal"
+              placeholder="e.g. 1200.00"
+            />
+          </label>
+          <p class="small muted">
+            Used to calculate your target weekly savings and compare against your weekly limit.
+          </p>
+
+          <hr class="modal-divider" />
+
+          <!-- Mode Segmented Switch -->
+          <div class="segmented" aria-label="Budget Mode">
+            <button
+              type="button"
+              :class="{ selected: editMode === 'structured' }"
+              @click="editMode = 'structured'"
+            >
+              Structured by Category
+            </button>
+            <button
+              type="button"
+              :class="{ selected: editMode === 'quick' }"
+              @click="editMode = 'quick'"
+            >
+              Single Overall Limit
+            </button>
+          </div>
+
+          <!-- Structured Mode -->
+          <div v-if="editMode === 'structured'" class="structured-form">
+            <p class="small muted">
+              Separate your week limit between rent, food, bills, expenses, and discretionary spending.
+            </p>
+
+            <div class="category-inputs-list">
+              <div
+                v-for="(row, idx) in localCategoryLimits"
+                :key="idx"
+                class="category-limit-row"
+              >
+                <select v-model="row.category">
+                  <option
+                    v-for="cat in store.allCategories"
+                    :key="cat"
+                    :value="cat"
+                  >
+                    {{ cat }}
+                  </option>
+                </select>
+
+                <div class="amount-input-wrap">
+                  <span class="currency-prefix">$</span>
+                  <input
+                    :value="(row.amount / 100).toFixed(2)"
+                    inputmode="decimal"
+                    placeholder="0.00"
+                    @input="row.amount = parseMoney(($event.target as HTMLInputElement).value || '0')"
+                  />
+                </div>
+
+                <button
+                  class="icon-button"
+                  type="button"
+                  title="Remove category"
+                  @click="removeCategoryRow(idx)"
+                >
+                  <Trash2 :size="15" />
+                </button>
+              </div>
+            </div>
+
+            <button
+              class="secondary btn-sm add-cat-btn"
+              type="button"
+              @click="addCategoryRow"
+            >
+              <Plus :size="14" />Add category limit
+            </button>
+
+            <div class="structured-total-banner">
+              <span>Total Weekly Limit:</span>
+              <strong>{{ store.displayMoney(structuredTotal) }}</strong>
+            </div>
+          </div>
+
+          <!-- Quick Single Limit Mode -->
+          <div v-else class="quick-limit-form">
+            <label>
+              Weekly limit · NZD
+              <input
+                v-model="amount"
+                inputmode="decimal"
+                required
+                placeholder="e.g. 500.00"
+              />
+            </label>
+          </div>
+
+          <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+
+          <div class="entry-actions">
+            <button class="primary" :disabled="busy" @click="saveBudget">
+              Save Budget
+            </button>
+            <button type="button" class="secondary" @click="editing = false">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
   </section>
 </template>
 
@@ -234,7 +518,6 @@ async function save(remove = false) {
   overflow: hidden;
 }
 
-/* Status-driven card styling */
 .high-impact-limit-card[data-status="over"] {
   background: #fdf5f4;
   border: 2px solid #e58778;
@@ -301,7 +584,15 @@ async function save(remove = false) {
   color: #556c62;
 }
 
-/* Status Banner */
+.btn-sm {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .limit-status-banner {
   display: flex;
   align-items: center;
@@ -337,6 +628,59 @@ async function save(remove = false) {
 
 .banner-text strong {
   font-size: 14px;
+}
+
+/* Salary strip */
+.salary-comparison-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #edf5ef;
+  border-radius: 12px;
+  border: 1px solid #c7dfd0;
+}
+
+.salary-stat-col {
+  display: grid;
+  gap: 1px;
+}
+
+.stat-micro-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #4b6257;
+}
+
+.salary-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #153d35;
+}
+
+.limit-target-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #556c62;
+}
+
+.savings-amount {
+  font-size: 14px;
+  font-weight: 750;
+  color: #1e5239;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rate-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: #c9ef88;
+  color: #153d35;
 }
 
 /* Hero Numbers */
@@ -380,7 +724,6 @@ async function save(remove = false) {
   color: #61776d;
 }
 
-/* Progress Track */
 .progress-container {
   width: 100%;
 }
@@ -423,7 +766,130 @@ async function save(remove = false) {
   left: 80%;
 }
 
-/* Pacing Footer */
+/* Structured category budgets */
+.structured-budget-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.structured-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.structured-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #153d35;
+}
+
+.frequent-pill {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: #edf2ee;
+  color: #4b6058;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.cat-budget-card {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e1e8e4;
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.cat-budget-card[data-status="over"] {
+  border-color: #f6c8c2;
+  background: #fdf6f5;
+}
+
+.cat-budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.cat-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #153d35;
+}
+
+.cat-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.cat-fraction {
+  font-size: 11px;
+  color: #63776d;
+  font-variant-numeric: tabular-nums;
+}
+
+.cat-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #e4ece7;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cat-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cat-progress-fill[data-status="under"] {
+  background: #27ae60;
+}
+
+.cat-progress-fill[data-status="near"] {
+  background: #f39c12;
+}
+
+.cat-progress-fill[data-status="over"] {
+  background: #e74c3c;
+}
+
+.cat-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.cat-rem {
+  font-weight: 600;
+  color: #21533b;
+}
+
+.cat-rem.rem-over {
+  color: #a03e30;
+}
+
 .pacing-footer {
   display: flex;
   justify-content: space-between;
@@ -465,7 +931,6 @@ async function save(remove = false) {
   width: auto;
 }
 
-/* No Limit Set Banner */
 .no-limit-banner {
   display: flex;
   justify-content: space-between;
@@ -478,7 +943,104 @@ async function save(remove = false) {
   border-radius: 14px;
 }
 
-.no-limit-banner p {
-  color: #4b6058;
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  border: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.modal-dialog {
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  display: grid;
+  gap: 14px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.budget-modal-body {
+  display: grid;
+  gap: 14px;
+}
+
+.modal-divider {
+  border: 0;
+  border-top: 1px solid #e5ebe7;
+  margin: 0;
+}
+
+.category-inputs-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.category-limit-row {
+  display: grid;
+  grid-template-columns: 1fr 140px 36px;
+  gap: 8px;
+  align-items: center;
+}
+
+.amount-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-prefix {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  color: #70847b;
+  pointer-events: none;
+}
+
+.amount-input-wrap input {
+  padding-left: 22px;
+}
+
+.add-cat-btn {
+  justify-self: start;
+}
+
+.structured-total-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f0f5f2;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #153d35;
+}
+
+.structured-total-banner strong {
+  font-size: 16px;
+  color: #153d35;
 }
 </style>

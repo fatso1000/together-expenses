@@ -7,6 +7,13 @@ import {
   type MonthlyLimit,
   type Product,
   type CategoryDefinition,
+  type AccountId,
+  type FinancialAccounts,
+  type SalaryConfig,
+  type CategoryLimit,
+  type FrequentPayment,
+  type SavingsRecord,
+  type PaymentFrequency,
 } from "@/lib/types";
 import { units, findProduct, productId } from "@/lib/products";
 import { itemsTotal, validDate, validQuantity } from "@/lib/purchases";
@@ -16,12 +23,22 @@ export const storageKey = "daily-expenses-v1";
 export type Backup = AppData;
 export function emptyData(): AppData {
   return {
-    version: 3,
+    version: 4,
     expenses: [],
     shops: [],
     limits: [],
     products: [],
     weeklyLimit: 0,
+    categoryLimits: [],
+    accounts: {
+      globalInitialNZD: 0,
+      nzInitialNZD: 0,
+    },
+    salary: {
+      weeklyAverageNZD: 0,
+    },
+    frequentPayments: [],
+    savingsRecords: [],
   };
 }
 function text(value: unknown, max: number, empty = false): value is string {
@@ -88,7 +105,7 @@ export function parseBackup(source: string): AppData {
   const data = JSON.parse(source);
   if (
     !data ||
-    ![1, 2, 3].includes(data.version) ||
+    ![1, 2, 3, 4].includes(data.version) ||
     !Array.isArray(data.expenses)
   )
     return invalid();
@@ -130,12 +147,17 @@ export function parseBackup(source: string): AppData {
       typeof item?.category === "string" &&
       (allowedCategoryNames.has(item.category.trim().toLowerCase()) ||
         (customCategories.length > 0 && text(item.category, 100)));
+    const accountValid =
+      item.accountId === undefined ||
+      item.accountId === "global" ||
+      item.accountId === "nz";
     if (
       !item ||
       !text(item.id, 100) ||
       !cents(item.amount) ||
       !currency(item.currency) ||
       !categoryMatches ||
+      !accountValid ||
       !text(item.merchant, 100) ||
       !text(item.note, 500, true) ||
       !validDate(item.date) ||
@@ -160,6 +182,7 @@ export function parseBackup(source: string): AppData {
       date: item.date,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      accountId: item.accountId === "nz" ? "nz" : "global",
       ...(item.originalUSD ? { originalUSD: item.originalUSD } : {}),
       ...(items.length ? { items, adjustment } : {}),
     };
@@ -225,7 +248,7 @@ export function parseBackup(source: string): AppData {
   if (!unique(limits.map((limit) => `${limit.month}:${limit.currency}`)))
     return invalid();
   const products: Product[] = [];
-  const rawProducts = data.version === 3 ? data.products : [];
+  const rawProducts = data.version >= 3 ? data.products : [];
   if (!Array.isArray(rawProducts)) return invalid();
   for (const product of rawProducts) {
     if (
@@ -245,7 +268,7 @@ export function parseBackup(source: string): AppData {
       unit: product.unit,
     });
   }
-  if (data.version !== 3) {
+  if (data.version < 3) {
     const legacyItems = [
       ...shops.flatMap((shop) => shop.items),
       ...expenses.flatMap((expense) => expense.items ?? []),
@@ -269,15 +292,146 @@ export function parseBackup(source: string): AppData {
     !unique(products.map((product) => product.title.trim().toLowerCase()))
   )
     return invalid();
-  const weeklyLimit = data.version === 3 ? data.weeklyLimit : 0;
+  const weeklyLimit = data.version >= 3 ? data.weeklyLimit : 0;
   if (!cents(weeklyLimit, true)) return invalid();
+
+  // Category limits
+  const categoryLimits: CategoryLimit[] = [];
+  if (Array.isArray(data.categoryLimits)) {
+    for (const lim of data.categoryLimits) {
+      if (
+        !lim ||
+        !text(lim.category, 100) ||
+        !cents(lim.amount, true)
+      )
+        return invalid();
+      categoryLimits.push({
+        category: lim.category.trim(),
+        amount: lim.amount,
+      });
+    }
+    if (!unique(categoryLimits.map((c) => c.category.toLowerCase())))
+      return invalid();
+  }
+
+  // Financial accounts
+  let accounts: FinancialAccounts = {
+    globalInitialNZD: 0,
+    nzInitialNZD: 0,
+  };
+  if (data.accounts && typeof data.accounts === "object") {
+    const acc = data.accounts;
+    if (
+      !cents(acc.globalInitialNZD ?? 0, true) ||
+      !cents(acc.nzInitialNZD ?? 0, true) ||
+      (acc.globalInitialUSD !== undefined && !cents(acc.globalInitialUSD, true)) ||
+      (acc.globalManualNZD !== undefined && typeof acc.globalManualNZD !== "boolean") ||
+      (acc.updatedAt !== undefined && !Number.isSafeInteger(acc.updatedAt))
+    )
+      return invalid();
+    accounts = {
+      globalInitialNZD: acc.globalInitialNZD ?? 0,
+      nzInitialNZD: acc.nzInitialNZD ?? 0,
+      ...(acc.globalInitialUSD !== undefined ? { globalInitialUSD: acc.globalInitialUSD } : {}),
+      ...(acc.globalManualNZD !== undefined ? { globalManualNZD: acc.globalManualNZD } : {}),
+      ...(acc.updatedAt !== undefined ? { updatedAt: acc.updatedAt } : {}),
+    };
+  }
+
+  // Salary
+  let salary: SalaryConfig = {
+    weeklyAverageNZD: 0,
+  };
+  if (data.salary && typeof data.salary === "object") {
+    const sal = data.salary;
+    if (
+      !cents(sal.weeklyAverageNZD ?? 0, true) ||
+      (sal.updatedAt !== undefined && !Number.isSafeInteger(sal.updatedAt))
+    )
+      return invalid();
+    salary = {
+      weeklyAverageNZD: sal.weeklyAverageNZD ?? 0,
+      ...(sal.updatedAt !== undefined ? { updatedAt: sal.updatedAt } : {}),
+    };
+  }
+
+  // Frequent Payments
+  const frequentPayments: FrequentPayment[] = [];
+  if (Array.isArray(data.frequentPayments)) {
+    const validFrequencies: PaymentFrequency[] = ["weekly", "fortnightly", "monthly", "yearly"];
+    for (const fp of data.frequentPayments) {
+      const categoryMatches =
+        typeof fp?.category === "string" &&
+        (allowedCategoryNames.has(fp.category.trim().toLowerCase()) ||
+          (customCategories.length > 0 && text(fp.category, 100)));
+      if (
+        !fp ||
+        !text(fp.id, 100) ||
+        !text(fp.name, 100) ||
+        !cents(fp.amount) ||
+        !validFrequencies.includes(fp.frequency) ||
+        !categoryMatches ||
+        (fp.accountId !== "global" && fp.accountId !== "nz") ||
+        (fp.nextDueDate !== undefined && !validDate(fp.nextDueDate)) ||
+        (fp.note !== undefined && !text(fp.note, 500, true)) ||
+        typeof fp.active !== "boolean" ||
+        !Number.isSafeInteger(fp.createdAt) ||
+        !Number.isSafeInteger(fp.updatedAt)
+      )
+        return invalid();
+      frequentPayments.push({
+        id: fp.id,
+        name: fp.name.trim(),
+        amount: fp.amount,
+        frequency: fp.frequency,
+        category: fp.category,
+        accountId: fp.accountId,
+        ...(fp.nextDueDate ? { nextDueDate: fp.nextDueDate } : {}),
+        ...(fp.note !== undefined ? { note: fp.note } : {}),
+        active: fp.active,
+        createdAt: fp.createdAt,
+        updatedAt: fp.updatedAt,
+      });
+    }
+    if (!unique(frequentPayments.map((p) => p.id))) return invalid();
+  }
+
+  // Savings Records
+  const savingsRecords: SavingsRecord[] = [];
+  if (Array.isArray(data.savingsRecords)) {
+    for (const sr of data.savingsRecords) {
+      if (
+        !sr ||
+        !text(sr.id, 100) ||
+        !cents(sr.amount) ||
+        !validDate(sr.date) ||
+        (sr.note !== undefined && !text(sr.note, 500, true)) ||
+        !Number.isSafeInteger(sr.createdAt)
+      )
+        return invalid();
+      savingsRecords.push({
+        id: sr.id,
+        amount: sr.amount,
+        date: sr.date,
+        ...(sr.note !== undefined ? { note: sr.note } : {}),
+        createdAt: sr.createdAt,
+      });
+    }
+    if (!unique(savingsRecords.map((s) => s.id))) return invalid();
+  }
+
   return {
-    version: 3,
+    version: 4,
     expenses,
     shops,
     limits,
     products,
     weeklyLimit,
+    categoryLimits,
+    accounts,
+    salary,
+    frequentPayments,
+    savingsRecords,
     ...(data.customCategories !== undefined ? { customCategories } : {}),
   };
 }

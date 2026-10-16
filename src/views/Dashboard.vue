@@ -5,6 +5,8 @@ import { money, total, previousMonth } from "@/lib/finance";
 import ExpenseList from "@/components/ExpenseList.vue";
 import CategoryBreakdown from "@/components/CategoryBreakdown.vue";
 import WeeklyLimit from "@/components/WeeklyLimit.vue";
+import AccountsOverview from "@/components/AccountsOverview.vue";
+import FrequentPayments from "@/components/FrequentPayments.vue";
 import { Zap, ListPlus, ScanLine, AlertCircle } from "lucide-vue-next";
 import TrendChart from "@/components/TrendChart.vue";
 
@@ -35,6 +37,9 @@ const isOverWeeklyLimit = computed(
     </button>
   </div>
 
+  <!-- Accounts & Total Money Overview -->
+  <AccountsOverview />
+
   <!-- Prominent Top Limit Alert when Exceeded -->
   <div v-if="isOverWeeklyLimit" class="top-limit-alert" role="alert">
     <AlertCircle :size="22" class="alert-icon" />
@@ -46,8 +51,11 @@ const isOverWeeklyLimit = computed(
     </div>
   </div>
 
-  <!-- Weekly limit prominent position -->
+  <!-- Weekly limit & structured budgets prominent position -->
   <WeeklyLimit />
+
+  <!-- Frequent Payments & Bills -->
+  <FrequentPayments />
 
   <section class="report-stats" aria-label="Monthly summary">
     <article class="total-card">

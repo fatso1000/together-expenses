@@ -8,9 +8,24 @@ import {
   type Shop,
   type Product,
   type CategoryDefinition,
+  type FinancialAccounts,
+  type SalaryConfig,
+  type CategoryLimit,
+  type FrequentPayment,
+  type SavingsRecord,
+  type AccountId,
   categories,
 } from "@/lib/types";
-import { today, total, money } from "@/lib/finance";
+import {
+  today,
+  total,
+  money,
+  totalFrequentWeekly,
+  totalFrequentMonthly,
+  calculateAccountBalances,
+  compareSpendWithInitial,
+  calculateCategoryBudgetStatus,
+} from "@/lib/finance";
 import {
   storageKey,
   readData,
@@ -108,6 +123,68 @@ export const useExpenses = defineStore("expenses", () => {
       (item) => item.date >= weekStart.value && item.date <= weekEnd.value,
     ),
   );
+
+  // Financial Accounts & Balances
+  const accounts = computed<FinancialAccounts>(
+    () =>
+      data.value.accounts ?? {
+        globalInitialNZD: 0,
+        nzInitialNZD: 0,
+      },
+  );
+  const salary = computed<SalaryConfig>(
+    () =>
+      data.value.salary ?? {
+        weeklyAverageNZD: 0,
+      },
+  );
+  const categoryLimits = computed<CategoryLimit[]>(
+    () => data.value.categoryLimits ?? [],
+  );
+  const frequentPayments = computed<FrequentPayment[]>(
+    () => data.value.frequentPayments ?? [],
+  );
+  const savingsRecords = computed<SavingsRecord[]>(
+    () => data.value.savingsRecords ?? [],
+  );
+
+  const balances = computed(() =>
+    calculateAccountBalances(
+      accounts.value,
+      currencyExpenses.value,
+      savingsRecords.value,
+    ),
+  );
+  const globalBalance = computed(() => balances.value.globalBalance);
+  const nzBalance = computed(() => balances.value.nzBalance);
+  const totalMoney = computed(() => balances.value.totalMoney);
+  const allTimeTotal = computed(() => total(currencyExpenses.value));
+
+  const frequentWeeklyCommitment = computed(() =>
+    totalFrequentWeekly(frequentPayments.value),
+  );
+  const frequentMonthlyCommitment = computed(() =>
+    totalFrequentMonthly(frequentPayments.value),
+  );
+
+  const categoryBudgetProgress = computed(() =>
+    calculateCategoryBudgetStatus(categoryLimits.value, weekExpenses.value),
+  );
+
+  const initialGlobalNZD = computed(
+    () => accounts.value.globalInitialNZD ?? 0,
+  );
+  const initialGlobalUSD = computed(
+    () => accounts.value.globalInitialUSD ?? 0,
+  );
+
+  const allTimeBaselineComparison = computed(() =>
+    compareSpendWithInitial(allTimeTotal.value, initialGlobalNZD.value),
+  );
+  const monthBaselineComparison = computed(() =>
+    compareSpendWithInitial(monthTotal.value, initialGlobalNZD.value),
+  );
+
   function displayMoney(amount: number) {
     if (currency.value === "USD") {
       return rates.rate
@@ -438,6 +515,133 @@ export const useExpenses = defineStore("expenses", () => {
     });
     message.value = "Category removed";
   }
+  async function saveAccounts(config: FinancialAccounts) {
+    await change((current) => {
+      current.accounts = {
+        globalInitialNZD: config.globalInitialNZD,
+        nzInitialNZD: config.nzInitialNZD,
+        ...(config.globalInitialUSD !== undefined
+          ? { globalInitialUSD: config.globalInitialUSD }
+          : {}),
+        ...(config.globalManualNZD !== undefined
+          ? { globalManualNZD: config.globalManualNZD }
+          : {}),
+        updatedAt: Date.now(),
+      };
+    });
+    message.value = "Accounts updated";
+  }
+
+  async function saveSalary(weeklyAverageNZD: number) {
+    await change((current) => {
+      current.salary = {
+        weeklyAverageNZD,
+        updatedAt: Date.now(),
+      };
+    });
+    message.value = "Weekly salary updated";
+  }
+
+  async function saveCategoryLimits(
+    limits: CategoryLimit[],
+    syncTotalWeeklyLimit = true,
+  ) {
+    await change((current) => {
+      current.categoryLimits = limits;
+      if (syncTotalWeeklyLimit) {
+        const sum = limits.reduce((acc, l) => acc + l.amount, 0);
+        if (sum > 0) current.weeklyLimit = sum;
+      }
+    });
+    message.value = "Structured weekly budget saved";
+  }
+
+  async function saveFrequentPayment(payment: FrequentPayment) {
+    await change((current) => {
+      current.frequentPayments = current.frequentPayments ?? [];
+      const index = current.frequentPayments.findIndex(
+        (p) => p.id === payment.id,
+      );
+      const now = Date.now();
+      const item: FrequentPayment = {
+        ...payment,
+        id: payment.id || crypto.randomUUID(),
+        createdAt: payment.createdAt || now,
+        updatedAt: now,
+      };
+      if (index >= 0) {
+        current.frequentPayments[index] = item;
+      } else {
+        current.frequentPayments.push(item);
+      }
+    });
+    message.value = "Frequent payment saved";
+  }
+
+  async function removeFrequentPayment(id: string) {
+    await change((current) => {
+      current.frequentPayments = (current.frequentPayments ?? []).filter(
+        (p) => p.id !== id,
+      );
+    });
+    message.value = "Frequent payment removed";
+  }
+
+  async function toggleFrequentPayment(id: string) {
+    await change((current) => {
+      const item = (current.frequentPayments ?? []).find((p) => p.id === id);
+      if (item) {
+        item.active = !item.active;
+        item.updatedAt = Date.now();
+      }
+    });
+  }
+
+  async function logFrequentPaymentAsExpense(id: string, logDate?: string) {
+    const item = frequentPayments.value.find((p) => p.id === id);
+    if (!item) throw new Error("Frequent payment not found");
+    await savePurchases([
+      {
+        amount: item.amount,
+        currency: "NZD",
+        category: item.category,
+        merchant: item.name,
+        note: `Recurring payment (${item.frequency})`,
+        date: logDate || today(),
+        accountId: item.accountId,
+      },
+    ]);
+    message.value = `Logged ${item.name} as expense`;
+  }
+
+  async function saveSavingsRecord(record: SavingsRecord) {
+    await change((current) => {
+      current.savingsRecords = current.savingsRecords ?? [];
+      const index = current.savingsRecords.findIndex((s) => s.id === record.id);
+      const now = Date.now();
+      const item: SavingsRecord = {
+        ...record,
+        id: record.id || crypto.randomUUID(),
+        createdAt: record.createdAt || now,
+      };
+      if (index >= 0) {
+        current.savingsRecords[index] = item;
+      } else {
+        current.savingsRecords.push(item);
+      }
+    });
+    message.value = "Savings deposit recorded";
+  }
+
+  async function removeSavingsRecord(id: string) {
+    await change((current) => {
+      current.savingsRecords = (current.savingsRecords ?? []).filter(
+        (s) => s.id !== id,
+      );
+    });
+    message.value = "Savings record removed";
+  }
+
   function openExpense(
     mode: "quick" | "items" | "receipt" = "quick",
     source?: Expense,
@@ -498,6 +702,31 @@ export const useExpenses = defineStore("expenses", () => {
     saveShop,
     removeShop,
     saveLimit,
+    accounts,
+    salary,
+    categoryLimits,
+    frequentPayments,
+    savingsRecords,
+    globalBalance,
+    nzBalance,
+    totalMoney,
+    allTimeTotal,
+    frequentWeeklyCommitment,
+    frequentMonthlyCommitment,
+    categoryBudgetProgress,
+    initialGlobalNZD,
+    initialGlobalUSD,
+    allTimeBaselineComparison,
+    monthBaselineComparison,
+    saveAccounts,
+    saveSalary,
+    saveCategoryLimits,
+    saveFrequentPayment,
+    removeFrequentPayment,
+    toggleFrequentPayment,
+    logFrequentPaymentAsExpense,
+    saveSavingsRecord,
+    removeSavingsRecord,
   };
 });
 export function friendlyError(reason: unknown): string {
