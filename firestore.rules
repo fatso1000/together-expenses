@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The random 256-bit connection key is never stored here. Its SHA-256 digest
+    // selects a database; every record is encrypted on the client with AES-GCM.
+    // Possession of the private link grants access. There is no public directory.
+    match /privateDatabases/{databaseId}/records/{recordId} {
+      allow read, delete: if databaseId.matches('^[a-f0-9]{64}$');
+      allow create, update: if databaseId.matches('^[a-f0-9]{64}$')
+        && request.resource.data.keys().hasOnly(['revision', 'payload'])
+        && request.resource.data.revision is string
+        && request.resource.data.revision.size() <= 100
+        && request.resource.data.payload is string
+        && request.resource.data.payload.size() <= 900000;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
