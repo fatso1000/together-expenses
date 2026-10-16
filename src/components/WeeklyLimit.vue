@@ -16,7 +16,7 @@ import {
   PiggyBank,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { parseMoney, today } from "@/lib/finance";
+import { parseMoney, parseOptionalMoney, today } from "@/lib/finance";
 import type { CategoryLimit } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 
@@ -122,13 +122,9 @@ async function saveBudget() {
   busy.value = true;
   error.value = "";
   try {
-    // Save Salary if provided
-    if (salaryAmount.value.trim()) {
-      const salCents = parseMoney(salaryAmount.value);
-      await store.saveSalary(salCents);
-    } else {
-      await store.saveSalary(0);
-    }
+    const salCents = salaryAmount.value.trim()
+      ? parseOptionalMoney(salaryAmount.value)
+      : 0;
 
     if (editMode.value === "structured") {
       // Clean and validate category limits
@@ -142,11 +138,12 @@ async function saveBudget() {
           });
         }
       }
-      await store.saveCategoryLimits(validLimits, true);
+      const sum = validLimits.reduce((acc, l) => acc + l.amount, 0);
+      await store.saveWeeklyBudgetAndSalary(salCents, sum, validLimits);
     } else {
       // Quick amount
       const totalCents = parseMoney(amount.value);
-      await store.saveLimit(totalCents);
+      await store.saveWeeklyBudgetAndSalary(salCents, totalCents);
     }
     editing.value = false;
   } catch (reason) {
@@ -161,8 +158,7 @@ async function removeLimit() {
   busy.value = true;
   error.value = "";
   try {
-    await store.saveLimit(null);
-    await store.saveCategoryLimits([], false);
+    await store.saveWeeklyBudgetAndSalary(store.salary.weeklyAverageNZD, 0, []);
     editing.value = false;
   } catch (reason) {
     error.value = friendlyError(reason);

@@ -542,6 +542,48 @@ export const useExpenses = defineStore("expenses", () => {
     message.value = "Weekly salary updated";
   }
 
+  async function saveAccountsAndSalary(
+    config: FinancialAccounts,
+    weeklySalaryNZD: number,
+  ) {
+    await change((current) => {
+      current.accounts = {
+        globalInitialNZD: config.globalInitialNZD,
+        nzInitialNZD: config.nzInitialNZD,
+        ...(config.globalInitialUSD !== undefined
+          ? { globalInitialUSD: config.globalInitialUSD }
+          : {}),
+        ...(config.globalManualNZD !== undefined
+          ? { globalManualNZD: config.globalManualNZD }
+          : {}),
+        updatedAt: Date.now(),
+      };
+      current.salary = {
+        weeklyAverageNZD: weeklySalaryNZD,
+        updatedAt: Date.now(),
+      };
+    });
+    message.value = "Accounts and salary saved";
+  }
+
+  async function saveWeeklyBudgetAndSalary(
+    weeklySalaryNZD: number,
+    weeklyLimit: number,
+    categoryLimits?: CategoryLimit[],
+  ) {
+    await change((current) => {
+      current.salary = {
+        weeklyAverageNZD: weeklySalaryNZD,
+        updatedAt: Date.now(),
+      };
+      current.weeklyLimit = weeklyLimit;
+      if (categoryLimits !== undefined) {
+        current.categoryLimits = categoryLimits;
+      }
+    });
+    message.value = "Weekly budget and salary saved";
+  }
+
   async function saveCategoryLimits(
     limits: CategoryLimit[],
     syncTotalWeeklyLimit = true,
@@ -720,6 +762,8 @@ export const useExpenses = defineStore("expenses", () => {
     monthBaselineComparison,
     saveAccounts,
     saveSalary,
+    saveAccountsAndSalary,
+    saveWeeklyBudgetAndSalary,
     saveCategoryLimits,
     saveFrequentPayment,
     removeFrequentPayment,

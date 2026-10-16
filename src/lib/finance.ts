@@ -26,6 +26,12 @@ export function parseMoney(value: string): number {
   return cents;
 }
 
+export function parseOptionalMoney(value: string): number {
+  const normalized = value.trim();
+  if (!normalized || /^[+-]?0(?:\.0{1,2})?$/.test(normalized)) return 0;
+  return parseMoney(normalized);
+}
+
 export function money(cents: number, currency = "NZD"): string {
   return new Intl.NumberFormat("en", {
     style: "currency",

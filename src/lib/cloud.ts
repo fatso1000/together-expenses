@@ -22,7 +22,13 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 type RecordValue = {
-  kind: "expenses" | "products" | "shops" | "settings";
+  kind:
+    | "expenses"
+    | "products"
+    | "shops"
+    | "frequentPayments"
+    | "savingsRecords"
+    | "settings";
   value: unknown;
 };
 type CloudRecord = { revision: string; payload: string };
@@ -42,13 +48,26 @@ function canonical(value: unknown): string {
 }
 function records(data: AppData): Map<string, RecordValue> {
   const result = new Map<string, RecordValue>();
-  for (const kind of ["expenses", "products", "shops"] as const) {
-    for (const value of data[kind])
+  for (const kind of [
+    "expenses",
+    "products",
+    "shops",
+    "frequentPayments",
+    "savingsRecords",
+  ] as const) {
+    for (const value of data[kind] ?? [])
       result.set(`${kind}_${value.id}`, { kind, value });
   }
   result.set("settings", {
     kind: "settings",
-    value: { weeklyLimit: data.weeklyLimit, limits: data.limits },
+    value: {
+      weeklyLimit: data.weeklyLimit,
+      limits: data.limits,
+      categoryLimits: data.categoryLimits ?? [],
+      accounts: data.accounts ?? { globalInitialNZD: 0, nzInitialNZD: 0 },
+      salary: data.salary ?? { weeklyAverageNZD: 0 },
+      customCategories: data.customCategories ?? [],
+    },
   });
   return result;
 }
@@ -109,10 +128,21 @@ export class CloudDatabase {
                 record.payload,
                 document.id,
               )) as RecordValue;
-              if (value.kind === "settings") Object.assign(next, value.value);
-              else if (["expenses", "products", "shops"].includes(value.kind))
+              if (value.kind === "settings") {
+                Object.assign(next, value.value);
+              } else if (
+                [
+                  "expenses",
+                  "products",
+                  "shops",
+                  "frequentPayments",
+                  "savingsRecords",
+                ].includes(value.kind)
+              ) {
                 (next[value.kind] as unknown[]).push(value.value);
-              else throw new Error("Unexpected database record.");
+              } else {
+                throw new Error("Unexpected database record.");
+              }
               revisions.set(document.id, record.revision);
               values.set(document.id, value);
             }
@@ -205,8 +235,19 @@ export class CloudDatabase {
       }
       const merged = emptyData();
       for (const record of this.values.values()) {
-        if (record.kind === "settings") Object.assign(merged, record.value);
-        else (merged[record.kind] as unknown[]).push(record.value);
+        if (record.kind === "settings") {
+          Object.assign(merged, record.value);
+        } else if (
+          [
+            "expenses",
+            "products",
+            "shops",
+            "frequentPayments",
+            "savingsRecords",
+          ].includes(record.kind)
+        ) {
+          (merged[record.kind] as unknown[]).push(record.value);
+        }
       }
       this.changed(parseBackup(JSON.stringify(merged)));
       this.status("Synced");

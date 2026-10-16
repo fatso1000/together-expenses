@@ -4,7 +4,7 @@ import CategoryManager from "@/components/CategoryManager.vue";
 import FrequentPayments from "@/components/FrequentPayments.vue";
 import { shallowRef, ref, watch } from "vue";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { downloadFile, today, parseMoney, money } from "@/lib/finance";
+import { downloadFile, today, parseMoney, parseOptionalMoney, money } from "@/lib/finance";
 import { parseBackup } from "@/lib/storage";
 import { Wallet, PiggyBank, Banknote, RefreshCw, Check } from "lucide-vue-next";
 
@@ -14,32 +14,38 @@ const accountsBusy = shallowRef(false);
 const accountsSaved = shallowRef(false);
 
 // Accounts Form State
-const usdInitial = shallowRef(
-  store.accounts.globalInitialUSD
-    ? (store.accounts.globalInitialUSD / 100).toFixed(2)
-    : "",
-);
-const nzdInitial = shallowRef(
-  store.accounts.globalInitialNZD
-    ? (store.accounts.globalInitialNZD / 100).toFixed(2)
-    : "",
-);
-const nzSavingsInitial = shallowRef(
-  store.accounts.nzInitialNZD
-    ? (store.accounts.nzInitialNZD / 100).toFixed(2)
-    : "",
-);
-const weeklySalaryInput = shallowRef(
-  store.salary.weeklyAverageNZD
-    ? (store.salary.weeklyAverageNZD / 100).toFixed(2)
-    : "",
+const usdInitial = shallowRef("");
+const nzdInitial = shallowRef("");
+const nzSavingsInitial = shallowRef("");
+const weeklySalaryInput = shallowRef("");
+
+// Keep form fields synchronized with store data as cloud connects or updates
+watch(
+  [() => store.accounts, () => store.salary],
+  ([newAccounts, newSalary]) => {
+    if (accountsBusy.value) return;
+    usdInitial.value = newAccounts.globalInitialUSD
+      ? (newAccounts.globalInitialUSD / 100).toFixed(2)
+      : "";
+    nzdInitial.value = newAccounts.globalInitialNZD
+      ? (newAccounts.globalInitialNZD / 100).toFixed(2)
+      : "";
+    nzSavingsInitial.value = newAccounts.nzInitialNZD
+      ? (newAccounts.nzInitialNZD / 100).toFixed(2)
+      : "";
+    weeklySalaryInput.value = newSalary.weeklyAverageNZD
+      ? (newSalary.weeklyAverageNZD / 100).toFixed(2)
+      : "";
+  },
+  { immediate: true, deep: true },
 );
 
 // Auto-convert USD to NZD when USD is typed and rate is available
 function convertUsdToNzd() {
   if (!usdInitial.value.trim() || !store.rates.rate) return;
   try {
-    const usdCents = parseMoney(usdInitial.value);
+    const usdCents = parseOptionalMoney(usdInitial.value);
+    if (!usdCents) return;
     // Rate is 1 NZD = X USD, so NZD = USD / rate
     const nzdCents = Math.round(usdCents / store.rates.rate);
     nzdInitial.value = (nzdCents / 100).toFixed(2);
@@ -53,22 +59,22 @@ async function saveAccountsSetup() {
   error.value = "";
   accountsSaved.value = false;
   try {
-    const globalNZD = nzdInitial.value.trim() ? parseMoney(nzdInitial.value) : 0;
-    const globalUSD = usdInitial.value.trim() ? parseMoney(usdInitial.value) : undefined;
-    const nzNZD = nzSavingsInitial.value.trim() ? parseMoney(nzSavingsInitial.value) : 0;
-    const salaryNZD = weeklySalaryInput.value.trim()
-      ? parseMoney(weeklySalaryInput.value)
-      : 0;
+    const globalNZD = parseOptionalMoney(nzdInitial.value);
+    const globalUSD = usdInitial.value.trim()
+      ? parseOptionalMoney(usdInitial.value)
+      : undefined;
+    const nzNZD = parseOptionalMoney(nzSavingsInitial.value);
+    const salaryNZD = parseOptionalMoney(weeklySalaryInput.value);
 
-    await store.saveAccounts({
-      globalInitialNZD: globalNZD,
-      globalInitialUSD: globalUSD,
-      nzInitialNZD: nzNZD,
-      globalManualNZD: true,
-      updatedAt: Date.now(),
-    });
-
-    await store.saveSalary(salaryNZD);
+    await store.saveAccountsAndSalary(
+      {
+        globalInitialNZD: globalNZD,
+        globalInitialUSD: globalUSD,
+        nzInitialNZD: nzNZD,
+        globalManualNZD: true,
+      },
+      salaryNZD,
+    );
 
     accountsSaved.value = true;
     setTimeout(() => {
@@ -199,6 +205,7 @@ async function clear() {
           />
         </label>
       </div>
+      <p v-if="error" class="error-note" role="alert">{{ error }}</p>
 
       <div class="save-actions">
         <button class="primary" :disabled="accountsBusy">

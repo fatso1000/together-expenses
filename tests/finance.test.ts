@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   parseMoney,
+  parseOptionalMoney,
   total,
   categoryTotals,
   previousMonth,
@@ -38,6 +39,15 @@ test("amounts use integer cents with exact decimal parsing", () => {
 test("rejects invalid, negative, zero and over-precise amounts", () => {
   for (const value of ["0", "-2", "NaN", "1e5", "1.999", "10,20", "10000000"])
     assert.throws(() => parseMoney(value));
+});
+test("parseOptionalMoney permits zero and empty while enforcing positive decimal formatting", () => {
+  assert.equal(parseOptionalMoney(""), 0);
+  assert.equal(parseOptionalMoney("0"), 0);
+  assert.equal(parseOptionalMoney("0.00"), 0);
+  assert.equal(parseOptionalMoney("   "), 0);
+  assert.equal(parseOptionalMoney("12.50"), 1250);
+  assert.throws(() => parseOptionalMoney("-5"));
+  assert.throws(() => parseOptionalMoney("abc"));
 });
 test("category reporting totals exactly match transaction totals", () => {
   const rows = [expense(1250), expense(725, "Petrol"), expense(750)];
