@@ -1,4 +1,4 @@
-export const categories = [
+export const defaultCategories = [
   "Groceries",
   "Petrol",
   "Shopping",
@@ -8,9 +8,24 @@ export const categories = [
   "Eating out",
   "Health",
   "Travel",
+  "Entertainment",
+  "Education",
+  "Subscriptions",
+  "Personal Care",
   "Other",
 ] as const;
-export type Category = (typeof categories)[number];
+
+export const categories = defaultCategories;
+export type DefaultCategory = (typeof defaultCategories)[number];
+export type Category = DefaultCategory | (string & {});
+
+export interface CategoryDefinition {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  isDefault?: boolean;
+}
 export type Currency = "NZD" | "USD";
 export interface ExpenseDraft {
   items?: PurchaseItem[];
@@ -69,6 +84,7 @@ export interface AppData {
   expenses: Expense[];
   shops: Shop[];
   limits: MonthlyLimit[];
+  customCategories?: CategoryDefinition[];
 }
 export interface ItemInput {
   productId?: string;

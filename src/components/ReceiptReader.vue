@@ -2,7 +2,9 @@
 import { shallowRef, reactive, computed, onUnmounted } from "vue";
 import { Camera, ImagePlus, ScanLine } from "lucide-vue-next";
 import { parseReceipt, type ReceiptSuggestion } from "@/lib/receipt";
-const emit = defineEmits<{ result: [suggestion: ReceiptSuggestion] }>();
+const emit = defineEmits<{
+  result: [suggestion: ReceiptSuggestion, imageUrl?: string];
+}>();
 const busy = shallowRef(false);
 const status = shallowRef("");
 const failure = shallowRef("");
@@ -48,7 +50,7 @@ async function scan() {
       },
       crop,
     );
-    if (!signal.aborted) emit("result", parseReceipt(text));
+    if (!signal.aborted) emit("result", parseReceipt(text), preview.value);
   } catch (reason) {
     if (!signal.aborted)
       failure.value =

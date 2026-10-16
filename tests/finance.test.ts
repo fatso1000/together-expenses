@@ -64,3 +64,27 @@ test("currency filters never combine NZD and USD and CSV preserves each currency
   assert.match(output, /"12.00","NZD"/);
   assert.match(output, /"5.00","USD"/);
 });
+
+test("categoryTotals seamlessly incorporates custom categories", () => {
+  const rows = [
+    expense(1500, "Groceries"),
+    expense(2000, "Fitness"),
+  ];
+  const groups = categoryTotals(rows);
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].category, "Fitness");
+  assert.equal(groups[0].amount, 2000);
+  assert.equal(groups[1].category, "Groceries");
+  assert.equal(groups[1].amount, 1500);
+});
+
+test("csv formats receipt discount as a dedicated column", () => {
+  const output = csv([
+    {
+      ...expense(2500),
+      adjustment: -500, // $5.00 discount
+    },
+  ]);
+  assert.match(output, /"Discount"/);
+  assert.match(output, /"5.00"/);
+});

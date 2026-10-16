@@ -1,12 +1,14 @@
 import { defineStore } from "pinia";
 import { computed, ref, shallowRef } from "vue";
-import type {
-  Expense,
-  ExpenseDraft,
-  Currency,
-  AppData,
-  Shop,
-  Product,
+import {
+  type Expense,
+  type ExpenseDraft,
+  type Currency,
+  type AppData,
+  type Shop,
+  type Product,
+  type CategoryDefinition,
+  categories,
 } from "@/lib/types";
 import { today, total, money } from "@/lib/finance";
 import {
@@ -22,6 +24,23 @@ import { useRates } from "@/stores/rates";
 import { findProduct, productId } from "@/lib/products";
 import { itemsTotal } from "@/lib/purchases";
 import { rememberPurchase } from "@/lib/purchases";
+
+export const defaultCategoryDefinitions: CategoryDefinition[] = [
+  { id: "groceries", name: "Groceries", icon: "ShoppingBasket", color: "#75974e", isDefault: true },
+  { id: "petrol", name: "Petrol", icon: "Fuel", color: "#6b8caf", isDefault: true },
+  { id: "shopping", name: "Shopping", icon: "ShoppingBag", color: "#b18b60", isDefault: true },
+  { id: "rent", name: "Rent", icon: "House", color: "#547d61", isDefault: true },
+  { id: "bills", name: "Bills", icon: "Zap", color: "#b49c4c", isDefault: true },
+  { id: "taxes", name: "Taxes", icon: "Landmark", color: "#8b7ba9", isDefault: true },
+  { id: "eating-out", name: "Eating out", icon: "Utensils", color: "#b6816b", isDefault: true },
+  { id: "health", name: "Health", icon: "HeartPulse", color: "#c0392b", isDefault: true },
+  { id: "travel", name: "Travel", icon: "Plane", color: "#298d85", isDefault: true },
+  { id: "entertainment", name: "Entertainment", icon: "Film", color: "#8e44ad", isDefault: true },
+  { id: "education", name: "Education", icon: "BookOpen", color: "#2980b9", isDefault: true },
+  { id: "subscriptions", name: "Subscriptions", icon: "Tv", color: "#d35400", isDefault: true },
+  { id: "personal-care", name: "Personal Care", icon: "Sparkles", color: "#e84393", isDefault: true },
+  { id: "other", name: "Other", icon: "Ellipsis", color: "#718469", isDefault: true },
+];
 
 export const useExpenses = defineStore("expenses", () => {
   const data = ref<AppData>(emptyData());
@@ -44,6 +63,15 @@ export const useExpenses = defineStore("expenses", () => {
   const expenses = computed(() => data.value.expenses);
   const shops = computed(() => data.value.shops);
   const limits = computed(() => data.value.limits);
+  const customCategories = computed(() => data.value.customCategories ?? []);
+  const allCategories = computed(() => [
+    ...categories,
+    ...customCategories.value.map((c) => c.name),
+  ]);
+  const categoryDefinitions = computed<CategoryDefinition[]>(() => [
+    ...defaultCategoryDefinitions,
+    ...customCategories.value,
+  ]);
   const message = shallowRef("");
   const removedExpenses = ref<Expense[]>([]);
   const error = shallowRef("");
@@ -73,6 +101,11 @@ export const useExpenses = defineStore("expenses", () => {
       currencyExpenses.value.filter(
         (item) => item.date >= weekStart.value && item.date <= weekEnd.value,
       ),
+    ),
+  );
+  const weekExpenses = computed(() =>
+    currencyExpenses.value.filter(
+      (item) => item.date >= weekStart.value && item.date <= weekEnd.value,
     ),
   );
   function displayMoney(amount: number) {
@@ -373,6 +406,38 @@ export const useExpenses = defineStore("expenses", () => {
       );
     });
   }
+  async function saveCategory(category: CategoryDefinition) {
+    await change((current) => {
+      current.customCategories = current.customCategories ?? [];
+      const trimmedName = category.name.trim();
+      const existing = current.customCategories.find(
+        (c) =>
+          c.id === category.id ||
+          c.name.toLowerCase() === trimmedName.toLowerCase(),
+      );
+      if (existing) {
+        existing.name = trimmedName;
+        existing.icon = category.icon;
+        existing.color = category.color;
+      } else {
+        current.customCategories.push({
+          id: category.id || crypto.randomUUID(),
+          name: trimmedName,
+          icon: category.icon,
+          color: category.color,
+        });
+      }
+    });
+    message.value = "Category saved";
+  }
+  async function removeCategory(id: string) {
+    await change((current) => {
+      current.customCategories = (current.customCategories ?? []).filter(
+        (c) => c.id !== id,
+      );
+    });
+    message.value = "Category removed";
+  }
   function openExpense(
     mode: "quick" | "items" | "receipt" = "quick",
     source?: Expense,
@@ -387,6 +452,9 @@ export const useExpenses = defineStore("expenses", () => {
     expenses,
     shops,
     limits,
+    customCategories,
+    allCategories,
+    categoryDefinitions,
     currencyExpenses,
     monthExpenses,
     monthTotal,
@@ -395,12 +463,15 @@ export const useExpenses = defineStore("expenses", () => {
     weekStart,
     weekEnd,
     weekTotal,
+    weekExpenses,
     displayMoney,
     rates,
     products,
     saveProduct,
     removeProduct,
     mergeProducts,
+    saveCategory,
+    removeCategory,
     migrateUSD,
     syncStatus,
     syncBusy,

@@ -38,9 +38,13 @@ export function total(expenses: Expense[]): number {
 
 export function categoryTotals(
   expenses: Expense[],
+  categoryList?: readonly string[],
 ): { category: Category; amount: number; percent: number }[] {
   const sum = total(expenses);
-  return categories
+  const allCats = categoryList ?? [
+    ...new Set([...categories, ...expenses.map((e) => e.category)]),
+  ];
+  return allCats
     .map((category) => {
       const amount = total(
         expenses.filter((expense) => expense.category === category),
@@ -72,10 +76,14 @@ export function csv(expenses: Expense[]): string {
       "Currency",
       "Note",
       "Items",
-      "Tax / discount",
+      "Discount",
     ],
   ];
   for (const expense of expenses) {
+    const discountAmount =
+      expense.adjustment && expense.adjustment < 0
+        ? Math.abs(expense.adjustment)
+        : (expense.adjustment ?? 0);
     rows.push([
       expense.date,
       expense.merchant,
@@ -89,7 +97,7 @@ export function csv(expenses: Expense[]): string {
             `${item.title}: ${item.quantity} x ${(item.unitPrice / 100).toFixed(2)}; size ${item.size ?? 1} ${item.unit ?? "each"}; discount ${((item.discount ?? 0) / 100).toFixed(2)}`,
         )
         .join("; "),
-      ((expense.adjustment ?? 0) / 100).toFixed(2),
+      (discountAmount / 100).toFixed(2),
     ]);
   }
   return "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n");

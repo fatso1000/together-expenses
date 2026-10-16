@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DeviceSync from "@/components/data/DeviceSync.vue";
+import CategoryManager from "@/components/CategoryManager.vue";
 import { shallowRef } from "vue";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { downloadFile, today } from "@/lib/finance";
@@ -53,6 +54,9 @@ async function clear() {
 </script>
 <template>
   <DeviceSync />
+  <section class="panel">
+    <CategoryManager />
+  </section>
   <section class="panel">
     <h2>Backup</h2>
     <p>Export a copy of expenses, products, shops, and limits.</p>

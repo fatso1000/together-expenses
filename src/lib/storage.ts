@@ -6,6 +6,7 @@ import {
   type PurchaseItem,
   type MonthlyLimit,
   type Product,
+  type CategoryDefinition,
 } from "@/lib/types";
 import { units, findProduct, productId } from "@/lib/products";
 import { itemsTotal, validDate, validQuantity } from "@/lib/purchases";
@@ -91,13 +92,50 @@ export function parseBackup(source: string): AppData {
     !Array.isArray(data.expenses)
   )
     return invalid();
+
+  const customCategories: CategoryDefinition[] = [];
+  const rawCustomCategories = Array.isArray(data.customCategories)
+    ? data.customCategories
+    : [];
+  for (const cat of rawCustomCategories) {
+    if (
+      !cat ||
+      !text(cat.id, 100) ||
+      !text(cat.name, 100) ||
+      !text(cat.icon, 100) ||
+      !text(cat.color, 50)
+    )
+      return invalid();
+    customCategories.push({
+      id: cat.id,
+      name: cat.name.trim(),
+      icon: cat.icon.trim(),
+      color: cat.color.trim(),
+      ...(cat.isDefault ? { isDefault: true } : {}),
+    });
+  }
+  if (
+    !unique(customCategories.map((c) => c.id)) ||
+    !unique(customCategories.map((c) => c.name.toLowerCase()))
+  )
+    return invalid();
+
+  const allowedCategoryNames = new Set([
+    ...(categories as readonly string[]).map((name) => name.toLowerCase()),
+    ...customCategories.map((c) => c.name.toLowerCase()),
+  ]);
+
   const expenses: Expense[] = data.expenses.map((item: Expense) => {
+    const categoryMatches =
+      typeof item?.category === "string" &&
+      (allowedCategoryNames.has(item.category.trim().toLowerCase()) ||
+        (customCategories.length > 0 && text(item.category, 100)));
     if (
       !item ||
       !text(item.id, 100) ||
       !cents(item.amount) ||
       !currency(item.currency) ||
-      !categories.includes(item.category) ||
+      !categoryMatches ||
       !text(item.merchant, 100) ||
       !text(item.note, 500, true) ||
       !validDate(item.date) ||
@@ -233,7 +271,15 @@ export function parseBackup(source: string): AppData {
     return invalid();
   const weeklyLimit = data.version === 3 ? data.weeklyLimit : 0;
   if (!cents(weeklyLimit, true)) return invalid();
-  return { version: 3, expenses, shops, limits, products, weeklyLimit };
+  return {
+    version: 3,
+    expenses,
+    shops,
+    limits,
+    products,
+    weeklyLimit,
+    ...(data.customCategories !== undefined ? { customCategories } : {}),
+  };
 }
 export function readData(storage: Pick<Storage, "getItem">): AppData {
   const saved = storage.getItem(storageKey);
