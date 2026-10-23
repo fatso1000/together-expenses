@@ -1077,6 +1077,22 @@ hr {
   background: #eaf3e3;
   color: #4b733e;
 }
+.sync-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: #edf5ef;
+  border: 1px solid #cce2d4;
+  border-radius: 20px;
+  color: #1e5239;
+  font-weight: 600;
+  margin-bottom: 14px;
+  transition: all 0.15s ease;
+}
+.sync-link:hover {
+  background: #e2ede5;
+}
 .dismissible {
   display: flex;
   align-items: center;
@@ -1368,12 +1384,14 @@ hr {
     right: 0;
     height: auto;
     width: 100%;
-    z-index: 5;
-    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
+    z-index: 20;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgba(21, 61, 53, 0.08);
     border-right: 0;
-    background: #fffffff5;
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
   }
   .sidebar > .brand {
     display: none;
@@ -1383,18 +1401,29 @@ hr {
     display: flex;
     justify-content: space-around;
     width: 100%;
-    gap: 0;
+    gap: 2px;
   }
   .sidebar nav a {
     flex-direction: column;
     gap: 3px;
-    padding: 7px 6px;
-    min-width: 57px;
-    border-radius: 8px;
+    padding: 6px 4px;
+    min-width: 0;
+    min-height: 48px;
+    border-radius: 10px;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+  }
+  .sidebar nav a:active {
+    transform: scale(0.95);
+  }
+  .sidebar nav a.active {
+    background: #eaf2e8;
+    color: #153d35;
+    font-weight: 700;
   }
   .sidebar nav span {
     display: block;
-    font-size: 10px;
+    font-size: 10.5px;
+    line-height: 1.1;
   }
   .sidebar nav svg {
     width: 20px;
@@ -1403,7 +1432,7 @@ hr {
   .workspace {
     margin: 0;
     width: 100%;
-    padding: 0 18px 82px;
+    padding: 0 14px calc(96px + env(safe-area-inset-bottom, 0px));
   }
   .topbar {
     height: 57px;
@@ -1416,7 +1445,7 @@ hr {
     font-size: 10px;
   }
   .page-heading {
-    margin: 25px 0 22px;
+    margin: 20px 0 16px;
     align-items: flex-start;
     gap: 8px;
   }
@@ -1435,13 +1464,18 @@ hr {
   }
   .add-expense {
     position: fixed;
-    right: 18px;
-    bottom: 91px;
-    z-index: 4;
+    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    z-index: 15;
     border-radius: 50px;
-    min-height: 47px;
-    padding: 13px 18px;
-    box-shadow: 0 5px 25px #19372530;
+    min-height: 48px;
+    padding: 12px 20px;
+    box-shadow: 0 6px 20px rgba(21, 61, 53, 0.28);
+    font-weight: 650;
+    transition: transform 0.12s ease, box-shadow 0.15s ease;
+  }
+  .add-expense:active {
+    transform: scale(0.96);
   }
   .period-toolbar {
     margin-bottom: 16px;
@@ -1837,16 +1871,36 @@ hr {
   margin-bottom: 20px;
 }
 .quick-entry-actions button {
-  padding: 16px 10px;
-  min-height: 64px;
+  padding: 14px 8px;
+  min-height: 68px;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   background: #fff;
+  border: 1px solid #dce5df;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(21, 61, 53, 0.04);
+  color: #153d35;
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.2;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.quick-entry-actions button:hover {
+  background: #f7faf8;
+  border-color: #cbd8d1;
+}
+.quick-entry-actions button:active {
+  transform: scale(0.97);
 }
 .quick-entry-actions button:last-child {
-  background: #e7f2ed;
-  border-color: #b4d8c5;
-  color: #15533e;
+  background: #edf7f2;
+  border-color: #b7ddcb;
+  color: #134e3a;
+}
+.quick-entry-actions button:last-child:hover {
+  background: #e3f3ec;
 }
 .entry-actions {
   display: flex;
@@ -2152,20 +2206,24 @@ hr {
   .workspace {
     padding-left: 14px;
     padding-right: 14px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
   .page-heading {
     align-items: center;
     margin: 15px 0;
   }
   .page-heading h1 {
-    font-size: 27px;
+    font-size: 26px;
+    letter-spacing: -0.8px;
   }
   .quick-entry-actions {
     gap: 8px;
   }
   .quick-entry-actions button {
-    font-size: 12px;
-    padding: 12px 4px;
+    font-size: 11.5px;
+    padding: 10px 4px;
+    min-height: 62px;
+    border-radius: 12px;
   }
   .purchase-dialog {
     width: 100%;
@@ -2232,12 +2290,24 @@ hr {
   .period-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 12px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .period-toolbar label {
+    font-size: 12px;
+    color: #556c62;
+    font-weight: 600;
   }
   .period-toolbar input,
   .period-toolbar select {
     width: 100%;
     min-width: 0;
+    min-height: 42px;
+    border-radius: 11px;
+    border: 1px solid #d0ded6;
+    padding: 8px 10px;
+    font-size: 14px;
+    background-color: #fff;
   }
   .report-stats {
     grid-template-columns: 1fr 1fr;

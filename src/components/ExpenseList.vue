@@ -130,10 +130,15 @@ function dateLabel(date: string) {
   flex-wrap: wrap;
 }
 
+.expense-title-row strong {
+  word-break: break-word;
+}
+
 .account-tag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
+  padding: 3px 8px;
+  min-height: 24px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;

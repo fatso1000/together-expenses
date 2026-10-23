@@ -395,7 +395,7 @@ async function removeLimit() {
           </button>
         </div>
 
-        <div class="drawer-body budget-modal-body">
+        <div class="budget-drawer-body budget-modal-body">
           <!-- Weekly Salary Input -->
           <label>
             Weekly Average Salary · NZD (can change anytime)
@@ -1104,5 +1104,49 @@ async function removeLimit() {
 .structured-total-banner strong {
   font-size: 16px;
   color: #153d35;
+}
+
+@media (max-width: 480px) {
+  .limit-card-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .limit-title-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .limit-title-wrap h2 {
+    font-size: 17px;
+  }
+  .limit-icon-badge {
+    width: 38px;
+    height: 38px;
+  }
+  .salary-comparison-strip {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .salary-stat-col strong {
+    font-size: 13px;
+  }
+  .stat-micro-label {
+    font-size: 9px;
+  }
+  .limit-hero-numbers .stat-value {
+    font-size: 28px;
+  }
+  .limit-hero-numbers .stat-value-secondary {
+    font-size: 18px;
+  }
+  .category-budget-grid {
+    grid-template-columns: 1fr;
+  }
+  .category-limit-row {
+    grid-template-columns: 1fr 110px 32px;
+    gap: 6px;
+  }
+  .budget-drawer-body {
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
 }
 </style>

@@ -769,4 +769,35 @@ async function saveDeposit() {
   align-items: center;
   gap: 6px;
 }
+
+@media (max-width: 480px) {
+  .accounts-title-wrap h2 {
+    font-size: 17px;
+  }
+  .accounts-icon-badge {
+    width: 34px;
+    height: 34px;
+  }
+  .header-actions {
+    margin-left: auto;
+  }
+  .hero-balance-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .hero-amount {
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+  .accounts-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .account-card {
+    padding: 12px 14px;
+  }
+  .drawer-content {
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+}
 </style>

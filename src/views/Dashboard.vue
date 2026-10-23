@@ -37,9 +37,6 @@ const isOverWeeklyLimit = computed(
     </button>
   </div>
 
-  <!-- Accounts & Total Money Overview -->
-  <AccountsOverview />
-
   <!-- Compact Weekly Limit Alert when Exceeded -->
   <div v-if="isOverWeeklyLimit" class="compact-limit-alert" role="alert">
     <AlertCircle :size="16" class="alert-icon" />
@@ -50,6 +47,9 @@ const isOverWeeklyLimit = computed(
 
   <!-- Weekly limit & structured budgets prominent position -->
   <WeeklyLimit />
+
+  <!-- Accounts & Total Money Overview (Positioned below Weekly Spending Limit) -->
+  <AccountsOverview />
 
   <!-- Frequent Payments & Bills -->
   <FrequentPayments />
@@ -99,12 +99,13 @@ const isOverWeeklyLimit = computed(
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   background: #fdf2f0;
   border: 1px solid #f0a89d;
-  border-radius: 10px;
+  border-radius: 12px;
   color: #9a2b1c;
   font-size: 13px;
+  margin-bottom: 12px;
 }
 
 .compact-limit-alert .alert-icon {

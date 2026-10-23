@@ -321,4 +321,27 @@ function exportCsv() {
   font-size: 13px;
   color: #60756d;
 }
+
+@media (max-width: 480px) {
+  .period-segmented button {
+    font-size: 11.5px;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .enhanced-filter-bar .search-input {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+  .category-select-label,
+  .account-select-label {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+  .sort-select-label {
+    flex: 1 1 100%;
+  }
+  .export-btn {
+    flex: 1;
+  }
+}
 </style>

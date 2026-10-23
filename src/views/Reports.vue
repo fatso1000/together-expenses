@@ -437,4 +437,26 @@ function exportCsv() {
 .comp-body p {
   margin: 2px 0 0;
 }
+
+@media (max-width: 480px) {
+  .report-filters .segmented {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .report-filters .segmented::-webkit-scrollbar {
+    display: none;
+  }
+  .report-filters .segmented button {
+    font-size: 11.5px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  .baseline-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
 </style>

@@ -307,4 +307,11 @@ async function clear() {
   display: flex;
   justify-content: flex-start;
 }
+
+@media (max-width: 480px) {
+  .form-pair {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
 </style>

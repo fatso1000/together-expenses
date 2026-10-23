@@ -666,4 +666,24 @@ function dueStatus(nextDueDate?: string): {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
+@media (max-width: 480px) {
+  .payment-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .row-actions {
+    justify-content: flex-end;
+    border-top: 1px dashed #e8eee9;
+    padding-top: 6px;
+  }
+  .form-pair {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .drawer-content {
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+}
 </style>
