@@ -373,6 +373,8 @@ export function parseBackup(source: string): AppData {
         !categoryMatches ||
         (fp.accountId !== "global" && fp.accountId !== "nz") ||
         (fp.nextDueDate !== undefined && !validDate(fp.nextDueDate)) ||
+        (fp.lastLoggedDate !== undefined && !validDate(fp.lastLoggedDate)) ||
+        (fp.lastSkippedDate !== undefined && !validDate(fp.lastSkippedDate)) ||
         (fp.note !== undefined && !text(fp.note, 500, true)) ||
         typeof fp.active !== "boolean" ||
         !Number.isSafeInteger(fp.createdAt) ||
@@ -387,6 +389,8 @@ export function parseBackup(source: string): AppData {
         category: fp.category,
         accountId: fp.accountId,
         ...(fp.nextDueDate ? { nextDueDate: fp.nextDueDate } : {}),
+        ...(fp.lastLoggedDate ? { lastLoggedDate: fp.lastLoggedDate } : {}),
+        ...(fp.lastSkippedDate ? { lastSkippedDate: fp.lastSkippedDate } : {}),
         ...(fp.note !== undefined ? { note: fp.note } : {}),
         active: fp.active,
         createdAt: fp.createdAt,

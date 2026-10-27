@@ -25,6 +25,8 @@ import {
   calculateAccountBalances,
   compareSpendWithInitial,
   calculateCategoryBudgetStatus,
+  nextDateAfterFrequency,
+  isDateInWeek,
 } from "@/lib/finance";
 import {
   storageKey,
@@ -36,6 +38,7 @@ import {
 import type { CloudDatabase } from "@/lib/cloud";
 import { newSyncKey, validSyncKey } from "@/lib/encryption";
 import { useRates } from "@/stores/rates";
+import { t } from "@/lib/i18n";
 import { findProduct, productId } from "@/lib/products";
 import { itemsTotal } from "@/lib/purchases";
 import { rememberPurchase } from "@/lib/purchases";
@@ -131,6 +134,54 @@ export const useExpenses = defineStore("expenses", () => {
   );
   const weekGlobalTotal = computed(() => total(weekGlobalExpenses.value));
   const weekNZTotal = computed(() => total(weekNZExpenses.value));
+
+  function previousWeek() {
+    const current = new Date(`${weekDate.value || today()}T12:00:00`);
+    current.setDate(current.getDate() - 7);
+    weekDate.value = localDate(current);
+  }
+
+  function nextWeek() {
+    const current = new Date(`${weekDate.value || today()}T12:00:00`);
+    current.setDate(current.getDate() + 7);
+    weekDate.value = localDate(current);
+  }
+
+  function resetToCurrentWeek() {
+    weekDate.value = today();
+  }
+
+  function isPaymentLoggedForWeek(
+    payment: FrequentPayment,
+    start = weekStart.value,
+    end = weekEnd.value,
+  ): boolean {
+    if (
+      payment.lastLoggedDate &&
+      payment.lastLoggedDate >= start &&
+      payment.lastLoggedDate <= end
+    ) {
+      return true;
+    }
+    return weekExpenses.value.some(
+      (e) =>
+        e.merchant.toLowerCase() === payment.name.toLowerCase() &&
+        e.category === payment.category &&
+        e.amount === payment.amount,
+    );
+  }
+
+  function isPaymentSkippedForWeek(
+    payment: FrequentPayment,
+    start = weekStart.value,
+    end = weekEnd.value,
+  ): boolean {
+    return Boolean(
+      payment.lastSkippedDate &&
+        payment.lastSkippedDate >= start &&
+        payment.lastSkippedDate <= end,
+    );
+  }
 
   // Financial Accounts & Balances
   const accounts = computed<FinancialAccounts>(
@@ -650,18 +701,76 @@ export const useExpenses = defineStore("expenses", () => {
   async function logFrequentPaymentAsExpense(id: string, logDate?: string) {
     const item = frequentPayments.value.find((p) => p.id === id);
     if (!item) throw new Error("Frequent payment not found");
-    await savePurchases([
-      {
+    const targetDate = logDate || today();
+
+    await change((current) => {
+      const draft: ExpenseDraft = {
         amount: item.amount,
         currency: "NZD",
         category: item.category,
         merchant: item.name,
         note: `Recurring payment (${item.frequency})`,
-        date: logDate || today(),
+        date: targetDate,
         accountId: item.accountId,
-      },
-    ]);
-    message.value = `Logged ${item.name} as expense`;
+      };
+      rememberPurchase(current, draft, () => crypto.randomUUID());
+      const now = Date.now();
+      current.expenses = [
+        {
+          ...draft,
+          id: crypto.randomUUID(),
+          createdAt: now,
+          updatedAt: now,
+        },
+        ...current.expenses,
+      ];
+
+      const currentItem = (current.frequentPayments ?? []).find(
+        (p) => p.id === id,
+      );
+      if (currentItem) {
+        currentItem.lastLoggedDate = targetDate;
+        if (currentItem.nextDueDate) {
+          currentItem.nextDueDate = nextDateAfterFrequency(
+            currentItem.nextDueDate,
+            currentItem.frequency,
+          );
+        }
+        currentItem.updatedAt = now;
+      }
+    });
+    message.value = t("frequent.logSuccess", {
+      amount: displayMoney(item.amount),
+      name: item.name,
+    });
+  }
+
+  async function skipFrequentPayment(id: string) {
+    const item = frequentPayments.value.find((p) => p.id === id);
+    if (!item) throw new Error("Frequent payment not found");
+
+    let updatedDueDate = item.nextDueDate;
+    await change((current) => {
+      const currentItem = (current.frequentPayments ?? []).find(
+        (p) => p.id === id,
+      );
+      if (currentItem) {
+        const now = Date.now();
+        currentItem.lastSkippedDate = today();
+        if (currentItem.nextDueDate) {
+          currentItem.nextDueDate = nextDateAfterFrequency(
+            currentItem.nextDueDate,
+            currentItem.frequency,
+          );
+          updatedDueDate = currentItem.nextDueDate;
+        }
+        currentItem.updatedAt = now;
+      }
+    });
+    message.value = t("frequent.skipSuccess", {
+      name: item.name,
+      date: updatedDueDate || today(),
+    });
   }
 
   async function saveSavingsRecord(record: SavingsRecord) {
@@ -798,6 +907,12 @@ export const useExpenses = defineStore("expenses", () => {
     removeFrequentPayment,
     toggleFrequentPayment,
     logFrequentPaymentAsExpense,
+    skipFrequentPayment,
+    isPaymentLoggedForWeek,
+    isPaymentSkippedForWeek,
+    previousWeek,
+    nextWeek,
+    resetToCurrentWeek,
     saveSavingsRecord,
     removeSavingsRecord,
   };

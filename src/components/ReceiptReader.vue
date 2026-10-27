@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { shallowRef, reactive, computed, onUnmounted } from "vue";
-import { Camera, ImagePlus, ScanLine } from "lucide-vue-next";
+import { Camera, ImagePlus, ScanLine, Sparkles } from "lucide-vue-next";
 import { parseReceipt, type ReceiptSuggestion } from "@/lib/receipt";
+import { parseReceiptWithGemma, getOllamaModel, isLocalDesktopApp } from "@/lib/ollama";
+import { t } from "@/lib/i18n";
+import { useExpenses } from "@/stores/expenses";
+
+const store = useExpenses();
+const useGemma = shallowRef(isLocalDesktopApp());
 const emit = defineEmits<{
   result: [suggestion: ReceiptSuggestion, imageUrl?: string];
 }>();
@@ -51,12 +57,30 @@ async function scan() {
       crop,
     );
     if (!signal.aborted) {
+      let suggestion: ReceiptSuggestion;
+      if (isLocalDesktopApp() && useGemma.value) {
+        status.value = t("receipt.extractingWithGemma", { model: getOllamaModel() });
+        try {
+          suggestion = await parseReceiptWithGemma(
+            text,
+            store.allCategories,
+            signal,
+          );
+        } catch {
+          // Fallback to local regex receipt parser seamlessly
+          suggestion = parseReceipt(text);
+          store.message = t("receipt.fallbackNotice");
+        }
+      } else {
+        suggestion = parseReceipt(text);
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
-        emit("result", parseReceipt(text), reader.result as string);
+        emit("result", suggestion, reader.result as string);
       };
       reader.onerror = () => {
-        emit("result", parseReceipt(text), preview.value);
+        emit("result", suggestion, preview.value);
       };
       reader.readAsDataURL(file);
     }
@@ -74,11 +98,20 @@ async function scan() {
 <template>
   <section class="scan-panel">
     <div class="scan-title">
-      <ScanLine :size="20" /><strong>Read a receipt</strong>
+      <ScanLine :size="20" /><strong>{{ t('receipt.title') }}</strong>
     </div>
+
+    <div v-if="isLocalDesktopApp()" class="ai-toggle-row">
+      <label class="ai-checkbox-label" :title="t('receipt.gemmaTooltip')">
+        <input type="checkbox" v-model="useGemma" />
+        <Sparkles :size="15" class="ai-sparkle-icon" />
+        <span>{{ t('receipt.gemmaAiParser', { model: getOllamaModel() }) }}</span>
+      </label>
+    </div>
+
     <div class="entry-actions">
       <label class="secondary upload-button"
-        ><Camera :size="18" />Take photo<input
+        ><Camera :size="18" />{{ t('receipt.takePhoto') }}<input
           class="sr-only"
           type="file"
           accept="image/*"
@@ -87,7 +120,7 @@ async function scan() {
           @change="selectPhoto"
       /></label>
       <label class="secondary upload-button"
-        ><ImagePlus :size="18" />Upload photo<input
+        ><ImagePlus :size="18" />{{ t('receipt.uploadPhoto') }}<input
           class="sr-only"
           type="file"
           accept="image/*"
@@ -97,8 +130,7 @@ async function scan() {
     </div>
     <div v-if="preview" class="receipt-crop">
       <p class="small">
-        Keep only the receipt inside the green box. Include all items and the
-        total.
+        {{ t('receipt.cropHelp') }}
       </p>
       <div class="crop-preview">
         <img :src="preview" alt="Receipt crop preview" />
@@ -187,5 +219,37 @@ async function scan() {
   width: 100%;
   min-height: 36px;
   padding: 0;
+}
+
+.ai-toggle-row {
+  display: flex;
+  justify-content: flex-start;
+  margin: 4px 0 8px;
+}
+
+.ai-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  background: #f0f8f4;
+  border: 1px solid #cce5d7;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #153d35;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ai-checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #1e7e48;
+}
+
+.ai-sparkle-icon {
+  color: #1e7e48;
 }
 </style>

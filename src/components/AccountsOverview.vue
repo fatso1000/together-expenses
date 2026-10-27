@@ -18,6 +18,7 @@ import {
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, today } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 import type { SavingsRecord } from "@/lib/types";
 
 defineProps<{ compact?: boolean }>();
@@ -150,9 +151,9 @@ async function saveDeposit() {
           <ArrowRightLeft :size="20" />
         </div>
         <div>
-          <h2>Accounts & Total Money</h2>
+          <h2>{{ t('accounts.title') }}</h2>
           <p class="small muted">
-            Global spending account · NZ salary savings account
+            {{ t('accounts.subtitle') }}
           </p>
         </div>
       </div>

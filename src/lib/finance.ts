@@ -110,6 +110,38 @@ export function totalFrequentMonthly(payments: FrequentPayment[]): number {
     .reduce((sum, p) => sum + frequencyToMonthly(p.amount, p.frequency), 0);
 }
 
+export function nextDateAfterFrequency(
+  currentDate: string,
+  frequency: PaymentFrequency,
+): string {
+  const [year, month, day] = currentDate.split("-").map(Number);
+  const date = new Date(year, month - 1, day, 12, 0, 0);
+
+  if (frequency === "weekly") {
+    date.setDate(date.getDate() + 7);
+  } else if (frequency === "fortnightly") {
+    date.setDate(date.getDate() + 14);
+  } else if (frequency === "monthly") {
+    const targetMonth = date.getMonth() + 1;
+    date.setMonth(targetMonth);
+    // If day overflowed into following month (e.g. Jan 31 -> Mar 3), clamp to last day of target month
+    if (date.getMonth() !== targetMonth % 12) {
+      date.setDate(0);
+    }
+  } else if (frequency === "yearly") {
+    date.setFullYear(date.getFullYear() + 1);
+  }
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function isDateInWeek(
+  date: string,
+  weekStart: string,
+  weekEnd: string,
+): boolean {
+  return Boolean(date && date >= weekStart && date <= weekEnd);
+}
+
 export function calculateAccountBalances(
   accounts: FinancialAccounts,
   expenses: Expense[],

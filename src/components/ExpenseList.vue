@@ -5,8 +5,10 @@ import CategoryIcon from "@/components/CategoryIcon.vue";
 import type { Expense } from "@/lib/types";
 import { money } from "@/lib/finance";
 import { useExpenses, friendlyError } from "@/stores/expenses";
+import { useI18n } from "@/lib/i18n";
 defineProps<{ expenses: Expense[]; compact?: boolean }>();
 const store = useExpenses();
+const { locale, t } = useI18n();
 const deleting = shallowRef("");
 const average = computed(() =>
   store.monthExpenses.length
@@ -38,7 +40,8 @@ async function remove(expense: Expense) {
   }
 }
 function dateLabel(date: string) {
-  return new Date(`${date}T12:00:00`).toLocaleDateString("en", {
+  const lang = locale.value === "es" ? "es-AR" : "en-US";
+  return new Date(`${date}T12:00:00`).toLocaleDateString(lang, {
     day: "numeric",
     month: "short",
   });
@@ -47,7 +50,7 @@ function dateLabel(date: string) {
 <template>
   <div v-if="!expenses.length" class="empty-state">
     <Receipt :size="32" />
-    <h3>No expenses here yet</h3>
+    <h3>{{ t('expenses.noExpensesFound') }}</h3>
     <p>Add your first expense or choose another period.</p>
     <button class="secondary" @click="store.openExpense()">Add expense</button>
   </div>

@@ -65,6 +65,8 @@ export interface FrequentPayment {
   category: Category;
   accountId: AccountId;
   nextDueDate?: string;
+  lastLoggedDate?: string;
+  lastSkippedDate?: string;
   note?: string;
   active: boolean;
   createdAt: number;

@@ -15,6 +15,8 @@ import {
   Wallet,
   PiggyBank,
   X,
+  SkipForward,
+  CheckCircle2,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, today, frequencyToWeekly } from "@/lib/finance";
@@ -25,6 +27,7 @@ import type {
   AccountId,
 } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import { t } from "@/lib/i18n";
 
 const store = useExpenses();
 
@@ -117,6 +120,14 @@ async function logExpense(payment: FrequentPayment) {
   }
 }
 
+async function skipPayment(payment: FrequentPayment) {
+  try {
+    await store.skipFrequentPayment(payment.id);
+  } catch (reason) {
+    store.error = friendlyError(reason);
+  }
+}
+
 function dueStatus(nextDueDate?: string): {
   label: string;
   type: "overdue" | "today" | "soon" | "future" | "none";
@@ -149,31 +160,31 @@ function dueStatus(nextDueDate?: string): {
           <CalendarClock :size="20" />
         </div>
         <div>
-          <h2>Frequent Payments & Bills</h2>
+          <h2>{{ t('frequent.title') }}</h2>
           <p class="small muted">
-            Electricity, insurance, phone, rent, and subscriptions
+            {{ t('frequent.subtitle') }}
           </p>
         </div>
       </div>
       <button class="primary btn-sm" type="button" @click="openForm()">
-        <Plus :size="16" />Add payment
+        <Plus :size="16" />{{ t('frequent.addPayment') }}
       </button>
     </div>
 
     <!-- Summary Commitment Metrics -->
     <div v-if="store.frequentPayments.length" class="frequent-metrics">
       <article class="metric-card">
-        <span class="muted small">Weekly Commitment</span>
+        <span class="muted small">{{ t('frequent.weeklyCommitment') }}</span>
         <strong>{{ store.displayMoney(store.frequentWeeklyCommitment) }}</strong>
         <span class="small font-mono">avg per week</span>
       </article>
       <article class="metric-card">
-        <span class="muted small">Monthly Commitment</span>
+        <span class="muted small">{{ t('frequent.monthlyCommitment') }}</span>
         <strong>{{ store.displayMoney(store.frequentMonthlyCommitment) }}</strong>
         <span class="small font-mono">avg per month</span>
       </article>
       <article class="metric-card">
-        <span class="muted small">Active Payments</span>
+        <span class="muted small">{{ t('frequent.activePayments') }}</span>
         <strong>{{ store.frequentPayments.filter((p) => p.active).length }}</strong>
         <span class="small font-mono">{{ store.frequentPayments.length }} total</span>
       </article>
@@ -199,6 +210,20 @@ function dueStatus(nextDueDate?: string): {
               >
                 {{ payment.accountId === "nz" ? "NZ Account" : "Global" }}
               </span>
+              <span
+                v-if="store.isPaymentLoggedForWeek(payment)"
+                class="status-tag logged-tag"
+                title="Expense logged for this week"
+              >
+                <CheckCircle2 :size="12" /> {{ t('frequent.loggedThisWeek') }}
+              </span>
+              <span
+                v-else-if="store.isPaymentSkippedForWeek(payment)"
+                class="status-tag skipped-tag"
+                title="Payment skipped for this cycle"
+              >
+                <SkipForward :size="12" /> {{ t('frequent.skippedThisCycle') }}
+              </span>
             </div>
 
             <div class="payment-meta">
@@ -220,12 +245,23 @@ function dueStatus(nextDueDate?: string): {
 
         <div class="row-actions">
           <button
-            class="secondary log-btn"
-            title="Log this payment as an expense today"
+            class="primary log-btn-prominent"
+            :class="{ 'already-logged': store.isPaymentLoggedForWeek(payment) }"
+            :title="store.isPaymentLoggedForWeek(payment) ? 'Already logged this week - click to log another expense' : 'Log this payment as an expense in week expenses'"
             type="button"
             @click="logExpense(payment)"
           >
-            <Receipt :size="15" />Log expense
+            <Receipt :size="15" />
+            <span>{{ store.isPaymentLoggedForWeek(payment) ? t('frequent.logAgain') : t('frequent.logPayment') }}</span>
+          </button>
+          <button
+            class="secondary skip-btn"
+            title="Skip this payment cycle without creating an expense"
+            type="button"
+            @click="skipPayment(payment)"
+          >
+            <SkipForward :size="14" />
+            <span>{{ t('frequent.skipPayment') }}</span>
           </button>
           <button
             class="icon-button"
@@ -564,17 +600,80 @@ function dueStatus(nextDueDate?: string): {
 .row-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-.log-btn {
-  min-height: 32px;
-  padding: 4px 9px;
+.log-btn-prominent {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #153d35;
+  color: #fff;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(21, 61, 53, 0.2);
+}
+
+.log-btn-prominent:hover {
+  background: #1c5247;
+  transform: translateY(-1px);
+}
+
+.log-btn-prominent.already-logged {
+  background: #27ae60;
+  box-shadow: 0 2px 6px rgba(39, 174, 96, 0.2);
+}
+
+.skip-btn {
+  min-height: 36px;
+  padding: 6px 11px;
   font-size: 12px;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  background: #fff;
+  color: #556c62;
+  border: 1px solid #d2ded7;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skip-btn:hover {
+  background: #f3f7f5;
+  color: #153d35;
+  border-color: #b7cbbf;
+}
+
+.status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+
+.status-tag.logged-tag {
+  background: #e7f7ed;
+  color: #1e7e48;
+  border: 1px solid #c3ebcf;
+}
+
+.status-tag.skipped-tag {
+  background: #f1f4f3;
+  color: #637b70;
+  border: 1px solid #d8e2dc;
 }
 
 .empty-frequent {

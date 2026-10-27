@@ -152,7 +152,7 @@ export class CloudDatabase {
               );
             const validated = parseBackup(JSON.stringify(next));
             if (sequence !== this.sequence) return;
-            this.values = values;
+            this.values = records(validated);
             this.revisions = revisions;
             this.ready = true;
             this.changed(validated);

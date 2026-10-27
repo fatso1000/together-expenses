@@ -2,11 +2,14 @@
 import { computed } from "vue";
 import { useExpenses } from "@/stores/expenses";
 import { money, total, previousMonth } from "@/lib/finance";
+import { isLocalDesktopApp } from "@/lib/ollama";
+import { t } from "@/lib/i18n";
 import ExpenseList from "@/components/ExpenseList.vue";
 import CategoryBreakdown from "@/components/CategoryBreakdown.vue";
 import WeeklyLimit from "@/components/WeeklyLimit.vue";
 import AccountsOverview from "@/components/AccountsOverview.vue";
 import FrequentPayments from "@/components/FrequentPayments.vue";
+import AiMoneyAdvisor from "@/components/AiMoneyAdvisor.vue";
 import { Zap, ListPlus, ScanLine, AlertCircle } from "lucide-vue-next";
 import TrendChart from "@/components/TrendChart.vue";
 
@@ -27,13 +30,13 @@ const isOverWeeklyLimit = computed(
 <template>
   <div class="quick-entry-actions">
     <button class="secondary" @click="store.openExpense('quick')">
-      <Zap :size="20" />Quick amount
+      <Zap :size="20" />{{ t('dashboard.quickAmount') }}
     </button>
     <button class="secondary" @click="store.openExpense('items')">
-      <ListPlus :size="20" />Add items
+      <ListPlus :size="20" />{{ t('dashboard.addItems') }}
     </button>
     <button class="secondary" @click="store.openExpense('receipt')">
-      <ScanLine :size="20" />Scan receipt
+      <ScanLine :size="20" />{{ t('dashboard.scanReceipt') }}
     </button>
   </div>
 
@@ -41,7 +44,7 @@ const isOverWeeklyLimit = computed(
   <div v-if="isOverWeeklyLimit" class="compact-limit-alert" role="alert">
     <AlertCircle :size="16" class="alert-icon" />
     <span>
-      Weekly limit exceeded by <strong>{{ store.displayMoney(store.weekTotal - store.weeklyLimit) }}</strong>
+      {{ t('dashboard.overWeeklyLimit', { amount: store.displayMoney(store.weekTotal - store.weeklyLimit) }) }}
     </span>
   </div>
 
@@ -53,6 +56,9 @@ const isOverWeeklyLimit = computed(
 
   <!-- Frequent Payments & Bills -->
   <FrequentPayments />
+
+  <!-- AI Money Advisor (Local Gemma Intelligence - Available only in Local Desktop App) -->
+  <AiMoneyAdvisor v-if="isLocalDesktopApp()" />
 
   <section class="report-stats" aria-label="Monthly summary">
     <article class="total-card">

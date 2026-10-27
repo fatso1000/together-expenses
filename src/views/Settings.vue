@@ -6,12 +6,68 @@ import { shallowRef, ref, watch } from "vue";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { downloadFile, today, parseMoney, parseOptionalMoney, money } from "@/lib/finance";
 import { parseBackup } from "@/lib/storage";
-import { Wallet, PiggyBank, Banknote, RefreshCw, Check } from "lucide-vue-next";
+import {
+  Wallet,
+  PiggyBank,
+  Banknote,
+  RefreshCw,
+  Check,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-vue-next";
+import {
+  getOllamaHost,
+  setOllamaHost,
+  getOllamaModel,
+  setOllamaModel,
+  checkOllamaStatus,
+  isLocalDesktopApp,
+  type OllamaStatus,
+} from "@/lib/ollama";
+import { t } from "@/lib/i18n";
 
 const store = useExpenses();
 const error = shallowRef("");
 const accountsBusy = shallowRef(false);
 const accountsSaved = shallowRef(false);
+
+// Ollama Settings State
+const ollamaHost = shallowRef(getOllamaHost());
+const ollamaModel = shallowRef(getOllamaModel());
+const ollamaTesting = shallowRef(false);
+const ollamaStatus = shallowRef<OllamaStatus | null>(null);
+const ollamaSaved = shallowRef(false);
+
+async function testOllama() {
+  if (!isLocalDesktopApp()) return;
+  ollamaTesting.value = true;
+  ollamaStatus.value = null;
+  try {
+    ollamaStatus.value = await checkOllamaStatus(ollamaHost.value, ollamaModel.value);
+  } catch (err) {
+    ollamaStatus.value = {
+      ok: false,
+      host: ollamaHost.value,
+      model: ollamaModel.value,
+      availableModels: [],
+      isModelPresent: false,
+      error: friendlyError(err),
+    };
+  } finally {
+    ollamaTesting.value = false;
+  }
+}
+
+function saveOllamaSettings() {
+  setOllamaHost(ollamaHost.value);
+  setOllamaModel(ollamaModel.value);
+  ollamaSaved.value = true;
+  store.message = "Ollama settings saved";
+  setTimeout(() => {
+    ollamaSaved.value = false;
+  }, 2500);
+}
 
 // Accounts Form State
 const usdInitial = shallowRef("");
@@ -224,6 +280,78 @@ async function clear() {
     <CategoryManager />
   </section>
 
+  <!-- Local Ollama AI Settings (Desktop Only) -->
+  <section v-if="isLocalDesktopApp()" class="panel ollama-config-panel">
+    <div class="panel-header">
+      <div class="header-tag">
+        <Sparkles :size="20" />
+        <h2>{{ t('ollama.title') }}</h2>
+      </div>
+      <p class="small muted">
+        {{ t('ollama.description') }}
+      </p>
+    </div>
+
+    <form @submit.prevent="saveOllamaSettings">
+      <div class="form-pair">
+        <label>
+          {{ t('ollama.endpoint') }}
+          <input
+            v-model="ollamaHost"
+            placeholder="http://localhost:11434"
+            required
+          />
+        </label>
+        <label>
+          {{ t('ollama.model') }}
+          <input
+            v-model="ollamaModel"
+            placeholder="gemma4:e4b"
+            required
+          />
+        </label>
+      </div>
+
+      <div class="ollama-actions-row">
+        <button
+          type="button"
+          class="secondary btn-sm"
+          :disabled="ollamaTesting"
+          @click="testOllama"
+        >
+          <RefreshCw :size="14" :class="{ spinning: ollamaTesting }" />
+          <span>{{ ollamaTesting ? t('ollama.testing') : t('ollama.testConnection') }}</span>
+        </button>
+
+        <button type="submit" class="primary btn-sm">
+          <Check v-if="ollamaSaved" :size="14" />
+          <span>{{ ollamaSaved ? t('common.saved') : t('ollama.saveSettings') }}</span>
+        </button>
+      </div>
+
+      <div v-if="ollamaStatus" class="ollama-status-banner" :class="{ success: ollamaStatus.ok, failure: !ollamaStatus.ok }">
+        <CheckCircle2 v-if="ollamaStatus.ok" :size="16" />
+        <AlertTriangle v-else :size="16" />
+        <div class="banner-msg">
+          <template v-if="ollamaStatus.ok">
+            <strong>Connected to Ollama!</strong>
+            <span class="small">
+              Available models: {{ ollamaStatus.availableModels.join(', ') || 'None found (run ollama pull ' + ollamaModel + ')' }}
+            </span>
+          </template>
+          <template v-else>
+            <strong>Connection Failed</strong>
+            <span class="small">{{ ollamaStatus.error }}</span>
+          </template>
+        </div>
+      </div>
+
+      <p class="small muted">
+        To allow browser requests, start Ollama with <code>OLLAMA_ORIGINS="*" ollama serve</code>.
+      </p>
+    </form>
+  </section>
+
   <!-- Backup & Restore -->
   <section class="panel">
     <h2>Backup</h2>
@@ -306,6 +434,62 @@ async function clear() {
 .save-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.ollama-config-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.ollama-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-sm {
+  min-height: 34px;
+  padding: 4px 12px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spinning {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ollama-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.ollama-status-banner.success {
+  background: #e8f7ee;
+  border: 1px solid #c2ebd0;
+  color: #176537;
+}
+
+.ollama-status-banner.failure {
+  background: #fdf2f0;
+  border: 1px solid #f2bdb5;
+  color: #a03e30;
+}
+
+.banner-msg {
+  display: grid;
+  gap: 2px;
 }
 
 @media (max-width: 480px) {

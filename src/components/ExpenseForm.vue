@@ -35,6 +35,7 @@ import { parseMoney, signedMoney, today, money } from "@/lib/finance";
 import { itemsTotal, validQuantity } from "@/lib/purchases";
 import { findProduct } from "@/lib/products";
 import { type ReceiptSuggestion } from "@/lib/receipt";
+import { t } from "@/lib/i18n";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import ItemEditor from "@/components/ItemEditor.vue";
 import ReceiptReader from "@/components/ReceiptReader.vue";
@@ -217,6 +218,9 @@ function applyReceipt(value: ReceiptSuggestion, imageUrl?: string) {
 
   if (value.merchant) form.merchant = value.merchant;
   if (value.date) form.date = value.date;
+  if (value.category && store.allCategories.includes(value.category)) {
+    form.category = value.category;
+  }
   form.amount = value.amount === null ? "" : (value.amount / 100).toFixed(2);
   lines.value = value.items.map((item) => ({
     id: crypto.randomUUID(),
@@ -303,10 +307,8 @@ async function submit() {
         <h2>
           {{
             expense
-              ? "Edit expense"
-              : store.repeat
-                ? "Repeat purchase"
-                : "Add expense"
+              ? t('expenses.editExpense')
+              : t('expenses.newExpense')
           }}
         </h2>
         <!-- Receipt Dock Quick Button -->

@@ -1,10 +1,11 @@
-import type { PurchaseItem, Currency, Unit } from "@/lib/types";
+import type { PurchaseItem, Currency, Unit, Category } from "@/lib/types";
 import { validDate, itemsTotal } from "@/lib/purchases";
 
 export interface ReceiptSuggestion {
   merchant: string;
   date: string;
   currency?: Currency;
+  category?: Category;
   amount: number | null;
   items: PurchaseItem[];
   text: string;

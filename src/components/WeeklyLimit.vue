@@ -15,9 +15,13 @@ import {
   Receipt,
   PiggyBank,
   X,
+  ChevronLeft,
+  ChevronRight,
+  SkipForward,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, parseOptionalMoney, today } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 import type { CategoryLimit } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 
@@ -31,6 +35,10 @@ const busy = shallowRef(false);
 
 // Local state for structured category limits editing
 const localCategoryLimits = ref<CategoryLimit[]>([]);
+
+const activeFrequentPayments = computed(() =>
+  store.frequentPayments.filter((p) => p.active),
+);
 
 const progress = computed(() =>
   store.weeklyLimit
@@ -262,13 +270,13 @@ async function removeLimit() {
       <!-- Hero Spending Numbers -->
       <div class="limit-hero-numbers">
         <div class="spent-stat">
-          <span class="stat-label">Spent this week</span>
+          <span class="stat-label">{{ t('weeklyLimit.spent') }}</span>
           <strong class="stat-value" :class="{ 'text-danger': status === 'over' }">
             {{ store.displayMoney(store.weekTotal) }}
           </strong>
         </div>
         <div class="limit-target-stat">
-          <span class="stat-label">Weekly limit</span>
+          <span class="stat-label">{{ t('weeklyLimit.limit') }}</span>
           <strong class="stat-value-secondary">
             {{ store.displayMoney(store.weeklyLimit) }}
           </strong>
@@ -347,6 +355,69 @@ async function removeLimit() {
         </div>
       </div>
 
+      <!-- Quick Frequent Bills for This Week -->
+      <div v-if="activeFrequentPayments.length" class="weekly-frequent-strip">
+        <div class="weekly-frequent-header">
+          <span class="frequent-strip-title">
+            <Receipt :size="14" /> Frequent Payments & Bills
+          </span>
+          <span class="small muted">
+            Add to this week's expenses
+          </span>
+        </div>
+
+        <div class="weekly-frequent-cards">
+          <div
+            v-for="p in activeFrequentPayments"
+            :key="p.id"
+            class="weekly-bill-chip"
+            :class="{
+              'bill-logged': store.isPaymentLoggedForWeek(p),
+              'bill-skipped': store.isPaymentSkippedForWeek(p),
+            }"
+          >
+            <div class="bill-chip-info">
+              <strong>{{ p.name }}</strong>
+              <span class="bill-amount">{{ store.displayMoney(p.amount) }}</span>
+            </div>
+
+            <div class="bill-chip-actions">
+              <span
+                v-if="store.isPaymentLoggedForWeek(p)"
+                class="bill-status-pill logged"
+              >
+                <CheckCircle2 :size="12" /> Logged
+              </span>
+              <span
+                v-else-if="store.isPaymentSkippedForWeek(p)"
+                class="bill-status-pill skipped"
+              >
+                <SkipForward :size="12" /> Skipped
+              </span>
+
+              <button
+                class="bill-action-btn log"
+                :title="store.isPaymentLoggedForWeek(p) ? 'Already logged this week - click to log again' : 'Log this payment into week expenses'"
+                type="button"
+                @click="store.logFrequentPaymentAsExpense(p.id, store.weekDate)"
+              >
+                {{ store.isPaymentLoggedForWeek(p) ? '+ Again' : 'Log payment' }}
+              </button>
+
+              <button
+                v-if="!store.isPaymentLoggedForWeek(p) && !store.isPaymentSkippedForWeek(p)"
+                class="bill-action-btn skip"
+                title="Skip this payment without creating an expense"
+                type="button"
+                @click="store.skipFrequentPayment(p.id)"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Daily Pacing & Pacing Advice -->
       <div class="pacing-footer">
         <div class="pacing-advice">
@@ -363,10 +434,39 @@ async function removeLimit() {
           </template>
         </div>
 
-        <label class="week-picker-inline" title="Select week to review">
-          <span>Week:</span>
-          <input v-model="store.weekDate" type="date" required />
-        </label>
+        <div class="week-stepper-controls">
+          <button
+            class="stepper-btn"
+            type="button"
+            title="Previous week"
+            aria-label="Previous week"
+            @click="store.previousWeek()"
+          >
+            <ChevronLeft :size="16" />
+          </button>
+          <label class="week-picker-inline" title="Select week to review">
+            <span>Week:</span>
+            <input v-model="store.weekDate" type="date" required />
+          </label>
+          <button
+            class="stepper-btn"
+            type="button"
+            title="Next week"
+            aria-label="Next week"
+            @click="store.nextWeek()"
+          >
+            <ChevronRight :size="16" />
+          </button>
+          <button
+            v-if="store.weekDate !== today()"
+            class="today-btn"
+            type="button"
+            title="Reset to current week"
+            @click="store.resetToCurrentWeek()"
+          >
+            Today
+          </button>
+        </div>
       </div>
     </template>
 
@@ -1104,6 +1204,172 @@ async function removeLimit() {
 .structured-total-banner strong {
   font-size: 16px;
   color: #153d35;
+}
+
+/* Weekly Frequent Bills Strip */
+.weekly-frequent-strip {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fdfefe;
+  border: 1px solid #dbe6e0;
+  border-radius: 14px;
+}
+
+.weekly-frequent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.frequent-strip-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #153d35;
+}
+
+.weekly-frequent-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weekly-bill-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f7faf8;
+  border: 1px solid #d5e3dc;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.weekly-bill-chip.bill-logged {
+  background: #eaf6ee;
+  border-color: #badfc7;
+}
+
+.weekly-bill-chip.bill-skipped {
+  opacity: 0.65;
+  background: #f2f5f3;
+}
+
+.bill-chip-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bill-chip-info strong {
+  color: #153d35;
+}
+
+.bill-amount {
+  font-weight: 700;
+  color: #27ae60;
+  font-variant-numeric: tabular-nums;
+}
+
+.bill-chip-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bill-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.bill-status-pill.logged {
+  background: #d4ebd9;
+  color: #186337;
+}
+
+.bill-status-pill.skipped {
+  background: #e5ece8;
+  color: #556c62;
+}
+
+.bill-action-btn {
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.bill-action-btn.log {
+  background: #153d35;
+  color: #fff;
+}
+
+.bill-action-btn.log:hover {
+  background: #1e5247;
+}
+
+.bill-action-btn.skip {
+  background: #fff;
+  color: #637b70;
+  border: 1px solid #d2ded7;
+}
+
+.bill-action-btn.skip:hover {
+  background: #eef3f0;
+}
+
+/* Week Stepper Controls */
+.week-stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepper-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f0f5f2;
+  border: 1px solid #d5e3dc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #153d35;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.stepper-btn:hover {
+  background: #e2ede7;
+}
+
+.today-btn {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e1ede5;
+  color: #153d35;
+  border: 1px solid #bdd6c7;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.today-btn:hover {
+  background: #cce3d5;
 }
 
 @media (max-width: 480px) {
