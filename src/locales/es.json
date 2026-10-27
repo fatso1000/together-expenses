@@ -128,7 +128,20 @@
     "itemDiscount": "Descuento",
     "totalItemsAmount": "Suma de ítems: {amount}",
     "confirmDelete": "¿Estás seguro de que querés borrar este gasto?",
-    "noExpensesFound": "No hay gastos con este filtro."
+    "noExpensesFound": "No hay gastos con este filtro.",
+    "addSeveral": "Cargar varios gastos",
+    "thisWeek": "Esta Semana",
+    "thisMonth": "Este Mes",
+    "allExpenses": "Todos los Gastos",
+    "searchPlaceholder": "Buscar comercio, ítem, nota…",
+    "allCategories": "Todas las categorías",
+    "allAccounts": "Todas las cuentas",
+    "export": "Exportar",
+    "resetFilters": "Limpiar filtros",
+    "sortNewest": "Más reciente",
+    "sortOldest": "Más antiguo",
+    "sortHighest": "Mayor monto",
+    "sortLowest": "Menor monto"
   },
   "receipt": {
     "title": "Escanear ticket",

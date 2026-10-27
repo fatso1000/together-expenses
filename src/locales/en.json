@@ -128,7 +128,20 @@
     "itemDiscount": "Discount",
     "totalItemsAmount": "Items sum: {amount}",
     "confirmDelete": "Are you sure you want to delete this expense?",
-    "noExpensesFound": "No expenses matching this filter."
+    "noExpensesFound": "No expenses matching this filter.",
+    "addSeveral": "Add several expenses",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "allExpenses": "All Expenses",
+    "searchPlaceholder": "Search merchant, item, note…",
+    "allCategories": "All categories",
+    "allAccounts": "All accounts",
+    "export": "Export",
+    "resetFilters": "Reset filters",
+    "sortNewest": "Newest date",
+    "sortOldest": "Oldest date",
+    "sortHighest": "Highest amount",
+    "sortLowest": "Lowest amount"
   },
   "receipt": {
     "title": "Read a receipt",

@@ -12,6 +12,7 @@ import BulkEntry from "@/components/BulkEntry.vue";
 import ExpenseList from "@/components/ExpenseList.vue";
 import { useExpenses } from "@/stores/expenses";
 import { csv, downloadFile, total } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 
 const store = useExpenses();
 const bulk = shallowRef(false);
@@ -106,7 +107,7 @@ function exportCsv() {
 
 <template>
   <button class="secondary bulk-button" @click="bulk = true">
-    <ClipboardList :size="18" />Add several expenses
+    <ClipboardList :size="18" />{{ t('expenses.addSeveral') }}
   </button>
   <BulkEntry v-if="bulk" @close="bulk = false" />
 
@@ -118,31 +119,31 @@ function exportCsv() {
         :class="{ selected: period === 'week' }"
         @click="period = 'week'"
       >
-        <Calendar :size="15" />This Week
+        <Calendar :size="15" />{{ t('expenses.thisWeek') }}
       </button>
       <button
         type="button"
         :class="{ selected: period === 'month' }"
         @click="period = 'month'"
       >
-        This Month
+        {{ t('expenses.thisMonth') }}
       </button>
       <button
         type="button"
         :class="{ selected: period === 'all' }"
         @click="period = 'all'"
       >
-        All Expenses
+        {{ t('expenses.allExpenses') }}
       </button>
     </div>
 
     <!-- Active Period Information Banner -->
     <div v-if="period === 'week'" class="week-banner">
       <span>
-        <strong>Current week:</strong> {{ store.weekStart }} to {{ store.weekEnd }} (Mon–Sun)
+        <strong>{{ t('expenses.thisWeek') }}:</strong> {{ store.weekStart }} to {{ store.weekEnd }} (Mon–Sun)
       </span>
       <span class="week-banner-metric">
-        {{ filtered.length }} expenses · {{ store.displayMoney(total(filtered)) }}
+        {{ filtered.length }} {{ t('nav.expenses').toLowerCase() }} · {{ store.displayMoney(total(filtered)) }}
       </span>
     </div>
 
@@ -150,18 +151,18 @@ function exportCsv() {
     <div class="filter-bar enhanced-filter-bar">
       <label class="search-input">
         <Search :size="18" />
-        <span class="sr-only">Search expenses</span>
+        <span class="sr-only">{{ t('common.search') }}</span>
         <input
           v-model="search"
           type="search"
-          placeholder="Search merchant, item, note…"
+          :placeholder="t('expenses.searchPlaceholder')"
         />
       </label>
 
       <label class="category-select-label">
-        <span class="sr-only">Category</span>
+        <span class="sr-only">{{ t('expenses.category') }}</span>
         <select v-model="category">
-          <option value="">All categories</option>
+          <option value="">{{ t('expenses.allCategories') }}</option>
           <option
             v-for="item in store.allCategories"
             :key="item"
@@ -174,9 +175,9 @@ function exportCsv() {
 
       <!-- Account Filter -->
       <label class="account-select-label">
-        <span class="sr-only">Account</span>
+        <span class="sr-only">{{ t('expenses.allAccounts') }}</span>
         <select v-model="account" aria-label="Filter by account">
-          <option value="">All accounts</option>
+          <option value="">{{ t('expenses.allAccounts') }}</option>
           <option value="global">💳 Global Account</option>
           <option value="nz">🏦 NZ Account (Savings)</option>
         </select>
@@ -187,16 +188,16 @@ function exportCsv() {
         <div class="select-with-icon">
           <ArrowUpDown :size="16" class="select-icon" />
           <select v-model="sortBy" aria-label="Sort expenses">
-            <option value="date-desc">Newest date</option>
-            <option value="date-asc">Oldest date</option>
-            <option value="amount-desc">Highest amount</option>
-            <option value="amount-asc">Lowest amount</option>
+            <option value="date-desc">{{ t('expenses.sortNewest') }}</option>
+            <option value="date-asc">{{ t('expenses.sortOldest') }}</option>
+            <option value="amount-desc">{{ t('expenses.sortHighest') }}</option>
+            <option value="amount-asc">{{ t('expenses.sortLowest') }}</option>
           </select>
         </div>
       </label>
 
       <button class="secondary export-btn" @click="exportCsv">
-        <Download :size="16" />Export
+        <Download :size="16" />{{ t('expenses.export') }}
       </button>
 
       <button
@@ -205,13 +206,13 @@ function exportCsv() {
         class="text-button reset-btn"
         @click="resetFilters"
       >
-        <RotateCcw :size="14" />Clear filters
+        <RotateCcw :size="14" />{{ t('expenses.resetFilters') }}
       </button>
     </div>
 
     <!-- Summary Bar -->
     <div class="list-summary">
-      <span>{{ filtered.length }} expenses</span>
+      <span>{{ filtered.length }} {{ t('nav.expenses').toLowerCase() }}</span>
       <strong>{{ store.displayMoney(total(filtered)) }}</strong>
     </div>
 
