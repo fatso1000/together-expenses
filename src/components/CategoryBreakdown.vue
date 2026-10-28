@@ -3,8 +3,11 @@ import { useExpenses } from "@/stores/expenses";
 import { computed } from "vue";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import { categoryTotals, money } from "@/lib/finance";
+import { useI18n } from "@/lib/i18n";
 import type { Expense } from "@/lib/types";
+
 const store = useExpenses();
+const { t, categoryLabel } = useI18n();
 const props = defineProps<{ expenses: Expense[]; currency: string }>();
 const rows = computed(() => categoryTotals(props.expenses));
 </script>
@@ -14,7 +17,7 @@ const rows = computed(() => categoryTotals(props.expenses));
       <CategoryIcon :category="row.category" />
       <div class="category-detail">
         <div>
-          <strong>{{ row.category }}</strong
+          <strong>{{ categoryLabel(row.category) }}</strong
           ><span>{{ store.displayMoney(row.amount) }}</span>
         </div>
         <div class="track"><span :style="{ width: `${row.percent}%` }" /></div>
@@ -22,7 +25,7 @@ const rows = computed(() => categoryTotals(props.expenses));
       <span class="category-percent">{{ Math.round(row.percent) }}%</span>
     </div>
     <p v-if="!rows.length" class="muted">
-      Your spending breakdown will appear after your first expense.
+      {{ t('categories.breakdownEmpty') }}
     </p>
   </div>
 </template>

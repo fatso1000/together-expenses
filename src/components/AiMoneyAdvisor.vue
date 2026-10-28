@@ -26,6 +26,7 @@ import {
   type FinancialContext,
   type OllamaStatus,
 } from "@/lib/ollama";
+import { t } from "@/lib/i18n";
 
 const store = useExpenses();
 
@@ -232,11 +233,11 @@ onMounted(() => {
     <div v-else-if="analysisError" class="analysis-error" role="alert">
       <AlertTriangle :size="18" />
       <div class="error-msg">
-        <strong>Could not complete analysis</strong>
+        <strong>{{ t('ai.couldNotComplete') }}</strong>
         <span>{{ analysisError }}</span>
       </div>
       <button class="secondary btn-sm" type="button" @click="runAnalysis(activeMode)">
-        Retry
+        {{ t('common.retry') }}
       </button>
     </div>
 

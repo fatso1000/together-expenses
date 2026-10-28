@@ -239,7 +239,7 @@ async function clear() {
             convertUsdToNzd();
           "
         >
-          <RefreshCw :size="13" /> Update conversion
+          <RefreshCw :size="13" /> {{ t('settings.updateConversion') }}
         </button>
       </div>
 
@@ -354,11 +354,11 @@ async function clear() {
 
   <!-- Backup & Restore -->
   <section class="panel">
-    <h2>Backup</h2>
+    <h2>{{ t('settings.backupRestore') }}</h2>
     <p>Export a copy of expenses, products, shops, limits, and financial accounts.</p>
-    <button class="secondary" @click="backup">Export backup</button>
+    <button class="secondary" @click="backup">{{ t('settings.exportBackup') }}</button>
     <label class="restore-input">
-      Restore backup
+      {{ t('settings.restoreBackup') }}
       <input
         type="file"
         accept=".json,application/json"
@@ -385,10 +385,10 @@ async function clear() {
       class="secondary"
       @click="store.undoDelete"
     >
-      Undo deletion
+      {{ t('settings.undoDeletion') }}
     </button>
     <button class="text-button danger" @click="clear">
-      Delete all expenses
+      {{ t('settings.deleteAllExpenses') }}
     </button>
   </section>
 

@@ -27,7 +27,7 @@ import type {
   AccountId,
 } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
-import { t } from "@/lib/i18n";
+import { t, categoryLabel } from "@/lib/i18n";
 
 const store = useExpenses();
 
@@ -135,10 +135,10 @@ function dueStatus(nextDueDate?: string): {
   if (!nextDueDate) return { label: "", type: "none" };
   const todayStr = today();
   if (nextDueDate === todayStr) {
-    return { label: "Due today", type: "today" };
+    return { label: t("frequent.dueToday"), type: "today" };
   }
   if (nextDueDate < todayStr) {
-    return { label: "Overdue", type: "overdue" };
+    return { label: t("frequent.dueOverdue"), type: "overdue" };
   }
   const diffDays = Math.round(
     (new Date(`${nextDueDate}T12:00:00`).getTime() -
@@ -146,9 +146,9 @@ function dueStatus(nextDueDate?: string): {
       (1000 * 60 * 60 * 24),
   );
   if (diffDays <= 5) {
-    return { label: `Due in ${diffDays}d`, type: "soon" };
+    return { label: t("frequent.dueInDays", { days: diffDays }), type: "soon" };
   }
-  return { label: `Due ${nextDueDate}`, type: "future" };
+  return { label: t("frequent.dueOnDate", { date: nextDueDate }), type: "future" };
 }
 </script>
 
@@ -176,17 +176,17 @@ function dueStatus(nextDueDate?: string): {
       <article class="metric-card">
         <span class="muted small">{{ t('frequent.weeklyCommitment') }}</span>
         <strong>{{ store.displayMoney(store.frequentWeeklyCommitment) }}</strong>
-        <span class="small font-mono">avg per week</span>
+        <span class="small font-mono">{{ t('frequent.avgPerWeek') }}</span>
       </article>
       <article class="metric-card">
         <span class="muted small">{{ t('frequent.monthlyCommitment') }}</span>
         <strong>{{ store.displayMoney(store.frequentMonthlyCommitment) }}</strong>
-        <span class="small font-mono">avg per month</span>
+        <span class="small font-mono">{{ t('frequent.avgPerMonth') }}</span>
       </article>
       <article class="metric-card">
         <span class="muted small">{{ t('frequent.activePayments') }}</span>
         <strong>{{ store.frequentPayments.filter((p) => p.active).length }}</strong>
-        <span class="small font-mono">{{ store.frequentPayments.length }} total</span>
+        <span class="small font-mono">{{ store.frequentPayments.length }} {{ t('frequent.total') }}</span>
       </article>
     </div>
 
@@ -203,7 +203,7 @@ function dueStatus(nextDueDate?: string): {
           <div class="payment-details">
             <div class="payment-title-line">
               <strong>{{ payment.name }}</strong>
-              <span class="freq-tag">{{ payment.frequency }}</span>
+              <span class="freq-tag">{{ payment.frequency === 'weekly' ? t('frequent.frequencyWeekly') : payment.frequency === 'fortnightly' ? t('frequent.frequencyFortnightly') : payment.frequency === 'monthly' ? t('frequent.frequencyMonthly') : t('frequent.frequencyYearly') }}</span>
               <span
                 class="account-mini-tag"
                 :class="{ 'nz-tag': payment.accountId === 'nz' }"
@@ -295,12 +295,12 @@ function dueStatus(nextDueDate?: string): {
     <!-- Empty State -->
     <div v-else class="empty-frequent">
       <CalendarClock :size="32" class="empty-icon" />
-      <p>No frequent payments added yet.</p>
+      <p>{{ t('frequent.emptyPrompt') }}</p>
       <span class="small muted">
-        Add electricity, insurance, phone, or rent to monitor weekly budget impacts and log expenses in one click.
+        {{ t('frequent.emptyHint') }}
       </span>
       <button class="secondary btn-sm" type="button" @click="openForm()">
-        <Plus :size="15" />Add first frequent payment
+        <Plus :size="15" />{{ t('frequent.addFirstPayment') }}
       </button>
     </div>
 
@@ -314,7 +314,7 @@ function dueStatus(nextDueDate?: string): {
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
           <h3>
-            {{ editingPayment === "new" ? "Add Frequent Payment" : "Edit Frequent Payment" }}
+            {{ editingPayment === "new" ? t('frequent.addPayment') : t('frequent.editPayment') }}
           </h3>
           <button
             class="icon-button"
@@ -328,7 +328,7 @@ function dueStatus(nextDueDate?: string): {
 
         <form class="drawer-content" @submit.prevent="saveForm">
           <label>
-            Payment Name
+            {{ t('frequent.nameLabel') }}
             <input
               v-model="form.name"
               required
@@ -339,7 +339,7 @@ function dueStatus(nextDueDate?: string): {
 
           <div class="form-pair">
             <label>
-              Amount · NZD
+              {{ t('expenses.amount') }} · NZD
               <input
                 v-model="form.amount"
                 inputmode="decimal"
@@ -348,45 +348,45 @@ function dueStatus(nextDueDate?: string): {
               />
             </label>
             <label>
-              Frequency
+              {{ t('frequent.frequencyLabel') }}
               <select v-model="form.frequency">
-                <option value="weekly">Weekly</option>
-                <option value="fortnightly">Fortnightly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
+                <option value="weekly">{{ t('frequent.frequencyWeekly') }}</option>
+                <option value="fortnightly">{{ t('frequent.frequencyFortnightly') }}</option>
+                <option value="monthly">{{ t('frequent.frequencyMonthly') }}</option>
+                <option value="yearly">{{ t('frequent.frequencyYearly') }}</option>
               </select>
             </label>
           </div>
 
           <div class="form-pair">
             <label>
-              Category
+              {{ t('frequent.categoryLabel') }}
               <select v-model="form.category">
                 <option
                   v-for="cat in store.allCategories"
                   :key="cat"
                   :value="cat"
                 >
-                  {{ cat }}
+                  {{ categoryLabel(cat) }}
                 </option>
               </select>
             </label>
             <label>
-              Paid From Account
+              {{ t('frequent.accountLabel') }}
               <select v-model="form.accountId">
-                <option value="global">Global Account (Everyday)</option>
-                <option value="nz">NZ Account (Savings)</option>
+                <option value="global">{{ t('accounts.globalEveryday') }}</option>
+                <option value="nz">{{ t('accounts.nzSavings') }}</option>
               </select>
             </label>
           </div>
 
           <label>
-            Next Due Date (Optional)
+            {{ t('frequent.nextDueLabel') }}
             <input v-model="form.nextDueDate" type="date" />
           </label>
 
           <label>
-            Note (Optional)
+            {{ t('frequent.noteLabel') }}
             <input
               v-model="form.note"
               placeholder="e.g. Direct debit on 1st of month"
@@ -397,14 +397,14 @@ function dueStatus(nextDueDate?: string): {
 
           <div class="entry-actions">
             <button class="primary" :disabled="formBusy">
-              Save Payment
+              {{ t('frequent.savePayment') }}
             </button>
             <button
               type="button"
               class="secondary"
               @click="editingPayment = null"
             >
-              Cancel
+              {{ t('common.cancel') }}
             </button>
           </div>
         </form>

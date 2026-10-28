@@ -3,6 +3,7 @@ import { computed, ref, shallowRef } from "vue";
 import { Store, Plus, Pencil, Trash2, Check, X } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { money, parseMoney } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 import type { Shop, SavedItem } from "@/lib/types";
 const store = useExpenses();
 const query = shallowRef("");
@@ -43,17 +44,17 @@ function startPurchase(shop: Shop) {
   <section class="panel">
     <form @submit.prevent="saveShop">
       <label
-        >{{ editingShop ? "Edit shop name" : "New shop"
+        >{{ editingShop ? t('shops.editShop') : t('shops.newShop')
         }}<input
           v-model="name"
           maxlength="100"
-          placeholder="e.g. New World"
+          :placeholder="t('shops.placeholder')"
           required
       /></label>
       <div class="entry-actions">
         <button class="primary" :disabled="busy">
           <Plus :size="18" />{{
-            editingShop ? "Save name" : "Add shop"
+            editingShop ? t('shops.saveName') : t('shops.addShop')
           }}</button
         ><button
           v-if="editingShop"
@@ -64,13 +65,13 @@ function startPurchase(shop: Shop) {
             name = '';
           "
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
       </div>
     </form>
   </section>
   <label v-if="store.shops.length > 3"
-    >Find shop<input v-model="query" type="search"
+    >{{ t('common.search') }}<input v-model="query" type="search"
   /></label>
   <p v-if="failure" role="alert" class="error-note">{{ failure }}</p>
   <section v-for="shop in filtered" :key="shop.id" class="panel shop-card">
@@ -96,8 +97,8 @@ function startPurchase(shop: Shop) {
       </div>
     </div>
     <div v-if="removing === shop.id" class="inline-confirm">
-      <p>Remove this shop? Products and past expenses stay unchanged.</p>
-      <button class="secondary" @click="removing = ''">Cancel</button
+      <p>{{ t('shops.confirmDeleteShop', { name: shop.name }) }}</p>
+      <button class="secondary" @click="removing = ''">{{ t('common.cancel') }}</button
       ><button
         class="secondary danger"
         :disabled="busy"
@@ -108,16 +109,16 @@ function startPurchase(shop: Shop) {
           })
         "
       >
-        Remove shop
+        {{ t('common.delete') }}
       </button>
     </div>
     <button class="secondary" @click="startPurchase(shop)">
-      <Plus :size="18" />New purchase
+      <Plus :size="18" />{{ t('shops.startPurchase') }}
     </button>
   </section>
   <section v-if="!store.shops.length" class="empty-state">
     <Store :size="32" />
-    <h2>No shops yet</h2>
-    <p>Add one above or save your first expense.</p>
+    <h2>{{ t('shops.title') }}</h2>
+    <p>{{ t('common.addExpense') }}</p>
   </section>
 </template>

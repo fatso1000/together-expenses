@@ -4,6 +4,7 @@ import { useExpenses } from "@/stores/expenses";
 import { total } from "@/lib/finance";
 import type { Expense } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import { useI18n } from "@/lib/i18n";
 
 const props = defineProps<{
   expenses: Expense[];
@@ -12,6 +13,7 @@ const props = defineProps<{
 }>();
 
 const store = useExpenses();
+const { t, categoryLabel } = useI18n();
 
 const varianceRows = computed(() => {
   const mult = props.multiplier ?? 1;
@@ -56,13 +58,13 @@ const varianceRows = computed(() => {
         <div class="row-header">
           <div class="category-info">
             <CategoryIcon :category="row.category" />
-            <strong>{{ row.category }}</strong>
+            <strong>{{ categoryLabel(row.category) }}</strong>
           </div>
           <div class="variance-badge" :class="{ 'badge-over': row.isOver, 'badge-under': !row.isOver }">
             {{
               row.isOver
-                ? `+${store.displayMoney(row.diff)} over limit`
-                : `${store.displayMoney(row.diff)} remaining`
+                ? `+${store.displayMoney(row.diff)} ${t('weeklyLimit.overBudget', { amount: '' }).trim()}`
+                : `${store.displayMoney(row.diff)} ${t('weeklyLimit.leftBudget', { amount: '' }).trim()}`
             }}
           </div>
         </div>
@@ -78,10 +80,10 @@ const varianceRows = computed(() => {
 
         <div class="variance-amounts-row">
           <span class="small muted">
-            Spent: <strong>{{ store.displayMoney(row.spent) }}</strong>
+            {{ t('weeklyLimit.spent') }}: <strong>{{ store.displayMoney(row.spent) }}</strong>
           </span>
           <span class="small muted">
-            Budget allowance: <strong>{{ store.displayMoney(row.allocated) }}</strong>
+            {{ t('weeklyLimit.limit') }}: <strong>{{ store.displayMoney(row.allocated) }}</strong>
           </span>
         </div>
       </div>
@@ -89,7 +91,7 @@ const varianceRows = computed(() => {
 
     <div v-else class="empty-variance">
       <p class="muted small">
-        Configure category limits in the <strong>Weekly Spending Limit</strong> card or Settings to view budget vs. actual variance analysis.
+        {{ t('reports.configureLimitsPrompt') }} <strong>{{ t('weeklyLimit.title') }}</strong>.
       </p>
     </div>
   </div>

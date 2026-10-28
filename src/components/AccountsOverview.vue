@@ -163,16 +163,16 @@ async function saveDeposit() {
           type="button"
           @click="openAddDeposit"
         >
-          <Plus :size="15" />Add savings
+          <Plus :size="15" />{{ t('accounts.addSavings') }}
         </button>
         <button
           v-if="store.savingsRecords.length"
           class="secondary btn-sm"
           type="button"
-          title="Manage savings deposits"
+          :title="t('accounts.manageDeposits')"
           @click="showManageDepositsModal = true"
         >
-          <History :size="15" />Deposits
+          <History :size="15" />{{ t('accounts.manageDeposits') }}
         </button>
         <RouterLink to="/settings" class="icon-button" aria-label="Configure accounts">
           <Settings :size="17" />
@@ -183,7 +183,7 @@ async function saveDeposit() {
     <!-- Hero Combined Total Money Card -->
     <div class="hero-balance-card">
       <div class="hero-balance-info">
-        <span class="hero-label">Total Current Money (All Accounts)</span>
+        <span class="hero-label">{{ t('accounts.heroLabel') }}</span>
         <strong class="hero-amount">{{ store.displayMoney(store.totalMoney) }}</strong>
         <p v-if="netWorthComparison" class="small net-status" :class="{ positive: netWorthComparison.isPositive }">
           <TrendingUp v-if="netWorthComparison.isPositive" :size="14" />
@@ -207,8 +207,8 @@ async function saveDeposit() {
         <strong>
           {{
             spendComparison.isOver
-              ? "All-time spending exceeds initial global capital"
-              : "All-time spending is within initial global capital"
+              ? t('accounts.baselineOver')
+              : t('accounts.baselineUnder')
           }}
         </strong>
         <p class="small">{{ spendComparison.label }}</p>
@@ -216,8 +216,8 @@ async function saveDeposit() {
     </div>
     <div v-else class="baseline-callout baseline-empty">
       <p class="small">
-        <Sparkles :size="14" /> Set an initial global baseline in
-        <RouterLink to="/settings">Data settings</RouterLink> to track spending against your starting funds in USD and NZD.
+        <Sparkles :size="14" />
+        {{ t('accounts.baselineEmpty') }}
       </p>
     </div>
 
@@ -230,20 +230,20 @@ async function saveDeposit() {
             <Wallet :size="16" />
             <strong>Global Account</strong>
           </div>
-          <span class="account-badge">Everyday purchases</span>
+          <span class="account-badge">{{ t('accounts.everydayPurchases') }}</span>
         </div>
 
         <div class="account-stats">
           <div class="account-balance">
-            <span class="stat-label">Current balance</span>
+            <span class="stat-label">{{ t('accounts.currentBalance') }}</span>
             <strong class="account-amount">{{ store.displayMoney(store.globalBalance) }}</strong>
           </div>
           <div class="account-initial-row">
-            <span class="muted small">Everyday spent:</span>
+            <span class="muted small">{{ t('accounts.everydaySpent') }}</span>
             <span class="small font-mono">{{ store.displayMoney(store.balances.globalSpent) }}</span>
           </div>
           <div v-if="store.initialGlobalNZD" class="account-initial-row">
-            <span class="muted small">Initial baseline:</span>
+            <span class="muted small">{{ t('accounts.initialBaseline') }}</span>
             <span class="small font-mono">
               {{ store.displayMoney(store.initialGlobalNZD) }}
               <template v-if="store.initialGlobalUSD">
@@ -261,26 +261,26 @@ async function saveDeposit() {
             <PiggyBank :size="16" />
             <strong>NZ Account</strong>
           </div>
-          <span class="account-badge savings-badge">Salary savings</span>
+          <span class="account-badge savings-badge">{{ t('accounts.salarySavings') }}</span>
         </div>
 
         <div class="account-stats">
           <div class="account-balance">
-            <span class="stat-label">Current savings</span>
+            <span class="stat-label">{{ t('accounts.currentSavings') }}</span>
             <strong class="account-amount nz-amount">{{ store.displayMoney(store.nzBalance) }}</strong>
           </div>
           <div class="account-initial-row">
-            <span class="muted small">Spent from savings:</span>
+            <span class="muted small">{{ t('accounts.spentFromSavings') }}</span>
             <span class="small font-mono">{{ store.displayMoney(store.balances.nzSpent) }}</span>
           </div>
           <div class="account-initial-row">
-            <span class="muted small">Savings deposits:</span>
+            <span class="muted small">{{ t('accounts.savingsDeposits') }}</span>
             <button
               type="button"
               class="text-button small font-mono link-manage-deposits"
               @click="showManageDepositsModal = true"
             >
-              {{ store.savingsRecords.length }} recorded · Manage
+              {{ t('accounts.recordedDeposits', { count: store.savingsRecords.length }) }}
             </button>
           </div>
         </div>
@@ -296,7 +296,7 @@ async function saveDeposit() {
       <div class="bottom-drawer" role="dialog" aria-modal="true">
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
-          <h3>{{ editingDepositId ? "Edit Savings Deposit" : "Record Salary / Savings Deposit" }}</h3>
+          <h3>{{ editingDepositId ? t('accounts.editDepositTitle') : t('accounts.recordDepositTitle') }}</h3>
           <button
             class="icon-button"
             type="button"
@@ -309,7 +309,7 @@ async function saveDeposit() {
 
         <form class="drawer-content" @submit.prevent="saveDeposit">
           <label>
-            Deposit Amount · NZD
+            {{ t('accounts.depositAmount') }}
             <input
               v-model="depositAmount"
               inputmode="decimal"
@@ -319,32 +319,32 @@ async function saveDeposit() {
             />
           </label>
           <label>
-            Date
+            {{ t('accounts.depositDate') }}
             <input v-model="depositDate" type="date" required />
           </label>
           <label>
-            Note / Description
+            {{ t('accounts.depositNote') }}
             <input
               v-model="depositNote"
               placeholder="e.g. Weekly salary deposit, Bonus"
             />
           </label>
           <p class="small muted">
-            Deposits are credited to your NZ Account and contribute to your total money.
+            {{ t('accounts.depositHint') }}
           </p>
 
           <p v-if="depositError" class="error-note" role="alert">{{ depositError }}</p>
 
           <div class="entry-actions">
             <button class="primary" :disabled="depositBusy">
-              {{ editingDepositId ? "Update Deposit" : "Save Deposit" }}
+              {{ editingDepositId ? t('accounts.updateDeposit') : t('accounts.saveDeposit') }}
             </button>
             <button
               type="button"
               class="secondary"
               @click="showDepositModal = false"
             >
-              Cancel
+              {{ t('common.cancel') }}
             </button>
           </div>
         </form>
@@ -361,12 +361,12 @@ async function saveDeposit() {
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
           <div class="drawer-title-group">
-            <h3>Salary Savings Deposits</h3>
-            <span class="small muted">{{ store.savingsRecords.length }} deposits recorded</span>
+            <h3>{{ t('accounts.depositsTitle') }}</h3>
+            <span class="small muted">{{ t('accounts.depositsCount', { count: store.savingsRecords.length }) }}</span>
           </div>
           <div class="row-actions">
             <button class="secondary btn-sm" type="button" @click="openAddDeposit">
-              <Plus :size="14" />New deposit
+              <Plus :size="14" />{{ t('accounts.newDeposit') }}
             </button>
             <button
               class="icon-button"
@@ -382,9 +382,9 @@ async function saveDeposit() {
         <div class="drawer-content deposits-list-stage">
           <div v-if="!store.savingsRecords.length" class="empty-deposits">
             <PiggyBank :size="32" />
-            <p>No savings deposits recorded yet.</p>
+            <p>{{ t('accounts.noDeposits') }}</p>
             <button class="secondary btn-sm" type="button" @click="openAddDeposit">
-              <Plus :size="15" />Record first deposit
+              <Plus :size="15" />{{ t('accounts.recordFirstDeposit') }}
             </button>
           </div>
           <ul v-else class="deposits-list">

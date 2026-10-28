@@ -35,7 +35,7 @@ import { parseMoney, signedMoney, today, money } from "@/lib/finance";
 import { itemsTotal, validQuantity } from "@/lib/purchases";
 import { findProduct } from "@/lib/products";
 import { type ReceiptSuggestion } from "@/lib/receipt";
-import { t } from "@/lib/i18n";
+import { t, categoryLabel } from "@/lib/i18n";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import ItemEditor from "@/components/ItemEditor.vue";
 import ReceiptReader from "@/components/ReceiptReader.vue";
@@ -320,7 +320,7 @@ async function submit() {
           @click="toggleDock"
         >
           <FileText :size="14" />
-          <span>Receipt preview</span>
+          <span>{{ t('expenses.receiptPreview') }}</span>
           <component :is="dockOpen ? ChevronUp : ChevronDown" :size="14" />
         </button>
       </div>
@@ -348,21 +348,21 @@ async function submit() {
               :aria-pressed="mode === 'quick'"
               @click="mode = 'quick'"
             >
-              <Zap :size="17" />Quick
+              <Zap :size="17" />{{ t('dashboard.quickAmount') }}
             </button>
             <button
               type="button"
               :aria-pressed="mode === 'items'"
               @click="mode = 'items'"
             >
-              <ListPlus :size="17" />Items
+              <ListPlus :size="17" />{{ t('dashboard.addItems') }}
             </button>
             <button
               type="button"
               :aria-pressed="mode === 'receipt'"
               @click="mode = 'receipt'"
             >
-              <ScanLine :size="17" />Receipt
+              <ScanLine :size="17" />{{ t('dashboard.scanReceipt') }}
             </button>
           </div>
 
@@ -384,7 +384,7 @@ async function submit() {
                     dockOpen = true;
                   "
                 >
-                  <FileText :size="14" />Transcript
+                  <FileText :size="14" />{{ t('expenses.transcriptTab') }}
                 </button>
                 <button
                   v-if="receiptImage"
@@ -396,7 +396,7 @@ async function submit() {
                     dockOpen = true;
                   "
                 >
-                  <ImageIcon :size="14" />Receipt Photo
+                  <ImageIcon :size="14" />{{ t('expenses.photoTab') }}
                 </button>
               </div>
               <div class="dock-actions">
@@ -407,7 +407,7 @@ async function submit() {
                   @click="isZoomed = !isZoomed"
                 >
                   <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{ isZoomed ? "Zoom out" : "Zoom in" }}</span>
+                  <span>{{ isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn') }}</span>
                 </button>
                 <button
                   v-if="previewTab === 'transcript'"
@@ -416,14 +416,14 @@ async function submit() {
                   @click="copyTranscript"
                 >
                   <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{ copySuccess ? "Copied" : "Copy" }}</span>
+                  <span>{{ copySuccess ? t('expenses.copied') : t('expenses.copy') }}</span>
                 </button>
                 <button
                   type="button"
                   class="text-button dock-toggle"
                   @click="dockOpen = !dockOpen"
                 >
-                  {{ dockOpen ? "Hide" : "Show" }}
+                  {{ dockOpen ? t('common.close') : t('common.view') }}
                 </button>
               </div>
             </div>
@@ -463,12 +463,12 @@ async function submit() {
           <!-- Form Inputs -->
           <form @submit.prevent="submit">
             <label>
-              Shop / title
+              {{ t('expenses.merchant') }}
               <input
                 v-model="form.merchant"
                 list="saved-shops"
                 maxlength="100"
-                placeholder="e.g. New World"
+                :placeholder="t('shops.placeholder')"
                 required
               />
             </label>
@@ -481,7 +481,7 @@ async function submit() {
             </datalist>
 
             <label>
-              Date
+              {{ t('expenses.date') }}
               <input
                 v-model="form.date"
                 type="date"
@@ -493,7 +493,7 @@ async function submit() {
 
             <!-- Prominent Account Selector (Global vs NZ Savings) -->
             <div class="account-selector-group">
-              <span class="account-group-label">Paid From Account</span>
+              <span class="account-group-label">{{ t('bulk.paidFrom') }}</span>
               <div
                 class="account-toggle-grid"
                 role="radiogroup"
@@ -511,7 +511,7 @@ async function submit() {
                     <Wallet :size="18" />
                   </div>
                   <div class="account-toggle-info">
-                    <strong>Global Account</strong>
+                    <strong>{{ t('accounts.globalEveryday') }}</strong>
                     <small>Everyday capital & weekly limit</small>
                   </div>
                 </button>
@@ -528,17 +528,17 @@ async function submit() {
                     <PiggyBank :size="18" />
                   </div>
                   <div class="account-toggle-info">
-                    <strong>NZ Account</strong>
-                    <small>Salary savings (rent, petrol)</small>
+                    <strong>{{ t('accounts.nzSavings') }}</strong>
+                    <small>{{ t('accounts.salarySavings') }}</small>
                   </div>
                 </button>
               </div>
               <p class="account-badge-hint" :class="form.accountId">
                 <span v-if="form.accountId === 'nz'">
-                  🏦 Deducted from NZ salary savings. Does not count against Global Capital baseline.
+                  🏦 {{ t('expenses.nzHint') }}
                 </span>
                 <span v-else>
-                  💳 Deducted from everyday Global Capital baseline.
+                  💳 {{ t('expenses.globalHint') }}
                 </span>
               </p>
             </div>
@@ -546,13 +546,13 @@ async function submit() {
             <!-- Category Picker with Custom Categories -->
             <fieldset class="category-picker">
               <div class="category-picker-header">
-                <legend>Category</legend>
+                <legend>{{ t('expenses.category') }}</legend>
                 <button
                   type="button"
                   class="text-button new-cat-link"
                   @click="openCategoryManager(true)"
                 >
-                  <Plus :size="14" />New category
+                  <Plus :size="14" />{{ t('categories.newCategory') }}
                 </button>
               </div>
 
@@ -565,16 +565,16 @@ async function submit() {
                   @click="form.category = catDef.name"
                 >
                   <CategoryIcon :category="catDef.name" :size="20" />
-                  <span>{{ catDef.name }}</span>
+                  <span>{{ categoryLabel(catDef.name) }}</span>
                 </button>
                 <button
                   type="button"
                   class="add-category-btn"
-                  title="Add custom category"
+                  :title="t('categories.newCategory')"
                   @click="openCategoryManager(true)"
                 >
                   <Plus :size="20" />
-                  <span>+ New</span>
+                  <span>+ {{ t('categories.newCategory') }}</span>
                 </button>
               </div>
             </fieldset>
@@ -591,14 +591,14 @@ async function submit() {
               <!-- Streamlined Receipt Discount Input -->
               <div v-if="lines.length" class="discount-container">
                 <label class="discount-field">
-                  Receipt discount · NZD (optional)
+                  {{ t('expenses.discountFieldLabel') }}
                   <input
                     v-model="discount"
                     inputmode="decimal"
                     placeholder="0.00"
                   />
                   <small class="muted">
-                    Subtracted from the item total (e.g. 5.00 saves $5).
+                    {{ t('expenses.discountHint') }}
                   </small>
                 </label>
               </div>
@@ -619,11 +619,11 @@ async function submit() {
             <!-- Itemized Total Breakdown -->
             <div v-else-if="itemized" class="purchase-total-breakdown">
               <div v-if="discountCents() > 0" class="subtotal-row">
-                <span>Items subtotal</span>
+                <span>{{ t('expenses.itemsSubtotal') }}</span>
                 <span>{{ money(itemsTotal(readLines()), form.currency) }}</span>
               </div>
               <div v-if="discountCents() > 0" class="discount-row">
-                <span>Receipt discount</span>
+                <span>{{ t('expenses.receiptDiscount') }}</span>
                 <span>-{{ money(discountCents(), form.currency) }}</span>
               </div>
               <div class="purchase-total">
@@ -640,28 +640,28 @@ async function submit() {
             <div v-if="receipt" class="receipt-review">
               <p v-if="receiptNote" class="small">{{ receiptNote }}</p>
               <p v-if="receipt.amount !== null">
-                Receipt total:
+                {{ t('expenses.receiptTotal') }}
                 <strong>{{ money(receipt.amount, form.currency) }}</strong>
               </p>
               <p v-if="totalMismatch" class="error-note">
-                Items do not match the receipt total. Check missing items or discount.
+                {{ t('expenses.itemsMismatch') }}
               </p>
               <p v-if="!receipt.date" class="small">
                 Date not detected — check the date above.
               </p>
               <label class="check">
                 <input v-model="reviewed" type="checkbox" />
-                I checked the shop, date, items and total
+                {{ t('expenses.checkItemsPrompt') }}
               </label>
             </div>
 
             <details>
-              <summary>Note</summary>
+              <summary>{{ t('expenses.notes') }}</summary>
               <textarea
                 v-model="form.note"
                 maxlength="500"
                 rows="2"
-                aria-label="Note"
+                :aria-label="t('expenses.notes')"
               />
             </details>
 
@@ -669,7 +669,7 @@ async function submit() {
 
             <div class="save-bar">
               <button class="primary wide" :disabled="busy">
-                {{ busy ? "Saving…" : expense ? "Save changes" : "Save expense" }}
+                {{ busy ? t('common.saving') : t('common.save') }}
               </button>
             </div>
           </form>
@@ -689,7 +689,7 @@ async function submit() {
                   @click="previewTab = 'image'"
                 >
                   <ImageIcon :size="15" />
-                  <span>Receipt Photo</span>
+                  <span>{{ t('expenses.photoTab') }}</span>
                 </button>
                 <button
                   type="button"
@@ -698,7 +698,7 @@ async function submit() {
                   @click="previewTab = 'transcript'"
                 >
                   <FileText :size="15" />
-                  <span>Text Transcript</span>
+                  <span>{{ t('expenses.transcriptTab') }}</span>
                 </button>
               </div>
 
@@ -707,11 +707,11 @@ async function submit() {
                   v-if="previewTab === 'image'"
                   type="button"
                   class="control-pill"
-                  :title="isZoomed ? 'Zoom out' : 'Zoom in'"
+                  :title="isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn')"
                   @click="isZoomed = !isZoomed"
                 >
                   <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{ isZoomed ? "Zoom out" : "Zoom in" }}</span>
+                  <span>{{ isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn') }}</span>
                 </button>
                 <button
                   v-if="previewTab === 'transcript'"
@@ -721,7 +721,7 @@ async function submit() {
                   @click="copyTranscript"
                 >
                   <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{ copySuccess ? "Copied!" : "Copy" }}</span>
+                  <span>{{ copySuccess ? t('expenses.copied') : t('expenses.copy') }}</span>
                 </button>
               </div>
             </div>
@@ -740,7 +740,7 @@ async function submit() {
                 :class="{ 'zoomed-img': isZoomed }"
               />
               <span class="preview-zoom-tip">
-                {{ isZoomed ? "Click to zoom out" : "Click image to zoom in" }}
+                {{ isZoomed ? t('expenses.clickZoomOut') : t('expenses.clickZoomIn') }}
               </span>
             </div>
 
@@ -765,9 +765,9 @@ async function submit() {
             <div class="placeholder-icon-wrap">
               <ScanLine :size="38" />
             </div>
-            <h3>Receipt & Transcript Preview</h3>
+            <h3>{{ t('expenses.receiptStagePrompt') }}</h3>
             <p>
-              Scan or upload a paper receipt to compare line items side-by-side with your form inputs.
+              {{ t('expenses.receiptStageDesc') }}
             </p>
             <button
               type="button"
@@ -775,7 +775,7 @@ async function submit() {
               @click="mode = 'receipt'"
             >
               <ScanLine :size="16" />
-              <span>Scan receipt now</span>
+              <span>{{ t('expenses.scanReceiptNow') }}</span>
             </button>
           </div>
         </aside>
@@ -793,7 +793,7 @@ async function submit() {
           <div class="drawer-handle" />
         </div>
         <div class="inline-modal-header">
-          <h3>Custom Categories</h3>
+          <h3>{{ t('categories.title') }}</h3>
           <button
             type="button"
             class="icon-button"
@@ -825,11 +825,14 @@ async function submit() {
   max-width: 100vw;
   height: 94dvh;
   max-height: 94dvh;
-  background: #ffffff;
-  border: 0;
-  border-radius: 24px 24px 0 0;
+  background: var(--glass-elevated-bg);
+  backdrop-filter: var(--glass-elevated-blur);
+  -webkit-backdrop-filter: var(--glass-elevated-blur);
+  border: var(--glass-elevated-border);
+  border-radius: 28px 28px 0 0;
+  color: inherit;
   padding: 0;
-  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  box-shadow: var(--glass-elevated-shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -837,8 +840,9 @@ async function submit() {
 }
 
 .expense-drawer-dialog::backdrop {
-  background: rgba(13, 36, 30, 0.55);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 24, 20, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 @keyframes slideUp {
@@ -860,7 +864,7 @@ async function submit() {
 .drawer-handle {
   width: 44px;
   height: 5px;
-  background: #d2ded7;
+  background: rgba(120, 150, 135, 0.45);
   border-radius: 10px;
 }
 
@@ -869,7 +873,7 @@ async function submit() {
   align-items: center;
   justify-content: space-between;
   padding: 8px 22px 14px;
-  border-bottom: 1px solid #edf2ef;
+  border-bottom: 1px solid var(--border);
 }
 
 .drawer-title-area {
@@ -890,19 +894,20 @@ async function submit() {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: #edf5ee;
-  border: 1px solid #b7ccbf;
+  background: var(--pill-bg);
+  border: var(--pill-border);
+  box-shadow: var(--pill-shadow);
   border-radius: 20px;
-  color: #1e5239;
+  color: var(--green);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
 
 .receipt-quick-pill.active {
-  background: #153d35;
+  background: var(--green);
   color: #ffffff;
-  border-color: #153d35;
+  border-color: var(--green);
 }
 
 .close-btn {
@@ -940,8 +945,10 @@ async function submit() {
 
 /* Mobile Quick Receipt Dock */
 .quick-receipt-dock {
-  background: #f4f8f5;
-  border: 1px solid #dbe6de;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-radius: 14px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -952,8 +959,8 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #eaf1ec;
-  border-bottom: 1px solid #dce7df;
+  background: var(--glass-card-bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .dock-tabs {
@@ -970,11 +977,11 @@ async function submit() {
   font-size: 12px;
   font-weight: 600;
   background: transparent;
-  color: #4b6058;
+  color: var(--muted);
 }
 
 .dock-tab.selected {
-  background: #153d35;
+  background: var(--green);
   color: #ffffff;
 }
 
@@ -992,9 +999,9 @@ async function submit() {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
-  background: #ffffff;
-  border: 1px solid #c9d8ce;
-  color: #274b3d;
+  background: var(--pill-bg);
+  border: var(--pill-border);
+  color: inherit;
   cursor: pointer;
 }
 
@@ -1018,7 +1025,7 @@ async function submit() {
   font-size: 11px;
   line-height: 1.4;
   white-space: pre-wrap;
-  color: #243d36;
+  color: inherit;
 }
 
 .dock-img-stage {
@@ -1061,7 +1068,7 @@ async function submit() {
 .account-group-label {
   font-size: 13px;
   font-weight: 600;
-  color: #2c4435;
+  color: inherit;
 }
 
 .account-toggle-grid {
@@ -1075,8 +1082,10 @@ async function submit() {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #f8faf8;
-  border: 1.5px solid #dce6df;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 12px;
   cursor: pointer;
   text-align: left;
@@ -1084,14 +1093,14 @@ async function submit() {
 }
 
 .account-toggle-card:hover {
-  background: #f0f6f2;
-  border-color: #b5cebf;
+  background: var(--pill-bg);
+  border-color: var(--accent);
 }
 
 .account-toggle-card.selected {
-  background: #eef6f0;
-  border-color: #1e5239;
-  box-shadow: 0 2px 8px rgba(30, 82, 57, 0.12);
+  background: rgba(42, 194, 148, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .account-toggle-icon {
@@ -1105,13 +1114,13 @@ async function submit() {
 }
 
 .global-icon {
-  background: #e6f0eb;
-  color: #153d35;
+  background: rgba(42, 194, 148, 0.15);
+  color: var(--accent);
 }
 
 .nz-icon {
-  background: #f5eedc;
-  color: #8c5b1b;
+  background: rgba(235, 198, 128, 0.2);
+  color: #c48c31;
 }
 
 .account-toggle-info {
@@ -1122,12 +1131,12 @@ async function submit() {
 
 .account-toggle-info strong {
   font-size: 13px;
-  color: #1c352b;
+  color: inherit;
 }
 
 .account-toggle-info small {
   font-size: 11px;
-  color: #63776d;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1138,14 +1147,12 @@ async function submit() {
   font-size: 11px;
   padding: 6px 10px;
   border-radius: 8px;
-  background: #f2f7f4;
-  color: #3f6050;
-  border-left: 3px solid #1e5239;
+  background: var(--surface);
+  color: var(--muted);
+  border-left: 3px solid var(--green);
 }
 
 .account-badge-hint.nz {
-  background: #faf4e8;
-  color: #7d5015;
   border-left-color: #c48c31;
 }
 
@@ -1165,8 +1172,8 @@ async function submit() {
 }
 
 .add-category-btn {
-  background: #f0f4f1;
-  border: 1px dashed #9cb5a6;
+  background: var(--surface);
+  border: 1px dashed var(--border);
   border-radius: 12px;
   padding: 9px 3px;
   min-height: 70px;
@@ -1176,12 +1183,15 @@ async function submit() {
   justify-content: center;
   gap: 5px;
   font-size: 11px;
-  color: #386450;
+  color: var(--muted);
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .add-category-btn:hover {
-  background: #e4eee7;
+  background: var(--pill-bg);
+  border-color: var(--accent);
+  color: inherit;
 }
 
 /* Discount Field & Total Breakdown */
@@ -1196,16 +1206,16 @@ async function submit() {
 
 .discount-field small {
   font-size: 11px;
-  color: #667871;
+  color: var(--muted);
 }
 
 .purchase-total-breakdown {
   display: grid;
   gap: 6px;
   padding: 12px 14px;
-  background: #f6faf7;
+  background: var(--surface);
   border-radius: 12px;
-  border: 1px solid #e1ebe3;
+  border: 1px solid var(--border);
 }
 
 .subtotal-row,
@@ -1213,11 +1223,11 @@ async function submit() {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #556c62;
+  color: var(--muted);
 }
 
 .discount-row {
-  color: #a03e30;
+  color: var(--danger);
   font-weight: 500;
 }
 
@@ -1225,7 +1235,9 @@ async function submit() {
 .inline-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 36, 30, 0.6);
+  background: rgba(10, 24, 20, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 1100;
   display: flex;
   align-items: flex-end;
@@ -1233,14 +1245,17 @@ async function submit() {
 }
 
 .inline-modal {
-  background: #ffffff;
-  border-radius: 24px 24px 0 0;
+  background: var(--glass-elevated-bg);
+  backdrop-filter: var(--glass-elevated-blur);
+  -webkit-backdrop-filter: var(--glass-elevated-blur);
+  border: var(--glass-elevated-border);
+  border-radius: 28px 28px 0 0;
   padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
   width: 100vw;
   max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  box-shadow: var(--glass-elevated-shadow);
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1283,11 +1298,13 @@ async function submit() {
     position: sticky;
     top: 0;
     max-height: calc(94dvh - 120px);
-    background: #f7faf8;
-    border: 1px solid #d8e5dc;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 4px 18px rgba(21, 61, 53, 0.05);
+    box-shadow: var(--glass-card-shadow);
   }
 
   .preview-stage-container {
@@ -1302,8 +1319,8 @@ async function submit() {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: #edf4ef;
-    border-bottom: 1px solid #dce8df;
+    background: var(--glass-card-bg);
+    border-bottom: 1px solid var(--border);
   }
 
   .preview-stage-tabs {
@@ -1320,13 +1337,13 @@ async function submit() {
     font-size: 13px;
     font-weight: 600;
     background: transparent;
-    color: #4a6356;
+    color: var(--muted);
     border: 0;
     cursor: pointer;
   }
 
   .preview-tab-btn.active {
-    background: #153d35;
+    background: var(--green);
     color: #ffffff;
   }
 
@@ -1343,14 +1360,14 @@ async function submit() {
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
-    background: #ffffff;
-    border: 1px solid #c9d8ce;
-    color: #274b3d;
+    background: var(--pill-bg);
+    border: var(--pill-border);
+    color: inherit;
     cursor: pointer;
   }
 
   .control-pill:hover {
-    background: #f0f7f2;
+    background: var(--surface);
   }
 
   .preview-image-scroll {
@@ -1363,7 +1380,7 @@ async function submit() {
     justify-content: center;
     position: relative;
     cursor: zoom-in;
-    background: #232c28;
+    background: #101915;
     min-height: 440px;
   }
 
@@ -1379,7 +1396,7 @@ async function submit() {
     max-height: calc(94dvh - 220px);
     object-fit: contain;
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
     transition: transform 0.2s ease;
   }
 
@@ -1406,7 +1423,7 @@ async function submit() {
     flex: 1;
     overflow-y: auto;
     padding: 18px;
-    background: #ffffff;
+    background: var(--surface);
     cursor: copy;
   }
 
@@ -1416,7 +1433,7 @@ async function submit() {
     font-size: 12px;
     line-height: 1.5;
     white-space: pre-wrap;
-    color: #203a30;
+    color: inherit;
   }
 
   .preview-placeholder-card {
@@ -1435,8 +1452,8 @@ async function submit() {
     width: 72px;
     height: 72px;
     border-radius: 20px;
-    background: #e7f2eb;
-    color: #1e5239;
+    background: rgba(42, 194, 148, 0.15);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1445,13 +1462,13 @@ async function submit() {
   .preview-placeholder-card h3 {
     margin: 0;
     font-size: 18px;
-    color: #1b3a2e;
+    color: inherit;
   }
 
   .preview-placeholder-card p {
     margin: 0;
     font-size: 13px;
-    color: #63786d;
+    color: var(--muted);
     max-width: 300px;
     line-height: 1.4;
   }

@@ -6,6 +6,7 @@ import { units, findProduct, suggestProducts } from "@/lib/products";
 import { lineTotal, validQuantity } from "@/lib/purchases";
 import { money, signedMoney } from "@/lib/finance";
 import PriceWarning from "@/components/products/PriceWarning.vue";
+import { t } from "@/lib/i18n";
 const props = defineProps<{
   item: ItemInput;
   index: number;
@@ -104,7 +105,7 @@ const parsed = computed<PurchaseItem | null>(() => {
       >
     </div>
     <label
-      >Price each · NZD<input
+      >{{ t('expenses.itemUnitPrice') }} · NZD<input
         :value="item.price"
         :aria-label="`Item ${index + 1} price`"
         inputmode="decimal"
@@ -113,7 +114,7 @@ const parsed = computed<PurchaseItem | null>(() => {
         @input="change('price', $event)"
     /></label>
     <label
-      >Quantity bought<input
+      >{{ t('products.qtyBought') }}<input
         :value="item.quantity"
         :aria-label="`Item ${index + 1} quantity`"
         inputmode="decimal"
@@ -121,7 +122,7 @@ const parsed = computed<PurchaseItem | null>(() => {
         @input="change('quantity', $event)"
     /></label>
     <label
-      >Size of one<input
+      >{{ t('products.sizeOne') }}<input
         :value="item.size ?? '1'"
         :aria-label="`Item ${index + 1} size`"
         inputmode="decimal"
@@ -129,7 +130,7 @@ const parsed = computed<PurchaseItem | null>(() => {
         @input="change('size', $event)"
     /></label>
     <label
-      >Measure<select
+      >{{ t('products.usualMeasure') }}<select
         :value="item.unit ?? 'each'"
         :aria-label="`Item ${index + 1} measure`"
         @change="change('unit', $event)"
@@ -140,7 +141,7 @@ const parsed = computed<PurchaseItem | null>(() => {
       </select></label
     >
     <label class="item-discount"
-      >Discount · NZD (optional)<input
+      >{{ t('expenses.itemDiscount') }} · NZD<input
         :value="item.discount ?? ''"
         :aria-label="`Item ${index + 1} discount`"
         inputmode="decimal"

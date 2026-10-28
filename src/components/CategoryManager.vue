@@ -44,6 +44,7 @@ import {
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import type { CategoryDefinition } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import { t, categoryLabel } from "@/lib/i18n";
 
 const emit = defineEmits<{
   close: [];
@@ -215,9 +216,9 @@ async function remove(id: string) {
   <div class="category-manager">
     <div class="manager-header">
       <div>
-        <h3>Manage Categories</h3>
+        <h3>{{ t('categories.managerTitle') }}</h3>
         <p class="small muted">
-          Personalize categories with custom icons and colors.
+          {{ t('categories.subtitle') }}
         </p>
       </div>
       <button
@@ -226,17 +227,17 @@ async function remove(id: string) {
         type="button"
         @click="startNew"
       >
-        <Plus :size="16" />New category
+        <Plus :size="16" />{{ t('categories.newCategory') }}
       </button>
     </div>
 
     <!-- Category Editor Form -->
     <div v-if="showEditor" class="category-editor-panel">
-      <h4>{{ editing ? "Edit category" : "New category" }}</h4>
+      <h4>{{ editing ? t('categories.editCategory') : t('categories.newCategory') }}</h4>
 
       <form @submit.prevent="save">
         <label>
-          Category name
+          {{ t('categories.categoryName') }}
           <input
             v-model="name"
             maxlength="50"
@@ -248,7 +249,7 @@ async function remove(id: string) {
 
         <!-- Live Preview -->
         <div class="category-preview-bar">
-          <span class="preview-label">Live Preview:</span>
+          <span class="preview-label">{{ t('categories.previewLabel') }}</span>
           <div class="preview-badge" :style="previewStyle">
             <CategoryIcon :category="name || 'Category'" :size="18" />
             <span>{{ name || "Category name" }}</span>
@@ -257,7 +258,7 @@ async function remove(id: string) {
 
         <!-- Icon Picker -->
         <fieldset class="icon-picker">
-          <legend>Choose Icon</legend>
+          <legend>{{ t('categories.chooseIcon') }}</legend>
           <div class="icon-grid">
             <button
               v-for="icon in availableIcons"
@@ -276,7 +277,7 @@ async function remove(id: string) {
 
         <!-- Color Picker -->
         <fieldset class="color-picker">
-          <legend>Choose Colour</legend>
+          <legend>{{ t('categories.chooseColor') }}</legend>
           <div class="color-swatches">
             <button
               v-for="color in curatedColors"
@@ -291,7 +292,7 @@ async function remove(id: string) {
               <Check v-if="selectedColor === color" :size="14" class="check-icon" />
             </button>
             <label class="custom-color-picker" title="Pick custom color">
-              <span class="sr-only">Custom colour</span>
+              <span class="sr-only">{{ t('categories.customColour') }}</span>
               <input
                 type="color"
                 :value="customColor"
@@ -306,10 +307,10 @@ async function remove(id: string) {
 
         <div class="entry-actions">
           <button class="primary" :disabled="busy || !name.trim()">
-            {{ busy ? "Saving…" : "Save category" }}
+            {{ busy ? t('common.saving') : t('categories.saveCategory') }}
           </button>
           <button type="button" class="secondary" @click="cancelEdit">
-            Cancel
+            {{ t('common.cancel') }}
           </button>
         </div>
       </form>
@@ -326,9 +327,9 @@ async function remove(id: string) {
         <div class="cat-info">
           <CategoryIcon :category="cat.name" :size="20" />
           <div class="cat-details">
-            <strong>{{ cat.name }}</strong>
-            <span v-if="cat.isDefault" class="badge muted-badge">Preset</span>
-            <span v-else class="badge custom-badge">Custom</span>
+            <strong>{{ cat.isDefault ? categoryLabel(cat.name) : cat.name }}</strong>
+            <span v-if="cat.isDefault" class="badge muted-badge">{{ t('categories.preset') }}</span>
+            <span v-else class="badge custom-badge">{{ t('categories.custom') }}</span>
           </div>
         </div>
 
@@ -354,11 +355,11 @@ async function remove(id: string) {
         <!-- Inline delete confirmation -->
         <div v-if="removingId === cat.id" class="inline-confirm full-width">
           <p class="small">
-            Delete "{{ cat.name }}"? Past expenses with this category will stay intact.
+            {{ t('categories.confirmDelete', { name: cat.name }) }}
           </p>
           <div class="confirm-actions">
             <button class="secondary compact-btn" type="button" @click="removingId = ''">
-              Cancel
+              {{ t('common.cancel') }}
             </button>
             <button
               class="secondary danger compact-btn"
@@ -366,7 +367,7 @@ async function remove(id: string) {
               :disabled="busy"
               @click="remove(cat.id)"
             >
-              Delete
+              {{ t('common.delete') }}
             </button>
           </div>
         </div>

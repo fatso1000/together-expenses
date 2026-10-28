@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import { useRegisterSW } from "virtual:pwa-register/vue";
 import {
@@ -13,6 +13,7 @@ import {
   X,
   Languages,
   Moon,
+  Sun,
 } from "lucide-vue-next";
 import ExpenseForm from "@/components/ExpenseForm.vue";
 import { useExpenses } from "@/stores/expenses";
@@ -21,6 +22,44 @@ import { useI18n } from "@/lib/i18n";
 const store = useExpenses();
 const route = useRoute();
 const { locale, t, toggleLocale } = useI18n();
+
+const isDark = ref(false);
+
+function applyTheme(dark: boolean) {
+  isDark.value = dark;
+  const theme = dark ? "dark" : "light";
+  try {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("expenses-theme", theme);
+    }
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  } catch {}
+}
+
+function onThemeToggle() {
+  const next = !isDark.value;
+  applyTheme(next);
+  store.message = next ? t("common.darkModeActive") : t("common.lightModeActive");
+}
+
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem("expenses-theme");
+    if (
+      saved === "dark" ||
+      (!saved &&
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+    ) {
+      applyTheme(true);
+    } else {
+      applyTheme(false);
+    }
+  } catch {}
+});
 
 const navigation = computed(() => [
   { path: "/", label: t("nav.overview"), icon: LayoutDashboard },
@@ -42,10 +81,6 @@ function onToggleLocale() {
   store.message = t("common.languageChanged");
 }
 
-function onDarkModeClick() {
-  store.message = t("common.darkModeComingSoon");
-}
-
 const { needRefresh, updateServiceWorker } = useRegisterSW();
 watch(
   () => store.message,
@@ -60,6 +95,14 @@ watch(
 </script>
 <template>
   <div class="app-layout">
+    <!-- Ambient Fluid Canvas Orbs (Liquid Light Layer) -->
+    <div class="ambient-fluid-mesh" aria-hidden="true">
+      <div class="fluid-orb orb-1" />
+      <div class="fluid-orb orb-2" />
+      <div class="fluid-orb orb-3" />
+      <div class="fluid-orb orb-4" />
+    </div>
+
     <aside class="sidebar">
       <RouterLink class="brand" to="/">{{ t('nav.brand') }}</RouterLink>
       <nav aria-label="Main navigation">
@@ -91,12 +134,12 @@ watch(
 
           <button
             type="button"
-            class="quick-action-pill theme-placeholder-btn"
-            :title="t('common.darkModeComingSoon')"
-            :aria-label="t('common.darkModeComingSoon')"
-            @click="onDarkModeClick"
+            class="quick-action-pill theme-toggle-btn"
+            :title="t('common.toggleTheme')"
+            :aria-label="t('common.toggleTheme')"
+            @click="onThemeToggle"
           >
-            <Moon :size="15" />
+            <component :is="isDark ? Sun : Moon" :size="15" />
           </button>
 
           <button class="primary add-expense" @click="store.openExpense()">

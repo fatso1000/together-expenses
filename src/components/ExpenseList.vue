@@ -8,7 +8,7 @@ import { useExpenses, friendlyError } from "@/stores/expenses";
 import { useI18n } from "@/lib/i18n";
 defineProps<{ expenses: Expense[]; compact?: boolean }>();
 const store = useExpenses();
-const { locale, t } = useI18n();
+const { locale, t, categoryLabel } = useI18n();
 const deleting = shallowRef("");
 const average = computed(() =>
   store.monthExpenses.length
@@ -51,8 +51,8 @@ function dateLabel(date: string) {
   <div v-if="!expenses.length" class="empty-state">
     <Receipt :size="32" />
     <h3>{{ t('expenses.noExpensesFound') }}</h3>
-    <p>Add your first expense or choose another period.</p>
-    <button class="secondary" @click="store.openExpense()">Add expense</button>
+    <p>{{ t('expenses.emptyHint') }}</p>
+    <button class="secondary" @click="store.openExpense()">{{ t('common.addExpense') }}</button>
   </div>
   <ul v-else class="expense-list">
     <li v-for="expense in expenses" :key="expense.id">
@@ -71,10 +71,9 @@ function dateLabel(date: string) {
           </button>
         </div>
         <span
-          >{{ expense.category }} <span aria-hidden="true">·</span>
+          >{{ categoryLabel(expense.category) }} <span aria-hidden="true">·</span>
           <template v-if="expense.items?.length"
-            >{{ expense.items.length }}
-            {{ expense.items.length === 1 ? "item" : "items" }} ·
+            >{{ expense.items.length === 1 ? t('expenses.singleItem') : t('expenses.multipleItems', { count: expense.items.length }) }} ·
           </template>
           {{ dateLabel(expense.date)
           }}<template v-if="expense.note && !compact"

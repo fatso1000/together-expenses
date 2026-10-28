@@ -171,7 +171,7 @@ async function scan() {
         /></label>
       </div>
       <button type="button" :disabled="busy" @click="scan">
-        Read selected area
+        {{ t('receipt.readArea') }}
       </button>
     </div>
     <p class="small muted">
@@ -181,7 +181,7 @@ async function scan() {
     <p v-if="busy" role="status">
       {{ status }}
       <button type="button" class="text-button" @click="controller?.abort()">
-        Cancel
+        {{ t('common.cancel') }}
       </button>
     </p>
     <p v-if="failure" role="alert" class="error-note">{{ failure }}</p>

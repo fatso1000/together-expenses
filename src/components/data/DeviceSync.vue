@@ -4,6 +4,7 @@ import { Cloud, Link, Copy } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { validSyncKey } from "@/lib/encryption";
 import { downloadFile, today } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 const store = useExpenses();
 const connection = shallowRef("");
 const failure = shallowRef("");
@@ -41,7 +42,7 @@ async function connect() {
 async function copy() {
   try {
     await navigator.clipboard.writeText(privateLink.value);
-    store.message = "Private link copied";
+    store.message = t("sync.linkCopied");
   } catch {
     showLink.value = true;
   }
@@ -54,18 +55,17 @@ function exportPrevious() {
 </script>
 <template>
   <section class="panel device-sync">
-    <h2><Cloud :size="20" />Devices</h2>
+    <h2><Cloud :size="20" />{{ t('sync.title') }}</h2>
     <p role="status">{{ store.syncStatus }}</p>
     <template v-if="store.syncConnected">
       <button class="secondary" @click="copy">
-        <Copy :size="18" />Copy connection link
+        <Copy :size="18" />{{ t('sync.copyLink') }}
       </button>
       <p class="small muted">
-        Open this private link on your other devices. Anyone with the link can
-        read and change this database.
+        {{ t('sync.linkNotice') }}
       </p>
       <label v-if="showLink"
-        >Private connection link<input :value="privateLink" readonly
+        >{{ t('sync.privateLink') }}<input :value="privateLink" readonly
       /></label>
     </template>
     <button v-else class="primary" :disabled="store.syncBusy" @click="create">
@@ -78,9 +78,9 @@ function exportPrevious() {
       }}
     </button>
     <details :open="!!store.pendingConnection">
-      <summary><Link :size="16" />Connect to an existing database</summary>
+      <summary><Link :size="16" />{{ t('sync.connectExisting') }}</summary>
       <label v-if="!store.pendingConnection"
-        >Private connection link<input
+        >{{ t('sync.privateLink') }}<input
           v-model="connection"
           type="text"
           autocomplete="off"
@@ -91,21 +91,20 @@ function exportPrevious() {
         as a local recovery backup; records are not automatically merged.
       </p>
       <label class="check"
-        ><input v-model="acknowledged" type="checkbox" />Use the connected
-        database on this device</label
+        ><input v-model="acknowledged" type="checkbox" />{{ t('sync.useConnected') }}</label
       >
       <button
         class="primary"
         :disabled="!acknowledged || store.syncBusy"
         @click="connect"
       >
-        Connect device
+        {{ t('sync.connectDevice') }}
       </button>
     </details>
     <details>
-      <summary>Recovery backup</summary>
+      <summary>{{ t('sync.recoveryBackup') }}</summary>
       <button class="secondary" @click="exportPrevious">
-        Export data from before connecting
+        {{ t('sync.exportBeforeConnect') }}
       </button>
     </details>
     <p v-if="failure" class="error-note" role="alert">{{ failure }}</p>

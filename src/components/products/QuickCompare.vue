@@ -17,6 +17,7 @@ import { validQuantity, lineTotal } from "@/lib/purchases";
 import { money } from "@/lib/finance";
 import PurchaseItemRow from "@/components/products/PurchaseItemRow.vue";
 import LivePriceCamera from "@/components/products/LivePriceCamera.vue";
+import { t } from "@/lib/i18n";
 const emit = defineEmits<{ close: [] }>();
 const store = useExpenses();
 const dialog = useTemplateRef<HTMLDialogElement>("dialog");
@@ -190,7 +191,7 @@ function reset() {
       <div class="drawer-handle" />
     </div>
     <div class="section-heading">
-      <h2>Check a price</h2>
+      <h2>{{ t('products.checkPrice') }}</h2>
       <button
         class="icon-button"
         aria-label="Close price comparison"
@@ -297,11 +298,11 @@ function reset() {
       :disabled="busy || store.syncBusy"
       @click="addProduct"
     >
-      Add product to database
+      {{ t('products.addProduct') }}
     </button>
     <p v-if="!busy && status" class="small" role="status">{{ status }}</p>
     <details v-if="recognized">
-      <summary>Read text</summary>
+      <summary>{{ t('products.readText') }}</summary>
       <pre>{{ recognized }}</pre>
     </details>
   </dialog>

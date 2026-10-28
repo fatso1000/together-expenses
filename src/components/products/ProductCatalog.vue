@@ -14,6 +14,7 @@ import {
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import type { Product, Unit } from "@/lib/types";
 import { units, productId, normalizeName } from "@/lib/products";
+import { t } from "@/lib/i18n";
 import QuickCompare from "@/components/products/QuickCompare.vue";
 import ProductPrices from "@/components/products/ProductPrices.vue";
 
@@ -109,9 +110,9 @@ async function merge() {
       </div>
       <div class="header-actions">
         <button class="secondary compact-btn" @click="add">
-          <Plus :size="16" />New Product
+          <Plus :size="16" />{{ t('products.newProduct') }}
         </button>
-        <RouterLink class="text-button" to="/shops">Manage shops</RouterLink>
+        <RouterLink class="text-button" to="/shops">{{ t('products.manageShops') }}</RouterLink>
       </div>
     </div>
 
@@ -122,7 +123,7 @@ async function merge() {
         <input
           v-model="query"
           type="search"
-          placeholder="Search product by name or receipt label…"
+          :placeholder="t('products.searchPlaceholder')"
           class="compact-search-input"
         />
         <button
@@ -144,7 +145,7 @@ async function merge() {
           :class="{ selected: selectedUnit === 'all' }"
           @click="selectedUnit = 'all'"
         >
-          All
+          {{ t('common.all') }}
         </button>
         <button
           v-for="u in units.slice(0, 5)"
@@ -161,7 +162,7 @@ async function merge() {
       <!-- Live Count Status -->
       <div class="search-status-bar">
         <span class="small muted">
-          Showing {{ filtered.length }} of {{ store.products.length }} products
+          {{ t('products.showingCount', { count: filtered.length, total: store.products.length }) }}
         </span>
       </div>
     </div>
@@ -169,13 +170,13 @@ async function merge() {
 
   <!-- Product Edit/New Form Modal or Drawer -->
   <form v-if="editing" class="panel edit-product-form" @submit.prevent="save">
-    <h3>{{ editing.id ? "Edit product" : "New product" }}</h3>
+    <h3>{{ editing.id ? t('products.editProduct') : t('products.newProduct') }}</h3>
     <label>
-      Product name
+      {{ t('products.productName') }}
       <input v-model="editing.title" maxlength="100" required autofocus />
     </label>
     <label>
-      Usual measure
+      {{ t('products.usualMeasure') }}
       <select v-model="editing.unit">
         <option v-for="unit in units" :key="unit.value" :value="unit.value">
           {{ unit.label }}
@@ -183,18 +184,18 @@ async function merge() {
       </select>
     </label>
     <div class="entry-actions">
-      <button class="primary" :disabled="busy">Save product</button>
+      <button class="primary" :disabled="busy">{{ t('products.saveProduct') }}</button>
       <button type="button" class="secondary" @click="editing = null">
-        Cancel
+        {{ t('common.cancel') }}
       </button>
     </div>
 
     <details v-if="store.products.some((product) => product.id === editing?.id)">
-      <summary>Merge a duplicate</summary>
+      <summary>{{ t('products.mergeDuplicate') }}</summary>
       <label>
-        Keep this existing product
+        {{ t('products.keepExisting') }}
         <select v-model="merging">
-          <option value="">Choose product</option>
+          <option value="">{{ t('products.chooseProduct') }}</option>
           <option
             v-for="product in store.products.filter(
               (product) => product.id !== editing?.id,
@@ -215,7 +216,7 @@ async function merge() {
         :disabled="!merging || busy"
         @click="merge"
       >
-        Merge products
+        {{ t('products.mergeProducts') }}
       </button>
     </details>
   </form>
@@ -255,7 +256,7 @@ async function merge() {
               type="button"
               @click="expanded = expanded === product.id ? '' : product.id"
             >
-              {{ expanded === product.id ? "Hide prices" : "Prices" }}
+              {{ expanded === product.id ? t('products.hidePrices') : t('products.showPrices') }}
               <component
                 :is="expanded === product.id ? ChevronUp : ChevronDown"
                 :size="14"
@@ -282,9 +283,9 @@ async function merge() {
 
         <!-- Inline Delete Confirmation -->
         <div v-if="removing === product.id" class="inline-confirm compact-confirm">
-          <p class="small">Remove from saved products? Past purchases remain.</p>
+          <p class="small">{{ t('products.confirmDeleteProduct', { name: product.title }) }}</p>
           <div class="confirm-btns">
-            <button class="secondary compact-btn" @click="removing = ''">Cancel</button>
+            <button class="secondary compact-btn" @click="removing = ''">{{ t('common.cancel') }}</button>
             <button
               class="secondary danger compact-btn"
               :disabled="busy"
@@ -295,7 +296,7 @@ async function merge() {
                 })
               "
             >
-              Remove
+              {{ t('common.delete') }}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { Plus } from "lucide-vue-next";
 import type { ItemInput, Product, Expense } from "@/lib/types";
 import { priceHistory } from "@/lib/products";
 import PurchaseItemRow from "@/components/products/PurchaseItemRow.vue";
+import { t } from "@/lib/i18n";
 const props = defineProps<{
   items: ItemInput[];
   products: Product[];
@@ -54,8 +55,8 @@ function useSaved() {
   <div class="items-editor">
     <div v-if="products.length" class="saved-picker">
       <label
-        >Saved product<select v-model="selected">
-          <option value="">Choose a product</option>
+        >{{ t('products.savedProduct') }}<select v-model="selected">
+          <option value="">{{ t('products.chooseProduct') }}</option>
           <option
             v-for="product in products"
             :key="product.id"
@@ -71,7 +72,7 @@ function useSaved() {
         :disabled="!selected || items.length >= 200"
         @click="useSaved"
       >
-        <Plus :size="18" />Add
+        <Plus :size="18" />{{ t('common.add') }}
       </button>
     </div>
     <PurchaseItemRow
@@ -91,7 +92,7 @@ function useSaved() {
       :disabled="items.length >= 200"
       @click="add()"
     >
-      <Plus :size="18" />Add item
+      <Plus :size="18" />{{ t('expenses.addItem') }}
     </button>
   </div>
 </template>

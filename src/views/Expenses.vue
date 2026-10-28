@@ -184,10 +184,10 @@ function exportCsv() {
       </label>
 
       <label class="sort-select-label">
-        <span class="sr-only">Sort by</span>
+        <span class="sr-only">{{ t('expenses.sortBy') }}</span>
         <div class="select-with-icon">
           <ArrowUpDown :size="16" class="select-icon" />
-          <select v-model="sortBy" aria-label="Sort expenses">
+          <select v-model="sortBy" :aria-label="t('expenses.sortBy')">
             <option value="date-desc">{{ t('expenses.sortNewest') }}</option>
             <option value="date-asc">{{ t('expenses.sortOldest') }}</option>
             <option value="amount-desc">{{ t('expenses.sortHighest') }}</option>

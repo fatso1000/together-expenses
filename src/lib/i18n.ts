@@ -89,10 +89,18 @@ export function toggleLocale(): Locale {
   return next;
 }
 
+export function categoryLabel(category: string): string {
+  if (!category) return "";
+  const key = `categories_list.${category}`;
+  const translated = t(key);
+  return translated !== key ? translated : category;
+}
+
 export function useI18n() {
   return {
     locale: currentLocale,
     t,
+    categoryLabel,
     setLocale,
     toggleLocale,
   };
@@ -101,6 +109,7 @@ export function useI18n() {
 export const i18nPlugin = {
   install(app: App) {
     app.config.globalProperties.$t = t;
+    app.config.globalProperties.$cat = categoryLabel;
     app.config.globalProperties.$locale = currentLocale;
   },
 };

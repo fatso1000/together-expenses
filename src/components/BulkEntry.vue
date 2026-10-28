@@ -5,6 +5,7 @@ import { categories, type Currency, type ExpenseDraft, type AccountId } from "@/
 import { parseBulk } from "@/lib/bulk";
 import { money, today } from "@/lib/finance";
 import { useExpenses, friendlyError } from "@/stores/expenses";
+import { t, categoryLabel } from "@/lib/i18n";
 const emit = defineEmits<{ close: [] }>();
 const store = useExpenses();
 const dialog = useTemplateRef<HTMLDialogElement>("dialog");
@@ -51,7 +52,7 @@ async function submit() {
       <div class="drawer-handle" />
     </div>
     <div class="section-heading">
-      <h2><ClipboardList :size="20" />Add several expenses</h2>
+      <h2><ClipboardList :size="20" />{{ t('bulk.title') }}</h2>
       <button
         class="icon-button"
         aria-label="Close bulk entry"
@@ -63,14 +64,14 @@ async function submit() {
     </div>
     <template v-if="!rows.length">
       <label>
-        Paid From Account
+        {{ t('bulk.paidFrom') }}
         <select v-model="accountId" :disabled="busy">
-          <option value="global">Global Account (Everyday)</option>
-          <option value="nz">NZ Account (Savings · e.g. petrol, rent)</option>
+          <option value="global">{{ t('bulk.globalAccount') }}</option>
+          <option value="nz">{{ t('bulk.nzAccount') }}</option>
         </select>
       </label>
       <label
-        >One expense per line<textarea
+        >{{ t('bulk.onePerLine') }}<textarea
           v-model="text"
           rows="7"
           :placeholder="`${today()} | New World | 32.50 | Groceries\n${today()} | Petrol station | 60 | Petrol`"
@@ -81,11 +82,11 @@ async function submit() {
         columns also works.
       </p>
       <details>
-        <summary>Categories</summary>
-        <p>{{ categories.join(", ") }}</p>
+        <summary>{{ t('categories.title') }}</summary>
+        <p>{{ categories.map(c => categoryLabel(c)).join(", ") }}</p>
       </details>
       <button class="primary wide" @click="preview">
-        Preview expenses
+        {{ t('bulk.previewExpenses') }}
       </button></template
     >
     <template v-else
@@ -93,23 +94,22 @@ async function submit() {
         <div v-for="(row, index) in rows" :key="index">
           <span
             >{{ row.date }} · {{ row.merchant
-            }}<small>{{ row.category }}</small></span
+            }}<small>{{ categoryLabel(row.category) }}</small></span
           ><strong>{{ money(row.amount, row.currency) }}</strong>
         </div>
       </div>
       <div class="purchase-total">
-        <span>{{ rows.length }} expenses</span
-        ><strong>{{ money(sum, currency) }}</strong>
+        <span>{{ rows.length }} {{ t('nav.expenses').toLowerCase() }}</span>
+        <strong>{{ money(sum, currency) }}</strong>
       </div>
       <label class="check"
-        ><input v-model="confirmed" type="checkbox" />I checked these rows,
-        including possible duplicates</label
+        ><input v-model="confirmed" type="checkbox" />{{ t('common.confirm') }}</label
       >
       <div class="entry-actions">
         <button class="secondary" :disabled="busy" @click="rows = []">
-          Edit rows</button
+          {{ t('common.edit') }}</button
         ><button class="primary" :disabled="busy || !confirmed" @click="submit">
-          {{ busy ? "Saving…" : "Save all" }}
+          {{ busy ? t('common.saving') : t('bulk.saveAll') }}
         </button>
       </div></template
     >

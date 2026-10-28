@@ -17,6 +17,7 @@ import {
 } from "lucide-vue-next";
 import { useExpenses } from "@/stores/expenses";
 import { total, money, csv, downloadFile, compareSpendWithInitial } from "@/lib/finance";
+import { t } from "@/lib/i18n";
 import CategoryDonutChart from "@/components/reports/CategoryDonutChart.vue";
 import SpendTrajectoryChart from "@/components/reports/SpendTrajectoryChart.vue";
 import BudgetVarianceChart from "@/components/reports/BudgetVarianceChart.vue";
@@ -142,17 +143,7 @@ function exportCsv() {
         :class="{ selected: mode === period }"
         @click="mode = period"
       >
-        {{
-          period === "week"
-            ? "Weekly"
-            : period === "month"
-              ? "Monthly"
-              : period === "year"
-                ? "Yearly"
-                : period === "all"
-                  ? "All Time"
-                  : "Custom dates"
-        }}
+        {{ t(`reports.periods.${period}`) }}
       </button>
     </div>
 
@@ -160,7 +151,7 @@ function exportCsv() {
     <div v-if="mode === 'week'" class="week-filter-details">
       <label class="week-input-label">
         <Calendar :size="15" />
-        <span>Week containing:</span>
+        <span>{{ t('reports.weekContaining') }}</span>
         <input v-model="store.weekDate" type="date" required />
       </label>
       <span class="small muted">
@@ -169,12 +160,12 @@ function exportCsv() {
     </div>
 
     <div v-if="mode === 'custom'" class="form-pair">
-      <label>From<input v-model="from" type="date" /></label>
-      <label>To<input v-model="to" type="date" :min="from" /></label>
+      <label>{{ t('reports.from') }}<input v-model="from" type="date" /></label>
+      <label>{{ t('reports.to') }}<input v-model="to" type="date" :min="from" /></label>
     </div>
 
     <button class="secondary export-btn" @click="exportCsv">
-      <Download :size="16" />Export report
+      <Download :size="16" />{{ t('reports.exportReport') }}
     </button>
   </section>
 
@@ -184,9 +175,9 @@ function exportCsv() {
       <div class="heading-with-icon">
         <Wallet :size="20" class="hub-icon" />
         <div>
-          <h2>Initial Global Capital Comparison</h2>
+          <h2>{{ t('reports.initialCapitalHub') }}</h2>
           <p class="small muted">
-            Starting money: {{ store.displayMoney(initialGlobalNZD) }}
+            {{ t('reports.startingMoney', { amount: store.displayMoney(initialGlobalNZD) }) }}
             <template v-if="initialGlobalUSD">
               (${{ (initialGlobalUSD / 100).toFixed(2) }} USD)
             </template>
@@ -202,19 +193,19 @@ function exportCsv() {
         :class="{ 'card-over': periodBaselineComparison.isOverInitial, 'card-under': !periodBaselineComparison.isOverInitial }"
       >
         <div class="comp-header">
-          <span class="small font-medium">Selected Period vs Initial Funds</span>
+          <span class="small font-medium">{{ t('reports.selectedVsInitial') }}</span>
           <span class="comp-badge">
-            {{ Math.round(periodBaselineComparison.spentPercent) }}% of starting money
+            {{ t('reports.percentOfStarting', { percent: Math.round(periodBaselineComparison.spentPercent) }) }}
           </span>
         </div>
         <div class="comp-body">
-          <strong class="comp-number">{{ store.displayMoney(sum) }} spent</strong>
+          <strong class="comp-number">{{ t('reports.spent', { amount: store.displayMoney(sum) }) }}</strong>
           <p class="small">
             <template v-if="!periodBaselineComparison.isOverInitial">
-              Spent less than starting funds · {{ store.displayMoney(periodBaselineComparison.remaining) }} remaining runway
+              {{ t('reports.spentLessThanStarting', { remaining: store.displayMoney(periodBaselineComparison.remaining) }) }}
             </template>
             <template v-else>
-              Exceeded starting funds by {{ store.displayMoney(periodBaselineComparison.difference) }}
+              {{ t('reports.exceededStarting', { difference: store.displayMoney(periodBaselineComparison.difference) }) }}
             </template>
           </p>
         </div>
@@ -226,19 +217,19 @@ function exportCsv() {
         :class="{ 'card-over': allTimeBaselineComparison.isOverInitial, 'card-under': !allTimeBaselineComparison.isOverInitial }"
       >
         <div class="comp-header">
-          <span class="small font-medium">All-Time Spend vs Initial Funds</span>
+          <span class="small font-medium">{{ t('reports.allTimeVsInitial') }}</span>
           <span class="comp-badge">
             {{ Math.round(allTimeBaselineComparison.spentPercent) }}% all-time
           </span>
         </div>
         <div class="comp-body">
-          <strong class="comp-number">{{ store.displayMoney(store.allTimeTotal) }} spent</strong>
+          <strong class="comp-number">{{ t('reports.spent', { amount: store.displayMoney(store.allTimeTotal) }) }}</strong>
           <p class="small">
             <template v-if="!allTimeBaselineComparison.isOverInitial">
-              Total spent is LESS than initial global money ({{ store.displayMoney(allTimeBaselineComparison.remaining) }} balance)
+              {{ t('reports.preservedCapital', { amount: store.displayMoney(allTimeBaselineComparison.remaining) }) }}
             </template>
             <template v-else>
-              Total spent is MORE than initial global money (+{{ store.displayMoney(allTimeBaselineComparison.difference) }})
+              {{ t('reports.capitalDepleted', { amount: store.displayMoney(allTimeBaselineComparison.difference) }) }}
             </template>
           </p>
         </div>
@@ -249,19 +240,19 @@ function exportCsv() {
   <!-- Executive Summary Stats -->
   <div class="report-stats">
     <article class="panel">
-      <span class="muted">Total spending</span>
+      <span class="muted">{{ t('reports.totalSpent') }}</span>
       <strong>{{ store.displayMoney(sum) }}</strong>
-      <small>{{ rows.length }} recorded expenses</small>
+      <small>{{ rows.length }} {{ t('reports.transactions') }}</small>
     </article>
     <article class="panel">
-      <span class="muted">Average expense</span>
+      <span class="muted">{{ t('reports.averageTransaction') }}</span>
       <strong>{{ store.displayMoney(average) }}</strong>
-      <small>Per transaction</small>
+      <small>{{ t('reports.summaryMetrics') }}</small>
     </article>
     <article class="panel">
-      <span class="muted">Largest expense</span>
+      <span class="muted">{{ t('reports.largestTransaction') }}</span>
       <strong>{{ store.displayMoney(largest?.amount ?? 0) }}</strong>
-      <small>{{ largest?.merchant ?? "No expenses in this period" }}</small>
+      <small>{{ largest ? `${largest.merchant} (${store.displayMoney(largest.amount)})` : '-' }}</small>
     </article>
   </div>
 
@@ -271,8 +262,8 @@ function exportCsv() {
       <div class="heading-with-icon">
         <LineChart :size="18" />
         <div>
-          <h2>Spending Progression & Trajectory</h2>
-          <p class="small muted">Daily transaction amounts and cumulative spending trend</p>
+          <h2>{{ t('reports.spendTrajectoryTitle') }}</h2>
+          <p class="small muted">{{ t('reports.spendTrajectoryDesc') }}</p>
         </div>
       </div>
     </div>
@@ -285,8 +276,8 @@ function exportCsv() {
       <div class="heading-with-icon">
         <PieChart :size="18" />
         <div>
-          <h2>Category Distribution</h2>
-          <p class="small muted">Proportionate breakdown across expense buckets</p>
+          <h2>{{ t('reports.categoryBreakdownTitle') }}</h2>
+          <p class="small muted">{{ t('reports.categoryBreakdownDesc') }}</p>
         </div>
       </div>
     </div>
@@ -299,8 +290,8 @@ function exportCsv() {
       <div class="heading-with-icon">
         <Layers :size="18" />
         <div>
-          <h2>Budget vs. Actual Variance</h2>
-          <p class="small muted">Comparing allocated category limits against actual spend</p>
+          <h2>{{ t('reports.budgetVarianceTitle') }}</h2>
+          <p class="small muted">{{ t('reports.budgetVarianceDesc') }}</p>
         </div>
       </div>
     </div>
@@ -317,8 +308,8 @@ function exportCsv() {
       <div class="heading-with-icon">
         <ArrowRightLeft :size="18" />
         <div>
-          <h2>Account Cashflow & Net Position</h2>
-          <p class="small muted">Global Account everyday outflows vs NZ Account salary savings</p>
+          <h2>{{ t('reports.cashflowTitle') }}</h2>
+          <p class="small muted">{{ t('reports.cashflowDesc') }}</p>
         </div>
       </div>
     </div>

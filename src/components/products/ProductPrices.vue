@@ -3,6 +3,7 @@ import { computed, shallowRef } from "vue";
 import type { Product, Expense } from "@/lib/types";
 import { priceHistory } from "@/lib/products";
 import { useExpenses } from "@/stores/expenses";
+import { t } from "@/lib/i18n";
 const store = useExpenses();
 const props = defineProps<{
   product: Product;
@@ -41,7 +42,7 @@ const groups = computed(() => {
 <template>
   <div class="product-prices">
     <label
-      >Compare with a similar product<select v-model="compareId">
+      >{{ t('products.compareSimilar') }}<select v-model="compareId">
         <option value="">Only {{ product.title }}</option>
         <option
           v-for="other in products.filter((value) => value.id !== product.id)"
@@ -58,14 +59,14 @@ const groups = computed(() => {
     <section v-for="group in groups" :key="group.family" class="price-group">
       <div class="price-range">
         <span
-          >Lowest
+          >{{ t('products.lowest') }}
           <strong
             >{{ store.displayMoney(Math.round(group.lowest)) }}/{{
               group.label
             }}</strong
           ></span
         ><span
-          >Highest
+          >{{ t('products.highest') }}
           <strong
             >{{ store.displayMoney(Math.round(group.highest)) }}/{{
               group.label

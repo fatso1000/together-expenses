@@ -21,7 +21,7 @@ import {
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, parseOptionalMoney, today } from "@/lib/finance";
-import { t } from "@/lib/i18n";
+import { t, categoryLabel } from "@/lib/i18n";
 import type { CategoryLimit } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 
@@ -202,11 +202,11 @@ async function removeLimit() {
       <div class="row-actions">
         <button
           class="secondary btn-sm"
-          aria-label="Edit weekly limit & salary"
+          :aria-label="t('weeklyLimit.configureBudget')"
           type="button"
           @click="openEdit"
         >
-          <Pencil :size="15" />Configure budget
+          <Pencil :size="15" />{{ t('weeklyLimit.configureBudget') }}
         </button>
         <button
           v-if="store.weeklyLimit"
@@ -228,22 +228,22 @@ async function removeLimit() {
         <template v-if="status === 'over'">
           <AlertCircle :size="18" />
           <div class="banner-text">
-            <strong>Exceeded weekly limit by {{ store.displayMoney(diff) }}</strong>
-            <span>{{ progress }}% of your limit spent</span>
+            <strong>{{ t('weeklyLimit.exceededBy', { amount: store.displayMoney(diff) }) }}</strong>
+            <span>{{ t('weeklyLimit.spentOfLimit', { percent: progress }) }}</span>
           </div>
         </template>
         <template v-else-if="status === 'near'">
           <AlertTriangle :size="18" />
           <div class="banner-text">
-            <strong>Approaching limit: {{ store.displayMoney(diff) }} left</strong>
-            <span>{{ progress }}% used · {{ daysRemaining }} {{ daysRemaining === 1 ? 'day' : 'days' }} remaining</span>
+            <strong>{{ t('weeklyLimit.approaching', { amount: store.displayMoney(diff) }) }}</strong>
+            <span>{{ progress }}% used · {{ t('weeklyLimit.daysRemaining', { count: daysRemaining, unit: daysRemaining === 1 ? t('weeklyLimit.daysRemainingSingle') : t('weeklyLimit.daysRemainingPlural') }) }}</span>
           </div>
         </template>
         <template v-else>
           <CheckCircle2 :size="18" />
           <div class="banner-text">
-            <strong>On track: {{ store.displayMoney(diff) }} remaining</strong>
-            <span>{{ progress }}% used · {{ daysRemaining }} {{ daysRemaining === 1 ? 'day' : 'days' }} left in week</span>
+            <strong>{{ t('weeklyLimit.onTrack', { amount: store.displayMoney(diff) }) }}</strong>
+            <span>{{ t('weeklyLimit.onTrackDays', { percent: progress, days: `${daysRemaining} ${daysRemaining === 1 ? t('weeklyLimit.daysRemainingSingle') : t('weeklyLimit.daysRemainingPlural')}` }) }}</span>
           </div>
         </template>
       </div>
@@ -251,15 +251,15 @@ async function removeLimit() {
       <!-- Weekly Salary vs Budget vs Spend Stats -->
       <div v-if="weeklySalary > 0" class="salary-comparison-strip">
         <div class="salary-stat-col">
-          <span class="stat-micro-label">Weekly Salary</span>
+          <span class="stat-micro-label">{{ t('weeklyLimit.salaryLabel') }}</span>
           <strong class="salary-amount">{{ store.displayMoney(weeklySalary) }}</strong>
         </div>
         <div class="salary-stat-col">
-          <span class="stat-micro-label">Weekly Limit</span>
+          <span class="stat-micro-label">{{ t('weeklyLimit.limit') }}</span>
           <strong class="limit-target-amount">{{ store.displayMoney(store.weeklyLimit) }}</strong>
         </div>
         <div class="salary-stat-col">
-          <span class="stat-micro-label">Target Savings</span>
+          <span class="stat-micro-label">{{ t('weeklyLimit.targetSavings') }}</span>
           <strong class="savings-amount">
             {{ store.displayMoney(targetSavings) }}
             <span class="rate-badge">{{ savingsRate }}%</span>
@@ -309,10 +309,10 @@ async function removeLimit() {
       <div v-if="store.categoryBudgetProgress.length" class="structured-budget-section">
         <div class="structured-header">
           <span class="structured-title">
-            <Layers :size="15" /> Structured Category Limits
+            <Layers :size="15" /> {{ t('weeklyLimit.structuredTitle') }}
           </span>
           <span v-if="store.frequentWeeklyCommitment > 0" class="frequent-pill">
-            <Receipt :size="12" /> {{ store.displayMoney(store.frequentWeeklyCommitment) }}/wk in frequent bills
+            <Receipt :size="12" /> {{ t('weeklyLimit.frequentBillsCommitment', { amount: store.displayMoney(store.frequentWeeklyCommitment) }) }}
           </span>
         </div>
 
@@ -326,7 +326,7 @@ async function removeLimit() {
             <div class="cat-budget-header">
               <div class="cat-tag">
                 <CategoryIcon :category="cat.category" />
-                <span class="cat-name">{{ cat.category }}</span>
+                <span class="cat-name">{{ categoryLabel(cat.category) }}</span>
               </div>
               <span class="cat-fraction">
                 {{ store.displayMoney(cat.spent) }} / {{ store.displayMoney(cat.limit) }}
@@ -346,8 +346,8 @@ async function removeLimit() {
               <span class="cat-rem small" :class="{ 'rem-over': cat.status === 'over' }">
                 {{
                   cat.status === "over"
-                    ? `+${store.displayMoney(cat.spent - cat.limit)} over`
-                    : `${store.displayMoney(cat.remaining)} left`
+                    ? t('weeklyLimit.overBudget', { amount: store.displayMoney(cat.spent - cat.limit) })
+                    : t('weeklyLimit.leftBudget', { amount: store.displayMoney(cat.remaining) })
                 }}
               </span>
             </div>
@@ -359,10 +359,10 @@ async function removeLimit() {
       <div v-if="activeFrequentPayments.length" class="weekly-frequent-strip">
         <div class="weekly-frequent-header">
           <span class="frequent-strip-title">
-            <Receipt :size="14" /> Frequent Payments & Bills
+            <Receipt :size="14" /> {{ t('frequent.title') }}
           </span>
           <span class="small muted">
-            Add to this week's expenses
+            {{ t('frequent.subtitle') }}
           </span>
         </div>
 
@@ -386,13 +386,13 @@ async function removeLimit() {
                 v-if="store.isPaymentLoggedForWeek(p)"
                 class="bill-status-pill logged"
               >
-                <CheckCircle2 :size="12" /> Logged
+                <CheckCircle2 :size="12" /> {{ t('frequent.loggedThisWeek') }}
               </span>
               <span
                 v-else-if="store.isPaymentSkippedForWeek(p)"
                 class="bill-status-pill skipped"
               >
-                <SkipForward :size="12" /> Skipped
+                <SkipForward :size="12" /> {{ t('frequent.skippedThisCycle') }}
               </span>
 
               <button
@@ -401,7 +401,7 @@ async function removeLimit() {
                 type="button"
                 @click="store.logFrequentPaymentAsExpense(p.id, store.weekDate)"
               >
-                {{ store.isPaymentLoggedForWeek(p) ? '+ Again' : 'Log payment' }}
+                {{ store.isPaymentLoggedForWeek(p) ? t('frequent.logAgain') : t('frequent.logPayment') }}
               </button>
 
               <button
@@ -411,7 +411,7 @@ async function removeLimit() {
                 type="button"
                 @click="store.skipFrequentPayment(p.id)"
               >
-                Skip
+                {{ t('frequent.skipPayment') }}
               </button>
             </div>
           </div>
@@ -423,13 +423,13 @@ async function removeLimit() {
         <div class="pacing-advice">
           <template v-if="status === 'over'">
             <span class="pacing-badge alert-badge">
-              Overpace · Limit reached {{ store.weekTotal > store.weeklyLimit ? 'this week' : '' }}
+              {{ t('weeklyLimit.overpace') }}
             </span>
           </template>
           <template v-else>
             <TrendingUp :size="15" />
             <span>
-              Daily budget: <strong>{{ store.displayMoney(dailyAllowance) }}/day</strong> for remaining {{ daysRemaining }} {{ daysRemaining === 1 ? 'day' : 'days' }}
+              {{ t('weeklyLimit.dailyBudgetRemaining', { amount: store.displayMoney(dailyAllowance), days: `${daysRemaining} ${daysRemaining === 1 ? t('weeklyLimit.daysRemainingSingle') : t('weeklyLimit.daysRemainingPlural')}` }) }}
             </span>
           </template>
         </div>
@@ -445,7 +445,7 @@ async function removeLimit() {
             <ChevronLeft :size="16" />
           </button>
           <label class="week-picker-inline" title="Select week to review">
-            <span>Week:</span>
+            <span>{{ t('weeklyLimit.week') }}:</span>
             <input v-model="store.weekDate" type="date" required />
           </label>
           <button
@@ -464,7 +464,7 @@ async function removeLimit() {
             title="Reset to current week"
             @click="store.resetToCurrentWeek()"
           >
-            Today
+            {{ t('weeklyLimit.today') }}
           </button>
         </div>
       </div>
@@ -473,10 +473,10 @@ async function removeLimit() {
     <!-- Empty State: No Limit Set -->
     <div v-else-if="!editing" class="no-limit-banner">
       <div class="no-limit-info">
-        <p>Set a structured weekly limit and salary to manage category spending.</p>
+        <p>{{ t('weeklyLimit.emptyHint') }}</p>
       </div>
       <button class="primary" type="button" @click="openEdit">
-        <Target :size="17" />Set weekly limit & budget
+        <Target :size="17" />{{ t('weeklyLimit.setLimitBtn') }}
       </button>
     </div>
 
@@ -489,7 +489,7 @@ async function removeLimit() {
       <div class="bottom-drawer" role="dialog" aria-modal="true">
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
-          <h3>Configure Weekly Budget & Salary</h3>
+          <h3>{{ t('weeklyLimit.configureTitle') }}</h3>
           <button class="icon-button" type="button" aria-label="Close" @click="editing = false">
             <X :size="18" />
           </button>
@@ -498,7 +498,7 @@ async function removeLimit() {
         <div class="budget-drawer-body budget-modal-body">
           <!-- Weekly Salary Input -->
           <label>
-            Weekly Average Salary · NZD (can change anytime)
+            {{ t('weeklyLimit.salaryField') }}
             <input
               v-model="salaryAmount"
               inputmode="decimal"
@@ -506,7 +506,7 @@ async function removeLimit() {
             />
           </label>
           <p class="small muted">
-            Used to calculate your target weekly savings and compare against your weekly limit.
+            {{ t('weeklyLimit.salaryHint') }}
           </p>
 
           <hr class="modal-divider" />
@@ -518,21 +518,21 @@ async function removeLimit() {
               :class="{ selected: editMode === 'structured' }"
               @click="editMode = 'structured'"
             >
-              Structured by Category
+              {{ t('weeklyLimit.structuredTab') }}
             </button>
             <button
               type="button"
               :class="{ selected: editMode === 'quick' }"
               @click="editMode = 'quick'"
             >
-              Single Overall Limit
+              {{ t('weeklyLimit.singleTab') }}
             </button>
           </div>
 
           <!-- Structured Mode -->
           <div v-if="editMode === 'structured'" class="structured-form">
             <p class="small muted">
-              Separate your week limit between rent, food, bills, expenses, and discretionary spending.
+              {{ t('weeklyLimit.structuredHint') }}
             </p>
 
             <div class="category-inputs-list">
@@ -547,7 +547,7 @@ async function removeLimit() {
                     :key="cat"
                     :value="cat"
                   >
-                    {{ cat }}
+                    {{ categoryLabel(cat) }}
                   </option>
                 </select>
 
@@ -577,11 +577,11 @@ async function removeLimit() {
               type="button"
               @click="addCategoryRow"
             >
-              <Plus :size="14" />Add category limit
+              <Plus :size="14" />{{ t('weeklyLimit.addCategoryLimit') }}
             </button>
 
             <div class="structured-total-banner">
-              <span>Total Weekly Limit:</span>
+              <span>{{ t('weeklyLimit.totalWeeklyLimit') }}</span>
               <strong>{{ store.displayMoney(structuredTotal) }}</strong>
             </div>
           </div>
@@ -589,7 +589,7 @@ async function removeLimit() {
           <!-- Quick Single Limit Mode -->
           <div v-else class="quick-limit-form">
             <label>
-              Weekly limit · NZD
+              {{ t('weeklyLimit.limit') }} · NZD
               <input
                 v-model="amount"
                 inputmode="decimal"
@@ -603,10 +603,10 @@ async function removeLimit() {
 
           <div class="entry-actions">
             <button class="primary" :disabled="busy" @click="saveBudget">
-              Save Budget
+              {{ t('weeklyLimit.saveBudget') }}
             </button>
             <button type="button" class="secondary" @click="editing = false">
-              Cancel
+              {{ t('common.cancel') }}
             </button>
           </div>
         </div>

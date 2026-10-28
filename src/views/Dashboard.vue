@@ -60,30 +60,30 @@ const isOverWeeklyLimit = computed(
   <!-- AI Money Advisor (Local Gemma Intelligence - Available only in Local Desktop App) -->
   <AiMoneyAdvisor v-if="isLocalDesktopApp()" />
 
-  <section class="report-stats" aria-label="Monthly summary">
+  <section class="report-stats" :aria-label="t('dashboard.monthlySummary')">
     <article class="total-card">
-      <span>This month · {{ store.currency }}</span>
+      <span>{{ t('dashboard.thisMonthSimple') }} · {{ store.currency }}</span>
       <strong class="hero-number">{{
         store.displayMoney(store.monthTotal)
       }}</strong>
     </article>
     <article class="panel">
-      <span class="muted">Expenses</span>
+      <span class="muted">{{ t('dashboard.expensesCount') }}</span>
       <strong>{{ store.monthExpenses.length }}</strong>
     </article>
     <article class="panel">
-      <span class="muted">Previous month</span>
+      <span class="muted">{{ t('dashboard.previousMonth') }}</span>
       <strong>{{ store.displayMoney(lastTotal) }}</strong>
     </article>
   </section>
 
   <section class="panel">
-    <h2>Recent expenses</h2>
+    <h2>{{ t('dashboard.recentExpenses') }}</h2>
     <ExpenseList :expenses="store.monthExpenses.slice(0, 5)" compact />
   </section>
 
   <section class="panel">
-    <h2>By category</h2>
+    <h2>{{ t('dashboard.byCategory') }}</h2>
     <CategoryBreakdown
       :expenses="store.monthExpenses"
       :currency="store.currency"
@@ -91,7 +91,7 @@ const isOverWeeklyLimit = computed(
   </section>
 
   <section class="panel">
-    <h2>Weekly spending</h2>
+    <h2>{{ t('dashboard.weeklySpending') }}</h2>
     <TrendChart
       :expenses="store.monthExpenses"
       :month="store.month"
