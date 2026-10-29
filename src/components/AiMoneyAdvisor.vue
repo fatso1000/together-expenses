@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from "lucide-vue-next";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { categoryTotals, today } from "@/lib/finance";
@@ -27,9 +28,11 @@ import {
   type OllamaStatus,
 } from "@/lib/ollama";
 import { t } from "@/lib/i18n";
+import AiSpendingChat from "@/components/AiSpendingChat.vue";
 
 const store = useExpenses();
 
+const activeTab = ref<"chat" | "audit">("chat");
 const status = shallowRef<OllamaStatus | null>(null);
 const checkingStatus = shallowRef(false);
 const analyzing = shallowRef(false);
@@ -176,117 +179,152 @@ onMounted(() => {
       <p v-if="status?.error" class="small error-text">{{ status.error }}</p>
     </div>
 
-    <!-- Quick Action Pills -->
-    <div class="analysis-action-pills">
+    <!-- Tab Switcher -->
+    <div class="advisor-tab-switcher" role="tablist" aria-label="Advisor Navigation">
       <button
-        class="mode-pill"
-        :class="{ active: activeMode === 'pacing' }"
         type="button"
-        :disabled="analyzing"
-        @click="runAnalysis('pacing')"
+        role="tab"
+        :aria-selected="activeTab === 'chat'"
+        class="advisor-tab-btn"
+        :class="{ active: activeTab === 'chat' }"
+        @click="activeTab = 'chat'"
       >
-        <TrendingUp :size="15" />
-        <span>Weekly Budget Pace</span>
+        <MessageSquare :size="15" />
+        <span>Spending Chat</span>
       </button>
 
       <button
-        class="mode-pill"
-        :class="{ active: activeMode === 'savings' }"
         type="button"
-        :disabled="analyzing"
-        @click="runAnalysis('savings')"
-      >
-        <PiggyBank :size="15" />
-        <span>Save Money</span>
-      </button>
-
-      <button
-        class="mode-pill"
-        :class="{ active: activeMode === 'bills' }"
-        type="button"
-        :disabled="analyzing"
-        @click="runAnalysis('bills')"
-      >
-        <Receipt :size="15" />
-        <span>Audit Bills</span>
-      </button>
-
-      <button
-        class="mode-pill"
-        :class="{ active: activeMode === 'audit' }"
-        type="button"
-        :disabled="analyzing"
-        @click="runAnalysis('audit')"
+        role="tab"
+        :aria-selected="activeTab === 'audit'"
+        class="advisor-tab-btn"
+        :class="{ active: activeTab === 'audit' }"
+        @click="activeTab = 'audit'"
       >
         <Sparkles :size="15" />
-        <span>Overall Health</span>
+        <span>Instant Health Audit</span>
       </button>
     </div>
 
-    <!-- Busy Spinner -->
-    <div v-if="analyzing" class="analyzing-state">
-      <RefreshCw :size="24" class="spinning" />
-      <p>Gemma is analyzing your spending patterns and category data…</p>
+    <!-- Tab 1: Spending Chat -->
+    <div v-if="activeTab === 'chat'" class="advisor-chat-pane">
+      <AiSpendingChat />
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="analysisError" class="analysis-error" role="alert">
-      <AlertTriangle :size="18" />
-      <div class="error-msg">
-        <strong>{{ t('ai.couldNotComplete') }}</strong>
-        <span>{{ analysisError }}</span>
+    <!-- Tab 2: Instant Health Audit -->
+    <div v-else-if="activeTab === 'audit'" class="advisor-audit-pane">
+      <!-- Quick Action Pills -->
+      <div class="analysis-action-pills">
+        <button
+          class="mode-pill"
+          :class="{ active: activeMode === 'pacing' }"
+          type="button"
+          :disabled="analyzing"
+          @click="runAnalysis('pacing')"
+        >
+          <TrendingUp :size="15" />
+          <span>Weekly Budget Pace</span>
+        </button>
+
+        <button
+          class="mode-pill"
+          :class="{ active: activeMode === 'savings' }"
+          type="button"
+          :disabled="analyzing"
+          @click="runAnalysis('savings')"
+        >
+          <PiggyBank :size="15" />
+          <span>Save Money</span>
+        </button>
+
+        <button
+          class="mode-pill"
+          :class="{ active: activeMode === 'bills' }"
+          type="button"
+          :disabled="analyzing"
+          @click="runAnalysis('bills')"
+        >
+          <Receipt :size="15" />
+          <span>Audit Bills</span>
+        </button>
+
+        <button
+          class="mode-pill"
+          :class="{ active: activeMode === 'audit' }"
+          type="button"
+          :disabled="analyzing"
+          @click="runAnalysis('audit')"
+        >
+          <Sparkles :size="15" />
+          <span>Overall Health</span>
+        </button>
       </div>
-      <button class="secondary btn-sm" type="button" @click="runAnalysis(activeMode)">
-        {{ t('common.retry') }}
-      </button>
-    </div>
 
-    <!-- Analysis Results Card -->
-    <div v-else-if="analysis" class="analysis-card" :data-status="analysis.status">
-      <div class="analysis-card-top">
-        <div class="headline-line">
-          <div class="status-chip" :data-status="analysis.status">
-            <CheckCircle2 v-if="analysis.status === 'on_track'" :size="14" />
-            <AlertTriangle v-else-if="analysis.status === 'caution'" :size="14" />
-            <ShieldAlert v-else :size="14" />
-            <span>{{ analysis.status === 'on_track' ? 'On Track' : analysis.status === 'caution' ? 'Caution' : 'Action Needed' }}</span>
+      <!-- Busy Spinner -->
+      <div v-if="analyzing" class="analyzing-state">
+        <RefreshCw :size="24" class="spinning" />
+        <p>Gemma is analyzing your spending patterns and category data…</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="analysisError" class="analysis-error" role="alert">
+        <AlertTriangle :size="18" />
+        <div class="error-msg">
+          <strong>{{ t('ai.couldNotComplete') }}</strong>
+          <span>{{ analysisError }}</span>
+        </div>
+        <button class="secondary btn-sm" type="button" @click="runAnalysis(activeMode)">
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
+      <!-- Analysis Results Card -->
+      <div v-else-if="analysis" class="analysis-card" :data-status="analysis.status">
+        <div class="analysis-card-top">
+          <div class="headline-line">
+            <div class="status-chip" :data-status="analysis.status">
+              <CheckCircle2 v-if="analysis.status === 'on_track'" :size="14" />
+              <AlertTriangle v-else-if="analysis.status === 'caution'" :size="14" />
+              <ShieldAlert v-else :size="14" />
+              <span>{{ analysis.status === 'on_track' ? 'On Track' : analysis.status === 'caution' ? 'Caution' : 'Action Needed' }}</span>
+            </div>
+            <h3>{{ analysis.headline }}</h3>
           </div>
-          <h3>{{ analysis.headline }}</h3>
+
+          <div v-if="analysis.potentialSavingsNZD > 0" class="savings-opportunity-badge">
+            <Lightbulb :size="14" />
+            <span>+${{ analysis.potentialSavingsNZD }} NZD Potential Savings</span>
+          </div>
         </div>
 
-        <div v-if="analysis.potentialSavingsNZD > 0" class="savings-opportunity-badge">
-          <Lightbulb :size="14" />
-          <span>+${{ analysis.potentialSavingsNZD }} NZD Potential Savings</span>
+        <p class="analysis-summary">{{ analysis.summary }}</p>
+
+        <div class="analysis-grid">
+          <div v-if="analysis.insights.length" class="analysis-col">
+            <span class="col-title">Key Observations</span>
+            <ul class="analysis-list">
+              <li v-for="(insight, idx) in analysis.insights" :key="idx">
+                {{ insight }}
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="analysis.recommendations.length" class="analysis-col">
+            <span class="col-title">Recommended Actions</span>
+            <ul class="analysis-list action-list">
+              <li v-for="(rec, idx) in analysis.recommendations" :key="idx">
+                {{ rec }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <p class="analysis-summary">{{ analysis.summary }}</p>
-
-      <div class="analysis-grid">
-        <div v-if="analysis.insights.length" class="analysis-col">
-          <span class="col-title">Key Observations</span>
-          <ul class="analysis-list">
-            <li v-for="(insight, idx) in analysis.insights" :key="idx">
-              {{ insight }}
-            </li>
-          </ul>
-        </div>
-
-        <div v-if="analysis.recommendations.length" class="analysis-col">
-          <span class="col-title">Recommended Actions</span>
-          <ul class="analysis-list action-list">
-            <li v-for="(rec, idx) in analysis.recommendations" :key="idx">
-              {{ rec }}
-            </li>
-          </ul>
-        </div>
+      <!-- Empty Initial State -->
+      <div v-else-if="!analyzing" class="empty-advisor-prompt">
+        <Lightbulb :size="20" class="hint-icon" />
+        <span>Select any topic above to generate on-device financial insights and recommendations.</span>
       </div>
-    </div>
-
-    <!-- Empty Initial State -->
-    <div v-else-if="!analyzing" class="empty-advisor-prompt">
-      <Lightbulb :size="20" class="hint-icon" />
-      <span>Select any topic above to generate on-device financial insights and recommendations.</span>
     </div>
   </section>
 </template>
@@ -405,6 +443,52 @@ onMounted(() => {
 .error-text {
   color: #a03e30;
   margin: 0;
+}
+
+.advisor-tab-switcher {
+  display: flex;
+  gap: 6px;
+  background: rgba(21, 61, 53, 0.05);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #d8e5df;
+  width: fit-content;
+}
+
+.advisor-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #556c62;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.advisor-tab-btn:hover {
+  color: #153d35;
+}
+
+.advisor-tab-btn.active {
+  background: #ffffff;
+  color: #153d35;
+  border-color: #cadbd1;
+  box-shadow: 0 2px 6px rgba(21, 61, 53, 0.08);
+}
+
+.advisor-chat-pane {
+  display: flex;
+  flex-direction: column;
+}
+
+.advisor-audit-pane {
+  display: grid;
+  gap: 16px;
 }
 
 .analysis-action-pills {
@@ -615,6 +699,15 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
+  .advisor-tab-switcher {
+    width: 100%;
+  }
+
+  .advisor-tab-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
   .analysis-grid {
     grid-template-columns: 1fr;
   }

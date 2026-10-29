@@ -466,6 +466,18 @@
     "statusCritical": "Atención Urgente",
     "couldNotComplete": "No se pudo completar el análisis"
   },
+  "chat": {
+    "title": "Chat Asesor de Gastos",
+    "modes": {
+      "low": "Presupuesto Bajo (Austero)",
+      "medium": "Presupuesto Medio (Equilibrado)",
+      "high": "Presupuesto Alto (Crecimiento)"
+    },
+    "quickMilk": "¿Debería eliminar la leche?",
+    "quickCart": "¿Qué puedo recortar de mi carrito?",
+    "quickEarn": "¿Cómo puedo ganar/ahorrar más esta semana?",
+    "placeholder": "Preguntá sobre tus gastos (ej. ¿debería quitar la leche?)..."
+  },
   "categories_list": {
     "Groceries": "Supermercado",
     "Petrol": "Nafta",

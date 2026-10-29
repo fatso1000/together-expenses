@@ -466,6 +466,18 @@
     "statusCritical": "Critical Attention",
     "couldNotComplete": "Could not complete analysis"
   },
+  "chat": {
+    "title": "Spending Advisor Chat",
+    "modes": {
+      "low": "Budget Low (Frugal)",
+      "medium": "Budget Medium (Balanced)",
+      "high": "Budget High (Growth)"
+    },
+    "quickMilk": "Should I remove milk?",
+    "quickCart": "What can I cut from my shopping cart?",
+    "quickEarn": "How can I earn/save the most this week?",
+    "placeholder": "Ask about your spendings (e.g. should I remove milk?)..."
+  },
   "categories_list": {
     "Groceries": "Groceries",
     "Petrol": "Petrol",
