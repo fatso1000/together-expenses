@@ -50,7 +50,8 @@ export const useAiChat = defineStore("ai-chat", () => {
     if (typeof localStorage !== "undefined") {
       const raw = localStorage.getItem(STORAGE_CHAT_KEY);
       if (raw) {
-        messages.value = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        messages.value = Array.isArray(parsed) ? parsed : [];
       }
     }
   } catch {
