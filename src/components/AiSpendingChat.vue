@@ -15,7 +15,6 @@ import {
 } from "lucide-vue-next";
 import { useAiChat } from "@/stores/ai-chat";
 import { type AiChatBudgetMode } from "@/lib/ai-chat";
-import { t } from "@/lib/i18n";
 
 const chatStore = useAiChat();
 const inputPrompt = ref("");
