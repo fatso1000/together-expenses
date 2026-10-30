@@ -1,10 +1,10 @@
 # Implementation Plan: Fix Performance Drop on Drawer Open & Remove Complex Animations
 
-## Phase 1: Baseline Verification & Test Assertions
+## Phase 1: Baseline Verification & Test Assertions [checkpoint: a904228]
 - [x] Task: Baseline Test Suite Verification & Performance Assertions a904228
   - [x] Run existing unit tests (`pnpm test`) and E2E drawer specs (`pnpm test:e2e`) to verify healthy baseline.
   - [x] Add/update test assertions to verify that drawer and backdrop elements do not require `backdrop-filter` and that no animated fluid orbs are rendered.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) a904228
 
 ## Phase 2: Purge Ambient Fluid Shaders & Orb Animations
 - [ ] Task: Remove Ambient Mesh and Orb Animations from CSS & Templates
