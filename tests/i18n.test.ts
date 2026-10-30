@@ -29,6 +29,7 @@ test("i18n: translates English strings correctly by default", () => {
   setLocale("en");
   assert.equal(t("nav.overview"), "Overview");
   assert.equal(t("nav.expenses"), "Expenses");
+  assert.equal(t("nav.aiChat"), "AI Chat");
   assert.equal(t("common.addExpense"), "Add expense");
   assert.equal(t("frequent.logPayment"), "Log payment");
   assert.equal(t("frequent.skipPayment"), "Skip payment");
@@ -42,6 +43,7 @@ test("i18n: switches to Argentinian Spanish and translates authentic vocab", () 
 
   assert.equal(t("nav.overview"), "Resumen");
   assert.equal(t("nav.expenses"), "Gastos");
+  assert.equal(t("nav.aiChat"), "Chat IA");
   assert.equal(t("common.addExpense"), "Cargar gasto");
   assert.equal(t("frequent.logPayment"), "Registrar pago");
   assert.equal(t("frequent.skipPayment"), "Saltear pago");

@@ -1722,9 +1722,13 @@ hr {
     gap: 2px;
   }
   .sidebar nav a {
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     flex-direction: column;
     gap: 3px;
-    padding: 6px 4px;
+    padding: 6px 2px;
     min-width: 0;
     min-height: 48px;
     border-radius: 18px;
@@ -3219,5 +3223,56 @@ hr {
 
   .chat-input-bar {
     padding: 10px 14px;
+  }
+}
+
+/* ==========================================================================
+   AI Chat Page View Layout
+   ========================================================================== */
+.ai-chat-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-chat-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+}
+
+.ai-chat-status-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ai-chat-status-info h2 {
+  font-size: 1.15rem;
+  margin: 0 0 2px 0;
+}
+
+.ai-chat-page .ai-spending-chat-container {
+  height: calc(100vh - 200px);
+  min-height: 520px;
+  max-height: none;
+  margin-top: 0;
+}
+
+.web-ai-disabled-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border-left: 4px solid var(--accent);
+}
+
+@media (max-width: 640px) {
+  .ai-chat-page .ai-spending-chat-container {
+    height: calc(100vh - 180px);
+    min-height: 480px;
   }
 }

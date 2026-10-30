@@ -28,11 +28,9 @@ import {
   type OllamaStatus,
 } from "@/lib/ollama";
 import { t } from "@/lib/i18n";
-import AiSpendingChat from "@/components/AiSpendingChat.vue";
 
 const store = useExpenses();
 
-const activeTab = ref<"chat" | "audit">("chat");
 const status = shallowRef<OllamaStatus | null>(null);
 const checkingStatus = shallowRef(false);
 const analyzing = shallowRef(false);
@@ -142,28 +140,35 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="advisor-status-wrap">
-        <button
-          class="status-pill-btn"
-          :class="{ connected: status?.ok, offline: !status?.ok }"
-          type="button"
-          :title="status?.ok ? 'Connected to local Ollama daemon' : 'Click to see Ollama setup guide'"
-          @click="showSetupGuide = !showSetupGuide"
-        >
-          <span class="status-dot"></span>
-          <span>{{ status?.ok ? `${status.model} Ready` : 'Ollama Offline' }}</span>
-          <ChevronDown v-if="!showSetupGuide" :size="13" />
-          <ChevronUp v-else :size="13" />
-        </button>
-        <button
-          class="icon-button"
-          title="Refresh Ollama connection"
-          type="button"
-          :disabled="checkingStatus"
-          @click="refreshOllamaStatus"
-        >
-          <RefreshCw :size="14" :class="{ spinning: checkingStatus }" />
-        </button>
+      <div class="advisor-actions-wrap">
+        <RouterLink to="/chat" class="chat-shortcut-btn" title="Open AI Spending Chat">
+          <MessageSquare :size="15" />
+          <span>{{ t('nav.aiChat') }}</span>
+        </RouterLink>
+
+        <div class="advisor-status-wrap">
+          <button
+            class="status-pill-btn"
+            :class="{ connected: status?.ok, offline: !status?.ok }"
+            type="button"
+            :title="status?.ok ? 'Connected to local Ollama daemon' : 'Click to see Ollama setup guide'"
+            @click="showSetupGuide = !showSetupGuide"
+          >
+            <span class="status-dot"></span>
+            <span>{{ status?.ok ? `${status.model} Ready` : 'Ollama Offline' }}</span>
+            <ChevronDown v-if="!showSetupGuide" :size="13" />
+            <ChevronUp v-else :size="13" />
+          </button>
+          <button
+            class="icon-button"
+            title="Refresh Ollama connection"
+            type="button"
+            :disabled="checkingStatus"
+            @click="refreshOllamaStatus"
+          >
+            <RefreshCw :size="14" :class="{ spinning: checkingStatus }" />
+          </button>
+        </div>
       </div>
     </div>
 
@@ -179,42 +184,8 @@ onMounted(() => {
       <p v-if="status?.error" class="small error-text">{{ status.error }}</p>
     </div>
 
-    <!-- Tab Switcher -->
-    <div class="advisor-tab-switcher" role="tablist" aria-label="Advisor Navigation">
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="activeTab === 'chat'"
-        class="advisor-tab-btn"
-        :class="{ active: activeTab === 'chat' }"
-        @click="activeTab = 'chat'"
-      >
-        <MessageSquare :size="15" />
-        <span>Spending Chat</span>
-      </button>
-
-      <button
-        type="button"
-        role="tab"
-        :aria-selected="activeTab === 'audit'"
-        class="advisor-tab-btn"
-        :class="{ active: activeTab === 'audit' }"
-        @click="activeTab = 'audit'"
-      >
-        <Sparkles :size="15" />
-        <span>Instant Health Audit</span>
-      </button>
-    </div>
-
-    <!-- Tab 1: Spending Chat -->
-    <div v-if="activeTab === 'chat'" class="advisor-chat-pane">
-      <AiSpendingChat />
-    </div>
-
-    <!-- Tab 2: Instant Health Audit -->
-    <div v-else-if="activeTab === 'audit'" class="advisor-audit-pane">
-      <!-- Quick Action Pills -->
-      <div class="analysis-action-pills">
+    <!-- Quick Action Pills -->
+    <div class="analysis-action-pills">
         <button
           class="mode-pill"
           :class="{ active: activeMode === 'pacing' }"
@@ -325,7 +296,6 @@ onMounted(() => {
         <Lightbulb :size="20" class="hint-icon" />
         <span>Select any topic above to generate on-device financial insights and recommendations.</span>
       </div>
-    </div>
   </section>
 </template>
 
@@ -445,50 +415,32 @@ onMounted(() => {
   margin: 0;
 }
 
-.advisor-tab-switcher {
+.advisor-actions-wrap {
   display: flex;
-  gap: 6px;
-  background: rgba(21, 61, 53, 0.05);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid #d8e5df;
-  width: fit-content;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.advisor-tab-btn {
+.chat-shortcut-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  border-radius: 9px;
+  gap: 6px;
+  padding: 6px 14px;
   font-size: 13px;
-  font-weight: 650;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #556c62;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  font-weight: 600;
+  color: var(--accent, #1f8e6c);
+  background: rgba(31, 142, 108, 0.1);
+  border: 1px solid rgba(31, 142, 108, 0.25);
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.advisor-tab-btn:hover {
-  color: #153d35;
-}
-
-.advisor-tab-btn.active {
-  background: #ffffff;
-  color: #153d35;
-  border-color: #cadbd1;
-  box-shadow: 0 2px 6px rgba(21, 61, 53, 0.08);
-}
-
-.advisor-chat-pane {
-  display: flex;
-  flex-direction: column;
-}
-
-.advisor-audit-pane {
-  display: grid;
-  gap: 16px;
+.chat-shortcut-btn:hover {
+  background: rgba(31, 142, 108, 0.18);
+  border-color: var(--accent, #1f8e6c);
+  transform: translateY(-1px);
 }
 
 .analysis-action-pills {
@@ -699,15 +651,6 @@ onMounted(() => {
 }
 
 @media (max-width: 600px) {
-  .advisor-tab-switcher {
-    width: 100%;
-  }
-
-  .advisor-tab-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
   .analysis-grid {
     grid-template-columns: 1fr;
   }

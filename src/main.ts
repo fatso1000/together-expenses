@@ -5,6 +5,7 @@ import App from "@/App.vue";
 import Dashboard from "@/views/Dashboard.vue";
 import Expenses from "@/views/Expenses.vue";
 import Reports from "@/views/Reports.vue";
+import AiChat from "@/views/AiChat.vue";
 import Products from "@/views/Products.vue";
 import Shops from "@/views/Shops.vue";
 import Settings from "@/views/Settings.vue";
@@ -17,6 +18,7 @@ const router = createRouter({
     { path: "/", component: Dashboard, meta: { titleKey: "nav.overview", title: "Overview" } },
     { path: "/expenses", component: Expenses, meta: { titleKey: "nav.expenses", title: "Expenses" } },
     { path: "/reports", component: Reports, meta: { titleKey: "nav.reports", title: "Reports" } },
+    { path: "/chat", component: AiChat, meta: { titleKey: "nav.aiChat", title: "AI Chat" } },
     { path: "/products", component: Products, meta: { titleKey: "nav.products", title: "Products" } },
     { path: "/shops", component: Shops, meta: { titleKey: "nav.shops", title: "Shops" } },
     { path: "/settings", component: Settings, meta: { titleKey: "nav.settings", title: "Data" } },
