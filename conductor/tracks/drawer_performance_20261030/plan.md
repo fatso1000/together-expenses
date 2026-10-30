@@ -31,9 +31,9 @@
   - [x] Verify drag handle responsiveness, body scrolling, and dialog accessibility attributes.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 44afa86
 
-## Phase 5: Verification & Full Regression Pass
-- [ ] Task: Run Comprehensive Automated Test Suites
-  - [ ] Run all unit tests (`pnpm test`) and confirm all tests pass.
-  - [ ] Run all Playwright E2E tests (`pnpm test:e2e`) and confirm 100% pass rate.
-  - [ ] Verify light mode and dark mode visual fidelity and 60fps drawer opening.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 5: Verification & Full Regression Pass [checkpoint: 44afa86]
+- [x] Task: Run Comprehensive Automated Test Suites 44afa86
+  - [x] Run all unit tests (`pnpm test`) and confirm all tests pass.
+  - [x] Run all Playwright E2E tests (`pnpm test:e2e`) and confirm 100% pass rate.
+  - [x] Verify light mode and dark mode visual fidelity and 60fps drawer opening.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 44afa86
