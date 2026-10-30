@@ -825,24 +825,22 @@ async function submit() {
   max-width: 100vw;
   height: 94dvh;
   max-height: 94dvh;
-  background: var(--glass-elevated-bg);
-  backdrop-filter: var(--glass-elevated-blur);
-  -webkit-backdrop-filter: var(--glass-elevated-blur);
-  border: var(--glass-elevated-border);
+  background: var(--surface-drawer, #ffffff);
+  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
   border-radius: 28px 28px 0 0;
   color: inherit;
   padding: 0;
-  box-shadow: var(--glass-elevated-shadow);
+  box-shadow: var(--surface-drawer-shadow, 0 -12px 40px rgba(13, 36, 30, 0.16));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .expense-drawer-dialog::backdrop {
-  background: rgba(10, 24, 20, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface-backdrop, rgba(10, 24, 20, 0.5));
 }
 
 @keyframes slideUp {
@@ -945,10 +943,8 @@ async function submit() {
 
 /* Mobile Quick Receipt Dock */
 .quick-receipt-dock {
-  background: var(--surface);
+  background: var(--surface-card, #f8faf8);
   border: 1px solid var(--border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border-radius: 14px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -959,7 +955,7 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: var(--glass-card-bg);
+  background: var(--surface-card-hover, #ffffff);
   border-bottom: 1px solid var(--border);
 }
 
@@ -1082,23 +1078,21 @@ async function submit() {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: var(--surface);
+  background: var(--surface-card, #f8faf8);
   border: 1.5px solid var(--border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: 12px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.18s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
 }
 
 .account-toggle-card:hover {
-  background: var(--pill-bg);
+  background: var(--surface-card-hover, #ffffff);
   border-color: var(--accent);
 }
 
 .account-toggle-card.selected {
-  background: rgba(42, 194, 148, 0.15);
+  background: rgba(42, 194, 148, 0.14);
   border-color: var(--accent);
   box-shadow: 0 2px 8px var(--accent-glow);
 }
@@ -1235,9 +1229,7 @@ async function submit() {
 .inline-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 24, 20, 0.45);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface-backdrop, rgba(10, 24, 20, 0.5));
   z-index: 1100;
   display: flex;
   align-items: flex-end;
@@ -1245,18 +1237,18 @@ async function submit() {
 }
 
 .inline-modal {
-  background: var(--glass-elevated-bg);
-  backdrop-filter: var(--glass-elevated-blur);
-  -webkit-backdrop-filter: var(--glass-elevated-blur);
-  border: var(--glass-elevated-border);
+  background: var(--surface-drawer, #ffffff);
+  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
   border-radius: 28px 28px 0 0;
   padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
   width: 100vw;
   max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: var(--glass-elevated-shadow);
+  box-shadow: var(--surface-drawer-shadow, 0 -12px 40px rgba(13, 36, 30, 0.16));
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .inline-modal-header {
@@ -1298,13 +1290,11 @@ async function submit() {
     position: sticky;
     top: 0;
     max-height: calc(94dvh - 120px);
-    background: var(--surface);
+    background: var(--surface-card, #f8faf8);
     border: 1px solid var(--border);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: var(--glass-card-shadow);
+    box-shadow: 0 4px 18px rgba(21, 61, 53, 0.05);
   }
 
   .preview-stage-container {
@@ -1319,7 +1309,7 @@ async function submit() {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: var(--glass-card-bg);
+    background: var(--surface-card-hover, #ffffff);
     border-bottom: 1px solid var(--border);
   }
 

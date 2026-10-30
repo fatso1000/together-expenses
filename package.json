@@ -9,6 +9,9 @@
     "build": "node scripts/prepare-ocr.mjs && vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 8080",
     "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "deploy": "pnpm build && firebase deploy --only hosting,firestore:rules --project expenses-tracker-fec08"
   },
   "dependencies": {
@@ -24,6 +27,7 @@
     "workbox-window": "^7.4.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^4.6.2",
     "firebase-tools": "^14.0.0",

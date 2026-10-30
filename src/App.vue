@@ -14,6 +14,7 @@ import {
   Languages,
   Moon,
   Sun,
+  Sparkles,
 } from "lucide-vue-next";
 import ExpenseForm from "@/components/ExpenseForm.vue";
 import { useExpenses } from "@/stores/expenses";
@@ -65,6 +66,7 @@ const navigation = computed(() => [
   { path: "/", label: t("nav.overview"), icon: LayoutDashboard },
   { path: "/expenses", label: t("nav.expenses"), icon: Receipt },
   { path: "/reports", label: t("nav.reports"), icon: ChartNoAxesCombined },
+  { path: "/chat", label: t("nav.aiChat"), icon: Sparkles },
   { path: "/products", label: t("nav.products"), icon: Scale },
   { path: "/shops", label: t("nav.shops"), icon: Store },
   { path: "/settings", label: t("nav.settings"), icon: Settings },
@@ -95,14 +97,6 @@ watch(
 </script>
 <template>
   <div class="app-layout">
-    <!-- Ambient Fluid Canvas Orbs (Liquid Light Layer) -->
-    <div class="ambient-fluid-mesh" aria-hidden="true">
-      <div class="fluid-orb orb-1" />
-      <div class="fluid-orb orb-2" />
-      <div class="fluid-orb orb-3" />
-      <div class="fluid-orb orb-4" />
-    </div>
-
     <aside class="sidebar">
       <RouterLink class="brand" to="/">{{ t('nav.brand') }}</RouterLink>
       <nav aria-label="Main navigation">
@@ -148,7 +142,7 @@ watch(
         </div>
       </div>
       <div
-        v-if="!['/settings', '/shops', '/products'].includes(route.path)"
+        v-if="!['/settings', '/shops', '/products', '/chat'].includes(route.path)"
         class="period-toolbar"
       >
         <label

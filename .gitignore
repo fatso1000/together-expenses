@@ -5,3 +5,7 @@ dist/
 .firebase/
 *-debug.log
 .DS_Store
+test-results/
+playwright-report/
+.superpowers/
+.worktrees/

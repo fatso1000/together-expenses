@@ -288,11 +288,12 @@ async function saveDeposit() {
     </div>
 
     <!-- Add / Edit Savings Deposit Drawer -->
-    <div
-      v-if="showDepositModal"
-      class="drawer-backdrop"
-      @click.self="showDepositModal = false"
-    >
+    <Teleport to="body">
+      <div
+        v-if="showDepositModal"
+        class="drawer-backdrop"
+        @click.self="showDepositModal = false"
+      >
       <div class="bottom-drawer" role="dialog" aria-modal="true">
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
@@ -350,13 +351,15 @@ async function saveDeposit() {
         </form>
       </div>
     </div>
+    </Teleport>
 
     <!-- Manage Savings Deposits Drawer -->
-    <div
-      v-if="showManageDepositsModal"
-      class="drawer-backdrop"
-      @click.self="showManageDepositsModal = false"
-    >
+    <Teleport to="body">
+      <div
+        v-if="showManageDepositsModal"
+        class="drawer-backdrop"
+        @click.self="showManageDepositsModal = false"
+      >
       <div class="bottom-drawer" role="dialog" aria-modal="true">
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
@@ -424,6 +427,7 @@ async function saveDeposit() {
         </div>
       </div>
     </div>
+    </Teleport>
   </section>
 </template>
 
@@ -651,8 +655,7 @@ async function saveDeposit() {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 36, 30, 0.55);
-  backdrop-filter: blur(4px);
+  background: var(--surface-backdrop, rgba(13, 36, 30, 0.55));
   z-index: 1000;
   display: flex;
   align-items: flex-end;
@@ -661,16 +664,19 @@ async function saveDeposit() {
 }
 
 .bottom-drawer {
-  background: #ffffff;
+  background: var(--surface-drawer, #ffffff);
+  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
   width: 100vw;
   max-width: 100vw;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  box-shadow: var(--surface-drawer-shadow, 0 -16px 64px rgba(13, 36, 30, 0.35));
   display: flex;
   flex-direction: column;
   max-height: 92dvh;
   overflow: hidden;
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 @keyframes slideUp {

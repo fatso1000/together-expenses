@@ -240,6 +240,7 @@ async function remove(id: string) {
           {{ t('categories.categoryName') }}
           <input
             v-model="name"
+            type="text"
             maxlength="50"
             placeholder="e.g. Gym & Fitness"
             required
@@ -306,7 +307,7 @@ async function remove(id: string) {
         <p v-if="error" class="error-note" role="alert">{{ error }}</p>
 
         <div class="entry-actions">
-          <button class="primary" :disabled="busy || !name.trim()">
+          <button type="submit" class="primary" :disabled="busy || !name.trim()">
             {{ busy ? t('common.saving') : t('categories.saveCategory') }}
           </button>
           <button type="button" class="secondary" @click="cancelEdit">
@@ -510,7 +511,6 @@ async function remove(id: string) {
 
 .color-swatch .check-icon {
   color: #ffffff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
 
 .custom-color-picker {

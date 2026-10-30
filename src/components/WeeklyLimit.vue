@@ -481,11 +481,12 @@ async function removeLimit() {
     </div>
 
     <!-- Configure Budget & Salary Drawer -->
-    <div
-      v-if="editing"
-      class="drawer-backdrop"
-      @click.self="editing = false"
-    >
+    <Teleport to="body">
+      <div
+        v-if="editing"
+        class="drawer-backdrop"
+        @click.self="editing = false"
+      >
       <div class="bottom-drawer" role="dialog" aria-modal="true">
         <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
         <div class="drawer-header">
@@ -612,6 +613,7 @@ async function removeLimit() {
         </div>
       </div>
     </div>
+    </Teleport>
   </section>
 </template>
 
@@ -1080,8 +1082,7 @@ async function removeLimit() {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(13, 36, 30, 0.55);
-  backdrop-filter: blur(4px);
+  background: var(--surface-backdrop, rgba(13, 36, 30, 0.55));
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1090,16 +1091,19 @@ async function removeLimit() {
 }
 
 .bottom-drawer {
-  background: #fff;
+  background: var(--surface-drawer, #fff);
+  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
   width: 100vw;
   max-width: 100vw;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -16px 64px rgba(13, 36, 30, 0.35);
+  box-shadow: var(--surface-drawer-shadow, 0 -16px 64px rgba(13, 36, 30, 0.35));
   display: flex;
   flex-direction: column;
   max-height: 92dvh;
   overflow: hidden;
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 @keyframes slideUp {
