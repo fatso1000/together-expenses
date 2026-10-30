@@ -24,12 +24,12 @@
   - [x] Set dialog and drawer backdrops (`::backdrop` and `.drawer-backdrop`) to flat `rgba(0, 0, 0, 0.45)` without blur filters.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 4c92d2a
 
-## Phase 4: Optimize Drawer Opening Transitions
-- [ ] Task: Streamline Drawer Animation & Hardware Acceleration
-  - [ ] Optimize drawer `@keyframes slideUp` across all components to use lightweight single-pass `translateY` transforms with `will-change: transform`.
-  - [ ] Simplify heavy multi-layered box-shadows on drawers to minimize rasterization costs during animation.
-  - [ ] Verify drag handle responsiveness, body scrolling, and dialog accessibility attributes.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 4: Optimize Drawer Opening Transitions [checkpoint: 44afa86]
+- [x] Task: Streamline Drawer Animation & Hardware Acceleration 44afa86
+  - [x] Optimize drawer `@keyframes slideUp` across all components to use lightweight single-pass `translateY` transforms with `will-change: transform`.
+  - [x] Simplify heavy multi-layered box-shadows on drawers to minimize rasterization costs during animation.
+  - [x] Verify drag handle responsiveness, body scrolling, and dialog accessibility attributes.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 44afa86
 
 ## Phase 5: Verification & Full Regression Pass
 - [ ] Task: Run Comprehensive Automated Test Suites
