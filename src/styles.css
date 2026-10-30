@@ -37,13 +37,6 @@
     0 2px 8px 0 rgba(0, 0, 0, 0.03),
     inset 0 1px 2px 0 rgba(255, 255, 255, 1);
 
-  /* Fluid Mesh Orbs (Light Mode) */
-  --liquid-mesh-1: rgba(30, 142, 107, 0.22);
-  --liquid-mesh-2: rgba(72, 199, 142, 0.26);
-  --liquid-mesh-3: rgba(43, 187, 173, 0.18);
-  --liquid-mesh-4: rgba(247, 194, 66, 0.14);
-  --liquid-bg-base: #f3f7f5;
-
   /* Form & Interactive Tokens */
   --input-bg: rgba(255, 255, 255, 0.65);
   --input-border: 1px solid rgba(198, 212, 205, 0.85);
@@ -83,13 +76,6 @@
     0 4px 12px 0 rgba(0, 0, 0, 0.3),
     inset 0 1px 2px 0 rgba(255, 255, 255, 0.18);
 
-  /* Fluid Mesh Orbs (Dark Mode) */
-  --liquid-mesh-1: rgba(16, 94, 71, 0.45);
-  --liquid-mesh-2: rgba(29, 140, 108, 0.38);
-  --liquid-mesh-3: rgba(20, 115, 125, 0.3);
-  --liquid-mesh-4: rgba(190, 140, 35, 0.22);
-  --liquid-bg-base: #0b1412;
-
   /* Form & Interactive Tokens */
   --input-bg: rgba(13, 23, 20, 0.75);
   --input-border: 1px solid rgba(255, 255, 255, 0.15);
@@ -99,93 +85,6 @@
   --pill-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
-/* Ambient Fluid Mesh Canvas (Atmospheric Refraction Underlay) */
-.ambient-fluid-mesh {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-  background-color: var(--liquid-bg-base);
-  contain: strict;
-  transition: background-color 0.4s ease;
-}
-
-.fluid-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(85px);
-  opacity: 0.85;
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
-}
-
-.orb-1 {
-  width: 580px;
-  height: 580px;
-  background: radial-gradient(circle, var(--liquid-mesh-2) 0%, transparent 68%);
-  top: -100px;
-  right: -80px;
-  animation: floatOrb1 26s ease-in-out infinite alternate;
-}
-
-.orb-2 {
-  width: 680px;
-  height: 680px;
-  background: radial-gradient(circle, var(--liquid-mesh-1) 0%, transparent 70%);
-  bottom: -80px;
-  left: -140px;
-  animation: floatOrb2 30s ease-in-out infinite alternate;
-}
-
-.orb-3 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--liquid-mesh-4) 0%, transparent 68%);
-  top: 36%;
-  right: 18%;
-  animation: floatOrb3 22s ease-in-out infinite alternate;
-}
-
-.orb-4 {
-  width: 440px;
-  height: 440px;
-  background: radial-gradient(circle, var(--liquid-mesh-3) 0%, transparent 68%);
-  top: 15%;
-  left: 20%;
-  animation: floatOrb4 25s ease-in-out infinite alternate;
-}
-
-@keyframes floatOrb1 {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-70px, 60px, 0) scale(1.08); }
-  100% { transform: translate3d(50px, 110px, 0) scale(0.94); }
-}
-
-@keyframes floatOrb2 {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(90px, -60px, 0) scale(1.06); }
-  100% { transform: translate3d(40px, -110px, 0) scale(0.93); }
-}
-
-@keyframes floatOrb3 {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-50px, -70px, 0) scale(1.12); }
-  100% { transform: translate3d(-90px, 40px, 0) scale(0.92); }
-}
-
-@keyframes floatOrb4 {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(60px, 50px, 0) scale(1.09); }
-  100% { transform: translate3d(-40px, 80px, 0) scale(0.95); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fluid-orb {
-    animation: none !important;
-    transform: none !important;
-  }
-}
 * {
   box-sizing: border-box;
 }
