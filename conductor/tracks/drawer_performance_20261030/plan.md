@@ -6,14 +6,14 @@
   - [x] Add/update test assertions to verify that drawer and backdrop elements do not require `backdrop-filter` and that no animated fluid orbs are rendered.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) a904228
 
-## Phase 2: Purge Ambient Fluid Shaders & Orb Animations
-- [ ] Task: Remove Ambient Mesh and Orb Animations from CSS & Templates
-  - [ ] Remove `.ambient-fluid-mesh`, `.fluid-orb`, and `@keyframes floatOrb*` from `together/src/styles.css`.
-  - [ ] Clean up redundant `--liquid-mesh-*` CSS variables in light and dark mode `:root`.
-  - [ ] Verify `App.vue` and `index.html` contain no orphaned mesh markup.
-- [ ] Task: Verify Orb Removal
-  - [ ] Run test suite to ensure clean build and no visual/structural regressions.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 2: Purge Ambient Fluid Shaders & Orb Animations [checkpoint: febfe62]
+- [x] Task: Remove Ambient Mesh and Orb Animations from CSS & Templates febfe62
+  - [x] Remove `.ambient-fluid-mesh`, `.fluid-orb`, and `@keyframes floatOrb*` from `together/src/styles.css`.
+  - [x] Clean up redundant `--liquid-mesh-*` CSS variables in light and dark mode `:root`.
+  - [x] Verify `App.vue` and `index.html` contain no orphaned mesh markup.
+- [x] Task: Verify Orb Removal febfe62
+  - [x] Run test suite to ensure clean build and no visual/structural regressions.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) febfe62
 
 ## Phase 3: Eliminate Heavy Backdrop Filters Across All Surfaces
 - [ ] Task: Refactor Surface & Blur Tokens in `styles.css`
