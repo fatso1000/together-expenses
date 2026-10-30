@@ -1,0 +1,3 @@
+Task: Remove Ambient Mesh and Orb Animations from CSS & Templates
+Summary: Stripped .ambient-fluid-mesh, .fluid-orb, and @keyframes floatOrb1-4 from styles.css. Cleaned up --liquid-mesh-* and --liquid-bg-base CSS tokens in light and dark mode. Verified no orphaned markup. Passing performance test assertion.
+Files modified: src/styles.css
