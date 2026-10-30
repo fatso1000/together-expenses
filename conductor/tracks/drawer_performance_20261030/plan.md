@@ -15,14 +15,14 @@
   - [x] Run test suite to ensure clean build and no visual/structural regressions.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) febfe62
 
-## Phase 3: Eliminate Heavy Backdrop Filters Across All Surfaces
-- [ ] Task: Refactor Surface & Blur Tokens in `styles.css`
-  - [ ] Replace `--glass-card-blur` and `--glass-elevated-blur` tokens with `none` and remove all `backdrop-filter` declarations.
-  - [ ] Adjust surface color tokens (`--glass-card-bg`, `--glass-elevated-bg`, `--surface-drawer`, etc.) to clean, solid/semi-opaque colors with high contrast for both light and dark themes.
-- [ ] Task: Purge Component-Level Backdrop Filters and Heavy Blurs
-  - [ ] Update `ExpenseForm.vue`, `WeeklyLimit.vue`, `AccountsOverview.vue`, `FrequentPayments.vue`, `QuickCompare.vue`, and `BulkEntry.vue`.
-  - [ ] Set dialog and drawer backdrops (`::backdrop` and `.drawer-backdrop`) to flat `rgba(0, 0, 0, 0.45)` without blur filters.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 3: Eliminate Heavy Backdrop Filters Across All Surfaces [checkpoint: 4c92d2a]
+- [x] Task: Refactor Surface & Blur Tokens in `styles.css` 4c92d2a
+  - [x] Replace `--glass-card-blur` and `--glass-elevated-blur` tokens with `none` and remove all `backdrop-filter` declarations.
+  - [x] Adjust surface color tokens (`--glass-card-bg`, `--glass-elevated-bg`, `--surface-drawer`, etc.) to clean, solid/semi-opaque colors with high contrast for both light and dark themes.
+- [x] Task: Purge Component-Level Backdrop Filters and Heavy Blurs 4c92d2a
+  - [x] Update `ExpenseForm.vue`, `WeeklyLimit.vue`, `AccountsOverview.vue`, `FrequentPayments.vue`, `QuickCompare.vue`, and `BulkEntry.vue`.
+  - [x] Set dialog and drawer backdrops (`::backdrop` and `.drawer-backdrop`) to flat `rgba(0, 0, 0, 0.45)` without blur filters.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 4c92d2a
 
 ## Phase 4: Optimize Drawer Opening Transitions
 - [ ] Task: Streamline Drawer Animation & Hardware Acceleration
