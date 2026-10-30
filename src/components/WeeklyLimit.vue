@@ -1082,7 +1082,7 @@ async function removeLimit() {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--surface-backdrop, rgba(13, 36, 30, 0.55));
+  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
   display: flex;
   align-items: flex-end;
   justify-content: center;

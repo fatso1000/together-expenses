@@ -840,7 +840,7 @@ async function submit() {
 }
 
 .expense-drawer-dialog::backdrop {
-  background: var(--surface-backdrop, rgba(10, 24, 20, 0.5));
+  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
 }
 
 @keyframes slideUp {
@@ -1229,7 +1229,7 @@ async function submit() {
 .inline-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--surface-backdrop, rgba(10, 24, 20, 0.5));
+  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
   z-index: 1100;
   display: flex;
   align-items: flex-end;
