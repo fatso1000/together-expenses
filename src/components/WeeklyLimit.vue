@@ -1096,14 +1096,13 @@ async function removeLimit() {
   width: 100vw;
   max-width: 100vw;
   border-radius: 24px 24px 0 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -16px 64px rgba(13, 36, 30, 0.35));
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
   display: flex;
   flex-direction: column;
   max-height: 92dvh;
   overflow: hidden;
-  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
-  transform: translate3d(0, 0, 0);
+  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {

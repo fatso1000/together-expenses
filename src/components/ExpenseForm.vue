@@ -830,13 +830,12 @@ async function submit() {
   border-radius: 28px 28px 0 0;
   color: inherit;
   padding: 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -12px 40px rgba(13, 36, 30, 0.16));
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
-  transform: translate3d(0, 0, 0);
+  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .expense-drawer-dialog::backdrop {
@@ -1245,10 +1244,9 @@ async function submit() {
   max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: var(--surface-drawer-shadow, 0 -12px 40px rgba(13, 36, 30, 0.16));
-  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
   will-change: transform;
-  transform: translate3d(0, 0, 0);
+  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .inline-modal-header {
