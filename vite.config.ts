@@ -2,9 +2,14 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "node:url";
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
+  css: {
+    devSourcemap: false,
+  },
   plugins: [
+    tailwindcss(),
     vue(),
     VitePWA({
       registerType: "prompt",

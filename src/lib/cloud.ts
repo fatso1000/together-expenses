@@ -65,7 +65,7 @@ function records(data: AppData): Map<string, RecordValue> {
       limits: data.limits,
       categoryLimits: data.categoryLimits ?? [],
       accounts: data.accounts ?? { globalInitialNZD: 0, nzInitialNZD: 0 },
-      salary: data.salary ?? { weeklyAverageNZD: 0 },
+      salary: data.salary ?? { weeklyAverageNZD: 0, payDayOfWeek: 1 },
       customCategories: data.customCategories ?? [],
     },
   });

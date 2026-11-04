@@ -7,6 +7,7 @@ import type {
   FinancialAccounts,
   SavingsRecord,
   CategoryLimit,
+  DayOfWeek,
 } from "@/lib/types";
 import { categories } from "@/lib/types";
 
@@ -132,6 +133,95 @@ export function nextDateAfterFrequency(
     date.setFullYear(date.getFullYear() + 1);
   }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function getWeekStart(
+  dateStr?: string,
+  payDayOfWeek: DayOfWeek = 1,
+): string {
+  const base =
+    dateStr && !isNaN(new Date(`${dateStr}T12:00:00`).getTime())
+      ? dateStr
+      : today();
+  const date = new Date(`${base}T12:00:00`);
+  const currentDay = date.getDay();
+  const diff = (currentDay - payDayOfWeek + 7) % 7;
+  date.setDate(date.getDate() - diff);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function getWeekEnd(weekStartStr: string): string {
+  const base =
+    weekStartStr && !isNaN(new Date(`${weekStartStr}T12:00:00`).getTime())
+      ? weekStartStr
+      : today();
+  const end = new Date(`${base}T12:00:00`);
+  end.setDate(end.getDate() + 6);
+  return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+}
+
+export function getWeekDays(weekStartStr: string): Array<{
+  date: string;
+  dayIndex: number;
+  shortLabel: string;
+  longLabel: string;
+}> {
+  const base =
+    weekStartStr && !isNaN(new Date(`${weekStartStr}T12:00:00`).getTime())
+      ? weekStartStr
+      : today();
+  const start = new Date(`${base}T12:00:00`);
+  const shortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const longNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const current = new Date(start);
+    current.setDate(start.getDate() + i);
+    const dayIndex = current.getDay();
+    const date = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+    return {
+      date,
+      dayIndex,
+      shortLabel: shortNames[dayIndex],
+      longLabel: longNames[dayIndex],
+    };
+  });
+}
+
+export function formatWeekdayRange(
+  weekStartStr: string,
+  weekEndStr: string,
+  short = true,
+): string {
+  const start = new Date(`${weekStartStr}T12:00:00`);
+  const end = new Date(`${weekEndStr}T12:00:00`);
+  const shortNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const longNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return "";
+  }
+
+  if (short) {
+    return `${shortNames[start.getDay()]}–${shortNames[end.getDay()]}`;
+  }
+  return `${longNames[start.getDay()]}–${longNames[end.getDay()]}`;
 }
 
 export function isDateInWeek(

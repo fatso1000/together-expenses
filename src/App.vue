@@ -98,7 +98,7 @@ watch(
 <template>
   <div class="app-layout">
     <aside class="sidebar">
-      <RouterLink class="brand" to="/">{{ t('nav.brand') }}</RouterLink>
+      <RouterLink class="brand pb-4" to="/">{{ t('nav.brand') }}</RouterLink>
       <nav aria-label="Main navigation">
         <RouterLink
           v-for="item in navigation"

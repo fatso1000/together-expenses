@@ -22,7 +22,7 @@ import {
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, parseOptionalMoney, today } from "@/lib/finance";
 import { t, categoryLabel } from "@/lib/i18n";
-import type { CategoryLimit } from "@/lib/types";
+import type { CategoryLimit, DayOfWeek } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 
 const store = useExpenses();
@@ -30,6 +30,8 @@ const editing = shallowRef(false);
 const editMode = shallowRef<"structured" | "quick">("structured");
 const amount = shallowRef("");
 const salaryAmount = shallowRef("");
+const payDayOfWeek = ref<DayOfWeek>(1);
+const payDate = ref<string>("");
 const error = shallowRef("");
 const busy = shallowRef(false);
 
@@ -98,6 +100,8 @@ function openEdit() {
   salaryAmount.value = weeklySalary.value
     ? (weeklySalary.value / 100).toFixed(2)
     : "";
+  payDayOfWeek.value = (store.salary.payDayOfWeek ?? 1) as DayOfWeek;
+  payDate.value = store.salary.payDate ?? "";
 
   // Populate local category limits
   if (store.categoryLimits.length) {
@@ -127,6 +131,15 @@ function removeCategoryRow(index: number) {
   localCategoryLimits.value.splice(index, 1);
 }
 
+function onPayDateChange() {
+  if (payDate.value) {
+    const d = new Date(`${payDate.value}T12:00:00`);
+    if (!isNaN(d.getTime())) {
+      payDayOfWeek.value = d.getDay() as DayOfWeek;
+    }
+  }
+}
+
 async function saveBudget() {
   busy.value = true;
   error.value = "";
@@ -148,11 +161,23 @@ async function saveBudget() {
         }
       }
       const sum = validLimits.reduce((acc, l) => acc + l.amount, 0);
-      await store.saveWeeklyBudgetAndSalary(salCents, sum, validLimits);
+      await store.saveWeeklyBudgetAndSalary(
+        salCents,
+        sum,
+        validLimits,
+        payDayOfWeek.value,
+        payDate.value.trim() || undefined,
+      );
     } else {
       // Quick amount
       const totalCents = parseMoney(amount.value);
-      await store.saveWeeklyBudgetAndSalary(salCents, totalCents);
+      await store.saveWeeklyBudgetAndSalary(
+        salCents,
+        totalCents,
+        undefined,
+        payDayOfWeek.value,
+        payDate.value.trim() || undefined,
+      );
     }
     editing.value = false;
   } catch (reason) {
@@ -167,7 +192,13 @@ async function removeLimit() {
   busy.value = true;
   error.value = "";
   try {
-    await store.saveWeeklyBudgetAndSalary(store.salary.weeklyAverageNZD, 0, []);
+    await store.saveWeeklyBudgetAndSalary(
+      store.salary.weeklyAverageNZD,
+      0,
+      [],
+      store.salary.payDayOfWeek,
+      store.salary.payDate,
+    );
     editing.value = false;
   } catch (reason) {
     error.value = friendlyError(reason);
@@ -194,7 +225,7 @@ async function removeLimit() {
           <h2>Weekly Spending Limit</h2>
           <p class="small muted date-range">
             <Calendar :size="13" />
-            {{ store.weekStart }} – {{ store.weekEnd }}
+            {{ store.weekStart }} – {{ store.weekEnd }} ({{ store.weekWeekdayRange }})
           </p>
         </div>
       </div>
@@ -508,6 +539,32 @@ async function removeLimit() {
           </label>
           <p class="small muted">
             {{ t('weeklyLimit.salaryHint') }}
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+            <label>
+              {{ t('weeklyLimit.salaryPaymentDay') }}
+              <select v-model.number="payDayOfWeek">
+                <option :value="1">{{ t('days.1') }}</option>
+                <option :value="2">{{ t('days.2') }}</option>
+                <option :value="3">{{ t('days.3') }}</option>
+                <option :value="4">{{ t('days.4') }}</option>
+                <option :value="5">{{ t('days.5') }}</option>
+                <option :value="6">{{ t('days.6') }}</option>
+                <option :value="0">{{ t('days.0') }}</option>
+              </select>
+            </label>
+            <label>
+              {{ t('weeklyLimit.pickFromDate') }}
+              <input
+                v-model="payDate"
+                type="date"
+                @change="onPayDateChange"
+              />
+            </label>
+          </div>
+          <p class="small muted" style="margin-top: 0.25rem;">
+            {{ t('weeklyLimit.paymentDayHint') }}
           </p>
 
           <hr class="modal-divider" />

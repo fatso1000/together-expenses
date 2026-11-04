@@ -103,6 +103,9 @@
     "configureTitle": "Configure Weekly Budget & Salary",
     "salaryField": "Weekly Average Salary · NZD (can change anytime)",
     "salaryHint": "Used to calculate your target weekly savings and compare against your weekly limit.",
+    "salaryPaymentDay": "Salary Payment Day",
+    "paymentDayHint": "Your weekly budget and calculations run for 7 days starting from this day.",
+    "pickFromDate": "Or pick by salary date:",
     "structuredTab": "Structured by Category",
     "singleTab": "Single Overall Limit",
     "structuredHint": "Separate your week limit between rent, food, bills, expenses, and discretionary spending.",
@@ -418,6 +421,8 @@
     "globalNzd": "Global Starting Money · NZD",
     "nzAccountNzd": "NZ Account Initial Balance · NZD",
     "salaryNzd": "Weekly Average Salary · NZD",
+    "salaryPaymentDay": "Salary Payment Day",
+    "salaryPaymentDayHint": "Starts your 7-day budget week on this day.",
     "saveAccounts": "Save accounts setup",
     "referenceRate": "Reference rate: 1 NZD = {rate} USD ({status})",
     "updateConversion": "Update conversion",
@@ -490,5 +495,23 @@
     "Travel": "Travel",
     "Home": "Home",
     "Other": "Other"
+  },
+  "days": {
+    "0": "Sunday",
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday"
+  },
+  "daysShort": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
   }
 }

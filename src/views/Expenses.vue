@@ -140,7 +140,7 @@ function exportCsv() {
     <!-- Active Period Information Banner -->
     <div v-if="period === 'week'" class="week-banner">
       <span>
-        <strong>{{ t('expenses.thisWeek') }}:</strong> {{ store.weekStart }} to {{ store.weekEnd }} (Mon–Sun)
+        <strong>{{ t('expenses.thisWeek') }}:</strong> {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRange }})
       </span>
       <span class="week-banner-metric">
         {{ filtered.length }} {{ t('nav.expenses').toLowerCase() }} · {{ store.displayMoney(total(filtered)) }}

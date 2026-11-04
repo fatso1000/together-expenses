@@ -10,6 +10,7 @@ import {
   type AccountId,
   type FinancialAccounts,
   type SalaryConfig,
+  type DayOfWeek,
   type CategoryLimit,
   type FrequentPayment,
   type SavingsRecord,
@@ -36,6 +37,7 @@ export function emptyData(): AppData {
     },
     salary: {
       weeklyAverageNZD: 0,
+      payDayOfWeek: 1,
     },
     frequentPayments: [],
     savingsRecords: [],
@@ -341,16 +343,28 @@ export function parseBackup(source: string): AppData {
   // Salary
   let salary: SalaryConfig = {
     weeklyAverageNZD: 0,
+    payDayOfWeek: 1,
   };
   if (data.salary && typeof data.salary === "object") {
     const sal = data.salary;
+    const hasValidPayDay =
+      sal.payDayOfWeek === undefined ||
+      (Number.isInteger(sal.payDayOfWeek) && sal.payDayOfWeek >= 0 && sal.payDayOfWeek <= 6);
+    const hasValidPayDate =
+      sal.payDate === undefined ||
+      (typeof sal.payDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sal.payDate));
+
     if (
       !cents(sal.weeklyAverageNZD ?? 0, true) ||
-      (sal.updatedAt !== undefined && !Number.isSafeInteger(sal.updatedAt))
+      (sal.updatedAt !== undefined && !Number.isSafeInteger(sal.updatedAt)) ||
+      !hasValidPayDay ||
+      !hasValidPayDate
     )
       return invalid();
     salary = {
       weeklyAverageNZD: sal.weeklyAverageNZD ?? 0,
+      payDayOfWeek: (sal.payDayOfWeek ?? 1) as DayOfWeek,
+      ...(sal.payDate ? { payDate: sal.payDate } : {}),
       ...(sal.updatedAt !== undefined ? { updatedAt: sal.updatedAt } : {}),
     };
   }

@@ -103,6 +103,9 @@
     "configureTitle": "Configurar Presupuesto Semanal y Sueldo",
     "salaryField": "Sueldo Semanal Promedio · NZD (se puede cambiar cuando quieras)",
     "salaryHint": "Se usa para calcular tu ahorro semanal estimado y comparar contra el límite.",
+    "salaryPaymentDay": "Día de Cobro del Sueldo",
+    "paymentDayHint": "Tu semana de presupuesto y cálculos correrá por 7 días a partir de este día.",
+    "pickFromDate": "O elegir por fecha de cobro:",
     "structuredTab": "Estructurado por Rubro",
     "singleTab": "Límite General Único",
     "structuredHint": "Dividí el límite semanal entre alquiler, comida, facturas, compras y salidas.",
@@ -418,6 +421,8 @@
     "globalNzd": "Plata Inicial Global · NZD",
     "nzAccountNzd": "Saldo Inicial Cuenta NZ · NZD",
     "salaryNzd": "Sueldo Promedio Semanal · NZD",
+    "salaryPaymentDay": "Día de Cobro del Sueldo",
+    "salaryPaymentDayHint": "Comienza tu semana de presupuesto de 7 días en este día.",
     "saveAccounts": "Guardar configuración de cuentas",
     "referenceRate": "Cotización de referencia: 1 NZD = {rate} USD ({status})",
     "updateConversion": "Actualizar cotización",
@@ -490,5 +495,23 @@
     "Travel": "Viajes",
     "Home": "Hogar",
     "Other": "Otros"
+  },
+  "days": {
+    "0": "Domingo",
+    "1": "Lunes",
+    "2": "Martes",
+    "3": "Miércoles",
+    "4": "Jueves",
+    "5": "Viernes",
+    "6": "Sábado"
+  },
+  "daysShort": {
+    "0": "Dom",
+    "1": "Lun",
+    "2": "Mar",
+    "3": "Mié",
+    "4": "Jue",
+    "5": "Vie",
+    "6": "Sáb"
   }
 }

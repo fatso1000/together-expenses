@@ -156,6 +156,41 @@ test("v4 backups support accounts, salary, category limits, frequent payments, a
   assert.equal(parsed.accounts?.globalInitialNZD, 820000);
   assert.equal(parsed.accounts?.nzInitialNZD, 250000);
   assert.equal(parsed.salary?.weeklyAverageNZD, 120000);
+  assert.equal(parsed.salary?.payDayOfWeek, 1); // defaults to Monday
+
+  // Custom payDayOfWeek and payDate
+  const customSalaryV4 = {
+    ...rawV4,
+    salary: {
+      weeklyAverageNZD: 150000,
+      payDayOfWeek: 4,
+      payDate: "2026-10-29",
+    },
+  };
+  const parsedCustom = parseBackup(JSON.stringify(customSalaryV4));
+  assert.equal(parsedCustom.salary?.weeklyAverageNZD, 150000);
+  assert.equal(parsedCustom.salary?.payDayOfWeek, 4);
+  assert.equal(parsedCustom.salary?.payDate, "2026-10-29");
+
+  // Invalid payDayOfWeek throws
+  assert.throws(() =>
+    parseBackup(
+      JSON.stringify({
+        ...rawV4,
+        salary: { weeklyAverageNZD: 100000, payDayOfWeek: 7 },
+      }),
+    ),
+  );
+
+  // Invalid payDate throws
+  assert.throws(() =>
+    parseBackup(
+      JSON.stringify({
+        ...rawV4,
+        salary: { weeklyAverageNZD: 100000, payDate: "not-a-date" },
+      }),
+    ),
+  );
   assert.equal(parsed.categoryLimits?.length, 2);
   assert.equal(parsed.categoryLimits?.[0].category, "Rent");
   assert.equal(parsed.frequentPayments?.length, 1);

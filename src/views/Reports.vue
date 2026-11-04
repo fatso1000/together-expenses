@@ -16,7 +16,7 @@ import {
   ArrowRightLeft,
 } from "lucide-vue-next";
 import { useExpenses } from "@/stores/expenses";
-import { total, money, csv, downloadFile, compareSpendWithInitial } from "@/lib/finance";
+import { total, money, csv, downloadFile, compareSpendWithInitial, getWeekDays } from "@/lib/finance";
 import { t } from "@/lib/i18n";
 import CategoryDonutChart from "@/components/reports/CategoryDonutChart.vue";
 import SpendTrajectoryChart from "@/components/reports/SpendTrajectoryChart.vue";
@@ -66,20 +66,15 @@ const allTimeBaselineComparison = computed(() =>
   compareSpendWithInitial(store.allTimeTotal, initialGlobalNZD.value),
 );
 
-// Daily spending for the current week (7 days: Monday to Sunday)
+// Daily spending for the current 7-day salary week
 const weekDays = computed(() => {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const start = new Date(`${store.weekStart}T12:00:00`);
+  const days = getWeekDays(store.weekStart);
 
-  return days.map((label, index) => {
-    const current = new Date(start);
-    current.setDate(start.getDate() + index);
-    const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
-    const amount = total(rows.value.filter((item) => item.date === dateStr));
-
+  return days.map((d) => {
+    const amount = total(rows.value.filter((item) => item.date === d.date));
     return {
-      label,
-      date: dateStr,
+      label: t(`daysShort.${d.dayIndex}`),
+      date: d.date,
       amount,
     };
   });
@@ -155,7 +150,7 @@ function exportCsv() {
         <input v-model="store.weekDate" type="date" required />
       </label>
       <span class="small muted">
-        {{ store.weekStart }} to {{ store.weekEnd }} (Monday–Sunday)
+        {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRangeLong }})
       </span>
     </div>
 

@@ -1,5 +1,7 @@
 @import "@fontsource-variable/dm-sans";
 @import "@fontsource-variable/manrope";
+@import "tailwindcss";
+
 :root {
   font-family: "DM Sans Variable", sans-serif;
   color: #1e3a32;

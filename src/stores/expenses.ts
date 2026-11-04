@@ -10,6 +10,7 @@ import {
   type CategoryDefinition,
   type FinancialAccounts,
   type SalaryConfig,
+  type DayOfWeek,
   type CategoryLimit,
   type FrequentPayment,
   type SavingsRecord,
@@ -27,6 +28,9 @@ import {
   calculateCategoryBudgetStatus,
   nextDateAfterFrequency,
   isDateInWeek,
+  getWeekStart,
+  getWeekEnd,
+  formatWeekdayRange,
 } from "@/lib/finance";
 import {
   storageKey,
@@ -107,13 +111,16 @@ export const useExpenses = defineStore("expenses", () => {
   );
   const monthTotal = computed(() => total(monthExpenses.value));
   const weeklyLimit = computed(() => data.value.weeklyLimit);
+  const payDayOfWeek = computed<DayOfWeek>(() => data.value.salary?.payDayOfWeek ?? 1);
   const weekDate = shallowRef(today());
-  const weekStart = computed(() => monday(weekDate.value));
-  const weekEnd = computed(() => {
-    const end = new Date(`${weekStart.value}T12:00:00`);
-    end.setDate(end.getDate() + 6);
-    return localDate(end);
-  });
+  const weekStart = computed(() => getWeekStart(weekDate.value, payDayOfWeek.value));
+  const weekEnd = computed(() => getWeekEnd(weekStart.value));
+  const weekWeekdayRange = computed(() =>
+    formatWeekdayRange(weekStart.value, weekEnd.value, true),
+  );
+  const weekWeekdayRangeLong = computed(() =>
+    formatWeekdayRange(weekStart.value, weekEnd.value, false),
+  );
   const weekTotal = computed(() =>
     total(
       currencyExpenses.value.filter(
@@ -253,9 +260,7 @@ export const useExpenses = defineStore("expenses", () => {
     return money(amount, "NZD");
   }
   function monday(value: string) {
-    const date = new Date(`${value || today()}T12:00:00`);
-    date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-    return localDate(date);
+    return getWeekStart(value, payDayOfWeek.value);
   }
   function localDate(date: Date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -591,10 +596,20 @@ export const useExpenses = defineStore("expenses", () => {
     message.value = "Accounts updated";
   }
 
-  async function saveSalary(weeklyAverageNZD: number) {
+  async function saveSalary(
+    weeklyAverageNZD: number,
+    payDayOfWeek?: DayOfWeek,
+    payDate?: string,
+  ) {
     await change((current) => {
       current.salary = {
         weeklyAverageNZD,
+        payDayOfWeek: payDayOfWeek ?? current.salary?.payDayOfWeek ?? 1,
+        ...(payDate !== undefined
+          ? { payDate }
+          : current.salary?.payDate
+            ? { payDate: current.salary.payDate }
+            : {}),
         updatedAt: Date.now(),
       };
     });
@@ -604,6 +619,8 @@ export const useExpenses = defineStore("expenses", () => {
   async function saveAccountsAndSalary(
     config: FinancialAccounts,
     weeklySalaryNZD: number,
+    payDayOfWeek?: DayOfWeek,
+    payDate?: string,
   ) {
     await change((current) => {
       current.accounts = {
@@ -619,6 +636,12 @@ export const useExpenses = defineStore("expenses", () => {
       };
       current.salary = {
         weeklyAverageNZD: weeklySalaryNZD,
+        payDayOfWeek: payDayOfWeek ?? current.salary?.payDayOfWeek ?? 1,
+        ...(payDate !== undefined
+          ? { payDate }
+          : current.salary?.payDate
+            ? { payDate: current.salary.payDate }
+            : {}),
         updatedAt: Date.now(),
       };
     });
@@ -629,10 +652,18 @@ export const useExpenses = defineStore("expenses", () => {
     weeklySalaryNZD: number,
     weeklyLimit: number,
     categoryLimits?: CategoryLimit[],
+    payDayOfWeek?: DayOfWeek,
+    payDate?: string,
   ) {
     await change((current) => {
       current.salary = {
         weeklyAverageNZD: weeklySalaryNZD,
+        payDayOfWeek: payDayOfWeek ?? current.salary?.payDayOfWeek ?? 1,
+        ...(payDate !== undefined
+          ? { payDate }
+          : current.salary?.payDate
+            ? { payDate: current.salary.payDate }
+            : {}),
         updatedAt: Date.now(),
       };
       current.weeklyLimit = weeklyLimit;
@@ -837,9 +868,12 @@ export const useExpenses = defineStore("expenses", () => {
     monthExpenses,
     monthTotal,
     weeklyLimit,
+    payDayOfWeek,
     weekDate,
     weekStart,
     weekEnd,
+    weekWeekdayRange,
+    weekWeekdayRangeLong,
     weekTotal,
     weekExpenses,
     weekGlobalExpenses,

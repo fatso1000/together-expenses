@@ -45,8 +45,12 @@ export interface FinancialAccounts {
   updatedAt?: number;
 }
 
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface SalaryConfig {
   weeklyAverageNZD: number;
+  payDayOfWeek?: DayOfWeek;
+  payDate?: string;
   updatedAt?: number;
 }
 

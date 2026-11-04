@@ -26,6 +26,7 @@ import {
   type OllamaStatus,
 } from "@/lib/ollama";
 import { t } from "@/lib/i18n";
+import type { DayOfWeek } from "@/lib/types";
 
 const store = useExpenses();
 const error = shallowRef("");
@@ -74,6 +75,8 @@ const usdInitial = shallowRef("");
 const nzdInitial = shallowRef("");
 const nzSavingsInitial = shallowRef("");
 const weeklySalaryInput = shallowRef("");
+const payDayOfWeekInput = ref<DayOfWeek>(1);
+const payDateInput = ref<string>("");
 
 // Keep form fields synchronized with store data as cloud connects or updates
 watch(
@@ -92,9 +95,20 @@ watch(
     weeklySalaryInput.value = newSalary.weeklyAverageNZD
       ? (newSalary.weeklyAverageNZD / 100).toFixed(2)
       : "";
+    payDayOfWeekInput.value = (newSalary.payDayOfWeek ?? 1) as DayOfWeek;
+    payDateInput.value = newSalary.payDate ?? "";
   },
   { immediate: true, deep: true },
 );
+
+function onPayDateChange() {
+  if (payDateInput.value) {
+    const d = new Date(`${payDateInput.value}T12:00:00`);
+    if (!isNaN(d.getTime())) {
+      payDayOfWeekInput.value = d.getDay() as DayOfWeek;
+    }
+  }
+}
 
 // Auto-convert USD to NZD when USD is typed and rate is available
 function convertUsdToNzd() {
@@ -130,6 +144,8 @@ async function saveAccountsSetup() {
         globalManualNZD: true,
       },
       salaryNZD,
+      payDayOfWeekInput.value,
+      payDateInput.value.trim() || undefined,
     );
 
     accountsSaved.value = true;
@@ -261,6 +277,32 @@ async function clear() {
           />
         </label>
       </div>
+
+      <div class="form-pair">
+        <label>
+          {{ t('settings.salaryPaymentDay') }}
+          <select v-model.number="payDayOfWeekInput">
+            <option :value="1">{{ t('days.1') }}</option>
+            <option :value="2">{{ t('days.2') }}</option>
+            <option :value="3">{{ t('days.3') }}</option>
+            <option :value="4">{{ t('days.4') }}</option>
+            <option :value="5">{{ t('days.5') }}</option>
+            <option :value="6">{{ t('days.6') }}</option>
+            <option :value="0">{{ t('days.0') }}</option>
+          </select>
+        </label>
+        <label>
+          {{ t('weeklyLimit.pickFromDate') }}
+          <input
+            v-model="payDateInput"
+            type="date"
+            @change="onPayDateChange"
+          />
+        </label>
+      </div>
+      <p class="small muted" style="margin-top: -0.5rem; margin-bottom: 0.75rem;">
+        {{ t('settings.salaryPaymentDayHint') }}
+      </p>
       <p v-if="error" class="error-note" role="alert">{{ error }}</p>
 
       <div class="save-actions">

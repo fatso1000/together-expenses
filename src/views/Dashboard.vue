@@ -12,6 +12,7 @@ import FrequentPayments from "@/components/FrequentPayments.vue";
 import AiMoneyAdvisor from "@/components/AiMoneyAdvisor.vue";
 import { Zap, ListPlus, ScanLine, AlertCircle } from "lucide-vue-next";
 import TrendChart from "@/components/TrendChart.vue";
+import Button from "primevue";
 
 const store = useExpenses();
 const lastTotal = computed(() =>
@@ -30,13 +31,13 @@ const isOverWeeklyLimit = computed(
 <template>
   <div class="quick-entry-actions">
     <button class="secondary" @click="store.openExpense('quick')">
-      <Zap :size="20" />{{ t('dashboard.quickAmount') }}
+      <Zap :size="20" />{{ t("dashboard.quickAmount") }}
     </button>
     <button class="secondary" @click="store.openExpense('items')">
-      <ListPlus :size="20" />{{ t('dashboard.addItems') }}
+      <ListPlus :size="20" />{{ t("dashboard.addItems") }}
     </button>
     <button class="secondary" @click="store.openExpense('receipt')">
-      <ScanLine :size="20" />{{ t('dashboard.scanReceipt') }}
+      <ScanLine :size="20" />{{ t("dashboard.scanReceipt") }}
     </button>
   </div>
 
@@ -44,7 +45,11 @@ const isOverWeeklyLimit = computed(
   <div v-if="isOverWeeklyLimit" class="compact-limit-alert" role="alert">
     <AlertCircle :size="16" class="alert-icon" />
     <span>
-      {{ t('dashboard.overWeeklyLimit', { amount: store.displayMoney(store.weekTotal - store.weeklyLimit) }) }}
+      {{
+        t("dashboard.overWeeklyLimit", {
+          amount: store.displayMoney(store.weekTotal - store.weeklyLimit),
+        })
+      }}
     </span>
   </div>
 
@@ -62,28 +67,28 @@ const isOverWeeklyLimit = computed(
 
   <section class="report-stats" :aria-label="t('dashboard.monthlySummary')">
     <article class="total-card">
-      <span>{{ t('dashboard.thisMonthSimple') }} · {{ store.currency }}</span>
+      <span>{{ t("dashboard.thisMonthSimple") }} · {{ store.currency }}</span>
       <strong class="hero-number">{{
         store.displayMoney(store.monthTotal)
       }}</strong>
     </article>
     <article class="panel">
-      <span class="muted">{{ t('dashboard.expensesCount') }}</span>
+      <span class="muted">{{ t("dashboard.expensesCount") }}</span>
       <strong>{{ store.monthExpenses.length }}</strong>
     </article>
     <article class="panel">
-      <span class="muted">{{ t('dashboard.previousMonth') }}</span>
+      <span class="muted">{{ t("dashboard.previousMonth") }}</span>
       <strong>{{ store.displayMoney(lastTotal) }}</strong>
     </article>
   </section>
 
   <section class="panel">
-    <h2>{{ t('dashboard.recentExpenses') }}</h2>
+    <h2>{{ t("dashboard.recentExpenses") }}</h2>
     <ExpenseList :expenses="store.monthExpenses.slice(0, 5)" compact />
   </section>
 
   <section class="panel">
-    <h2>{{ t('dashboard.byCategory') }}</h2>
+    <h2>{{ t("dashboard.byCategory") }}</h2>
     <CategoryBreakdown
       :expenses="store.monthExpenses"
       :currency="store.currency"
@@ -91,7 +96,7 @@ const isOverWeeklyLimit = computed(
   </section>
 
   <section class="panel">
-    <h2>{{ t('dashboard.weeklySpending') }}</h2>
+    <h2>{{ t("dashboard.weeklySpending") }}</h2>
     <TrendChart
       :expenses="store.monthExpenses"
       :month="store.month"

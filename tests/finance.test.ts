@@ -14,6 +14,10 @@ import {
   calculateAccountBalances,
   compareSpendWithInitial,
   calculateCategoryBudgetStatus,
+  getWeekStart,
+  getWeekEnd,
+  getWeekDays,
+  formatWeekdayRange,
 } from "../src/lib/finance.ts";
 import type { Expense } from "../src/lib/types.ts";
 const expense = (
@@ -252,5 +256,65 @@ test("expenses attached to NZ account discount exclusively from nz savings witho
   assert.equal(comparison.isOverInitial, false);
   assert.equal(comparison.remaining, 488000);
   assert.equal(comparison.spentPercent, 2.4);
+});
+
+test("getWeekStart and getWeekEnd calculate 7-day cycles based on salary payment day", () => {
+  // Thursday = 4
+  // 2026-10-29 is Thursday
+  // 2026-11-03 is Tuesday
+  // 2026-11-04 is Wednesday
+  // 2026-11-05 is Thursday (next payday)
+  assert.equal(getWeekStart("2026-10-29", 4), "2026-10-29");
+  assert.equal(getWeekEnd("2026-10-29"), "2026-11-04");
+
+  assert.equal(getWeekStart("2026-10-30", 4), "2026-10-29");
+  assert.equal(getWeekStart("2026-11-03", 4), "2026-10-29");
+  assert.equal(getWeekStart("2026-11-04", 4), "2026-10-29");
+
+  // On the next Thursday, a new week cycle begins
+  assert.equal(getWeekStart("2026-11-05", 4), "2026-11-05");
+  assert.equal(getWeekEnd("2026-11-05"), "2026-11-11");
+
+  // Default Monday = 1
+  assert.equal(getWeekStart("2026-11-03", 1), "2026-11-02");
+  assert.equal(getWeekEnd("2026-11-02"), "2026-11-08");
+  assert.equal(getWeekStart("2026-11-08", 1), "2026-11-02");
+  assert.equal(getWeekStart("2026-11-09", 1), "2026-11-09");
+
+  // Sunday = 0
+  assert.equal(getWeekStart("2026-11-03", 0), "2026-11-01");
+  assert.equal(getWeekEnd("2026-11-01"), "2026-11-07");
+
+  // Year boundary crossing
+  // 2026-12-31 is Thursday
+  assert.equal(getWeekStart("2027-01-01", 4), "2026-12-31");
+  assert.equal(getWeekEnd("2026-12-31"), "2027-01-06");
+
+  // Leap year boundary crossing
+  // 2024-02-29 was Thursday
+  assert.equal(getWeekStart("2024-03-01", 4), "2024-02-29");
+  assert.equal(getWeekEnd("2024-02-29"), "2024-03-06");
+});
+
+test("getWeekDays generates 7 consecutive days starting on payday", () => {
+  const days = getWeekDays("2026-10-29"); // Thursday
+  assert.equal(days.length, 7);
+  assert.equal(days[0].date, "2026-10-29");
+  assert.equal(days[0].shortLabel, "Thu");
+  assert.equal(days[0].dayIndex, 4);
+
+  assert.equal(days[1].date, "2026-10-30");
+  assert.equal(days[1].shortLabel, "Fri");
+
+  assert.equal(days[6].date, "2026-11-04");
+  assert.equal(days[6].shortLabel, "Wed");
+  assert.equal(days[6].dayIndex, 3);
+});
+
+test("formatWeekdayRange formats short and long weekday ranges", () => {
+  assert.equal(formatWeekdayRange("2026-10-29", "2026-11-04", true), "Thu–Wed");
+  assert.equal(formatWeekdayRange("2026-10-29", "2026-11-04", false), "Thursday–Wednesday");
+  assert.equal(formatWeekdayRange("2026-11-02", "2026-11-08", true), "Mon–Sun");
+  assert.equal(formatWeekdayRange("2026-11-02", "2026-11-08", false), "Monday–Sunday");
 });
 
