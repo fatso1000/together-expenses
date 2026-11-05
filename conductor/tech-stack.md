@@ -9,8 +9,9 @@
 
 ## Styling & Design System
 - **Framework**: Tailwind CSS utility framework
+- **UI Component Library**: PrimeVue 5 with Aura preset (default obsidian dark mode)
 - **Typography**: `@fontsource-variable/dm-sans` & `@fontsource-variable/manrope`
-- **Design Strategy**: Clean, native HTML/CSS/Vue/Tailwind rendering; performant transitions and layout without heavy 3D or shader overhead
+- **Design Strategy**: Clean, native obsidian dark-mode by default; performant transitions and layout without heavy 3D or shader overhead
 
 ## Build & Tooling
 - **Bundler**: Vite 4.5
