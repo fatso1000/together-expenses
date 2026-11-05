@@ -1,19 +1,19 @@
 # Implementation Plan: Permanent Dark Mode, Scroll Reset, and PrimeVue UI Adaptation
 
-## Phase 1: Permanent Dark Mode Foundation & Light Mode Purge
-- [ ] Task: Write Unit Tests for Dark Mode Lock and Theme Toggle Removal
-  - [ ] Create tests in `tests/theme-lock.test.ts` verifying that `App.vue` no longer renders theme toggle controls (`theme-toggle-btn`).
-  - [ ] Add assertions verifying that `data-theme="dark"` and PrimeVue `.p-dark` classes are permanently applied to the document root.
-  - [ ] Confirm tests fail (Red Phase).
-- [ ] Task: Remove Theme Toggling Logic from `App.vue` and Configure Root HTML
-  - [ ] Remove `isDark`, `applyTheme`, `onThemeToggle`, and `localStorage.getItem("expenses-theme")` from `src/App.vue`.
-  - [ ] Remove the theme toggle button and unused icons (`Sun`, `Moon`) from the header toolbar in `src/App.vue`.
-  - [ ] Update `index.html` to include `class="p-dark"` and `data-theme="dark"` on `<html>` to eliminate initial-load flashes.
-  - [ ] Verify unit tests pass (Green Phase).
-- [ ] Task: Configure PrimeVue Theme Preset for Dark Mode in `main.ts`
-  - [ ] Verify and update `PrimeVue` plugin configuration in `src/main.ts` with Aura preset and dark mode selector (`.p-dark`).
-  - [ ] Ensure clean initialization on application startup.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 1: Permanent Dark Mode Foundation & Light Mode Purge [checkpoint: 006141f]
+- [x] Task: Write Unit Tests for Dark Mode Lock and Theme Toggle Removal 006141f
+  - [x] Create tests in `tests/theme-lock.test.ts` verifying that `App.vue` no longer renders theme toggle controls (`theme-toggle-btn`).
+  - [x] Add assertions verifying that `data-theme="dark"` and PrimeVue `.p-dark` classes are permanently applied to the document root.
+  - [x] Confirm tests fail (Red Phase).
+- [x] Task: Remove Theme Toggling Logic from `App.vue` and Configure Root HTML 006141f
+  - [x] Remove `isDark`, `applyTheme`, `onThemeToggle`, and `localStorage.getItem("expenses-theme")` from `src/App.vue`.
+  - [x] Remove the theme toggle button and unused icons (`Sun`, `Moon`) from the header toolbar in `src/App.vue`.
+  - [x] Update `index.html` to include `class="p-dark"` and `data-theme="dark"` on `<html>` to eliminate initial-load flashes.
+  - [x] Verify unit tests pass (Green Phase).
+- [x] Task: Configure PrimeVue Theme Preset for Dark Mode in `main.ts` 006141f
+  - [x] Verify and update `PrimeVue` plugin configuration in `src/main.ts` with Aura preset and dark mode selector (`.p-dark`).
+  - [x] Ensure clean initialization on application startup.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 006141f
 
 ## Phase 2: Universal Route Navigation Scroll Reset
 - [ ] Task: Write Tests for Route Navigation Scroll Reset
