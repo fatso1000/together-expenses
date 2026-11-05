@@ -63,6 +63,9 @@ console.log(import.meta.env.VITE_PRIMEVUE_LICENSE);
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
+    options: {
+      darkModeSelector: ".p-dark",
+    },
   },
   license: import.meta.env.VITE_PRIMEVUE_LICENSE,
 });

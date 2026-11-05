@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from "vue";
+import { watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { useRegisterSW } from "virtual:pwa-register/vue";
 import {
@@ -12,55 +12,17 @@ import {
   Scale,
   X,
   Languages,
-  Moon,
-  Sun,
   Sparkles,
 } from "lucide-vue-next";
 import ExpenseForm from "@/components/ExpenseForm.vue";
 import { useExpenses } from "@/stores/expenses";
 import { useI18n } from "@/lib/i18n";
+import DatePicker from "primevue/datepicker";
+import Select from 'primevue/select';
 
 const store = useExpenses();
 const route = useRoute();
 const { locale, t, toggleLocale } = useI18n();
-
-const isDark = ref(false);
-
-function applyTheme(dark: boolean) {
-  isDark.value = dark;
-  const theme = dark ? "dark" : "light";
-  try {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("expenses-theme", theme);
-    }
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", theme);
-    }
-  } catch {}
-}
-
-function onThemeToggle() {
-  const next = !isDark.value;
-  applyTheme(next);
-  store.message = next ? t("common.darkModeActive") : t("common.lightModeActive");
-}
-
-onMounted(() => {
-  try {
-    const saved = localStorage.getItem("expenses-theme");
-    if (
-      saved === "dark" ||
-      (!saved &&
-        typeof window !== "undefined" &&
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      applyTheme(true);
-    } else {
-      applyTheme(false);
-    }
-  } catch {}
-});
 
 const navigation = computed(() => [
   { path: "/", label: t("nav.overview"), icon: LayoutDashboard },
@@ -94,11 +56,34 @@ watch(
     cleanup(() => clearTimeout(timer));
   },
 );
+
+const selectedMonth = computed<Date | null>({
+  get() {
+    if (!store.month) return null;
+    const parts = store.month.split("-");
+    if (parts.length < 2) return null;
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) return null;
+    return new Date(year, month - 1, 1);
+  },
+  set(val: Date | null) {
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      const year = val.getFullYear();
+      const monthNumber = val.getMonth() + 1;
+      const formattedMonth = String(monthNumber).padStart(2, "0");
+      store.month = `${year}-${formattedMonth}`;
+    } else {
+      store.month = new Date().toLocaleDateString("en-CA").slice(0, 7);
+    }
+  },
+});
 </script>
+
 <template>
   <div class="app-layout">
     <aside class="sidebar">
-      <RouterLink class="brand pb-4" to="/">{{ t('nav.brand') }}</RouterLink>
+      <RouterLink class="brand pb-4" to="/">{{ t("nav.brand") }}</RouterLink>
       <nav aria-label="Main navigation">
         <RouterLink
           v-for="item in navigation"
@@ -126,47 +111,45 @@ watch(
             <span class="lang-code">{{ locale.toUpperCase() }}</span>
           </button>
 
-          <button
-            type="button"
-            class="quick-action-pill theme-toggle-btn"
-            :title="t('common.toggleTheme')"
-            :aria-label="t('common.toggleTheme')"
-            @click="onThemeToggle"
-          >
-            <component :is="isDark ? Sun : Moon" :size="15" />
-          </button>
-
           <button class="primary add-expense" @click="store.openExpense()">
-            <Plus :size="19" />{{ t('common.addExpense') }}
+            <Plus :size="19" />{{ t("common.addExpense") }}
           </button>
         </div>
       </div>
       <div
-        v-if="!['/settings', '/shops', '/products', '/chat'].includes(route.path)"
+        v-if="
+          !['/settings', '/shops', '/products', '/chat'].includes(route.path)
+        "
         class="period-toolbar"
       >
-        <label
-          >{{ t('common.month') }}<input
-            type="month"
-            v-model="store.month"
-            required
-            @change="
-              !store.month &&
-              (store.month = new Date().toLocaleDateString('en-CA').slice(0, 7))
-            "
-        /></label>
-        <label
-          >{{ t('common.display') }}<select v-model="store.currency" aria-label="View currency">
-            <option value="NZD">NZD</option>
-            <option value="USD" :disabled="!store.rates.rate">USD</option>
-          </select></label
-        >
+        <div>
+          <label for="month-input">{{ t("common.month") }}</label>
+          <DatePicker
+            v-model="selectedMonth"
+            view="month"
+            inputId="month-input"
+            dateFormat="mm/yy"
+            :manualInput="false"
+          />
+        </div>
+        <div>
+          <label for="currency-input">{{ t("common.display") }}</label>
+          <Select
+            v-model="store.currency"
+            inputId="currency-input"
+            :options="store.currencyOptions"
+            optionLabel="label"
+            optionValue="value"
+            optionDisabled="disabled"
+            aria-label="View currency"
+          />
+        </div>
       </div>
       <p v-if="store.currency === 'USD'" class="small rate-note">
         {{ store.rates.status }} · {{ store.rates.date }} · 1 NZD =
         {{ store.rates.rate }} USD
         <button class="text-button" @click="store.rates.refresh">
-          {{ t('common.refreshRate') }}
+          {{ t("common.refreshRate") }}
         </button>
       </p>
       <RouterLink
@@ -174,7 +157,7 @@ watch(
         class="small sync-link"
         to="/settings"
         >{{
-          store.syncKey ? store.syncStatus : t('common.connectDevices')
+          store.syncKey ? store.syncStatus : t("common.connectDevices")
         }}</RouterLink
       >
       <div v-if="store.error" class="error-note" role="alert">
@@ -184,9 +167,9 @@ watch(
         v-if="store.expenses.some((expense) => expense.currency === 'USD')"
         class="error-note"
       >
-        {{ t('common.currencyExcludedNotice') }}
+        {{ t("common.currencyExcludedNotice") }}
         <button class="text-button" @click="store.migrateUSD">
-          {{ t('common.convertWithRate') }}
+          {{ t("common.convertWithRate") }}
         </button>
       </p>
       <RouterView />
@@ -211,13 +194,13 @@ watch(
       </button>
     </div>
     <div v-if="needRefresh" class="update-prompt" role="status">
-      {{ t('common.updateAvailable') }}
+      {{ t("common.updateAvailable") }}
       <button
         class="secondary"
         :disabled="!!store.editor"
         @click="updateServiceWorker()"
       >
-        {{ t('common.update') }}
+        {{ t("common.update") }}
       </button>
     </div>
   </div>

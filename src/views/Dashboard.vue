@@ -10,9 +10,12 @@ import WeeklyLimit from "@/components/WeeklyLimit.vue";
 import AccountsOverview from "@/components/AccountsOverview.vue";
 import FrequentPayments from "@/components/FrequentPayments.vue";
 import AiMoneyAdvisor from "@/components/AiMoneyAdvisor.vue";
-import { Zap, ListPlus, ScanLine, AlertCircle } from "lucide-vue-next";
+import { AlertCircle } from "lucide-vue-next";
 import TrendChart from "@/components/TrendChart.vue";
-import Button from "primevue";
+import Plus from "@primeicons/vue/plus";
+import Receipt from "@primeicons/vue/receipt";
+import Bolt from "@primeicons/vue/bolt";
+import RectangleButton from "@/components/inputs/RectangleButton.vue";
 
 const store = useExpenses();
 const lastTotal = computed(() =>
@@ -29,16 +32,36 @@ const isOverWeeklyLimit = computed(
 </script>
 
 <template>
-  <div class="quick-entry-actions">
-    <button class="secondary" @click="store.openExpense('quick')">
-      <Zap :size="20" />{{ t("dashboard.quickAmount") }}
-    </button>
-    <button class="secondary" @click="store.openExpense('items')">
-      <ListPlus :size="20" />{{ t("dashboard.addItems") }}
-    </button>
-    <button class="secondary" @click="store.openExpense('receipt')">
-      <ScanLine :size="20" />{{ t("dashboard.scanReceipt") }}
-    </button>
+  <div
+    class="grid grid-cols-3 gap-2 sm:gap-2.5 mb-5"
+    data-testid="quick-entry-actions"
+  >
+    <RectangleButton
+      :icon="Bolt"
+      :label="t('dashboard.quickAmount')"
+      iconPos="top"
+      fluid
+      severity="secondary"
+      variant="outlined"
+      @click="store.openExpense('quick')"
+    />
+    <RectangleButton
+      :icon="Plus"
+      :label="t('dashboard.addItems')"
+      iconPos="top"
+      fluid
+      severity="secondary"
+      variant="outlined"
+      @click="store.openExpense('items')"
+    />
+    <RectangleButton
+      :icon="Receipt"
+      :label="t('dashboard.scanReceipt')"
+      iconPos="top"
+      fluid
+      severity="primary"
+      @click="store.openExpense('receipt')"
+    />
   </div>
 
   <!-- Compact Weekly Limit Alert when Exceeded -->
