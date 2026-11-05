@@ -45,6 +45,22 @@ function onToggleLocale() {
   store.message = t("common.languageChanged");
 }
 
+watch(
+  () => route.path,
+  () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+    if (typeof document !== "undefined") {
+      const workspace = document.querySelector(".workspace");
+      if (workspace) {
+        workspace.scrollTop = 0;
+        workspace.scrollLeft = 0;
+      }
+    }
+  },
+);
+
 const { needRefresh, updateServiceWorker } = useRegisterSW();
 watch(
   () => store.message,

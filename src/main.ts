@@ -14,8 +14,11 @@ import "@/styles.css";
 import PrimeVue from "primevue/config";
 import Aura from "@primeuix/themes/aura";
 
-const router = createRouter({
+export const router = createRouter({
   history: createWebHashHistory(),
+  scrollBehavior() {
+    return { top: 0, left: 0 };
+  },
   routes: [
     {
       path: "/",
@@ -57,6 +60,16 @@ const router = createRouter({
 });
 router.afterEach((to) => {
   document.title = `${to.meta.title} · Expenses`;
+  if (typeof window !== "undefined") {
+    window.scrollTo(0, 0);
+  }
+  if (typeof document !== "undefined") {
+    const workspace = document.querySelector(".workspace");
+    if (workspace) {
+      workspace.scrollTop = 0;
+      workspace.scrollLeft = 0;
+    }
+  }
 });
 const app = createApp(App);
 console.log(import.meta.env.VITE_PRIMEVUE_LICENSE);
