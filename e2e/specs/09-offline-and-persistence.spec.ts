@@ -34,19 +34,15 @@ test.describe("Offline Resilience & Storage Persistence", () => {
     expect(stored?.expenses.some((e) => e.merchant === "Corner Artisan Bakery")).toBe(true);
   });
 
-  test("persists theme preference across page reloads", async ({ app }) => {
-    const shell = new AppShellPage(app.page);
-
-    // Initial theme should be light
-    await expect(app.page.locator("html")).not.toHaveAttribute("data-theme", "dark");
-
-    // Toggle to Dark
-    await shell.toggleTheme();
+  test("persists dark theme across page reloads", async ({ app }) => {
+    // Initial theme should be dark
     await expect(app.page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(app.page.locator("html")).toHaveClass(/p-dark/);
 
     // Reload
     await app.page.reload();
     await expect(app.page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(app.page.locator("html")).toHaveClass(/p-dark/);
   });
 
   test("persists locale preference across page reloads", async ({ app }) => {

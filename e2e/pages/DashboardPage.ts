@@ -41,9 +41,9 @@ export class DashboardPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.quickAmountBtn = page.locator(".quick-entry-actions button").nth(0);
-    this.addItemsBtn = page.locator(".quick-entry-actions button").nth(1);
-    this.scanReceiptBtn = page.locator(".quick-entry-actions button").nth(2);
+    this.quickAmountBtn = page.locator("[data-testid='quick-entry-actions'] button, .quick-entry-actions button").nth(0);
+    this.addItemsBtn = page.locator("[data-testid='quick-entry-actions'] button, .quick-entry-actions button").nth(1);
+    this.scanReceiptBtn = page.locator("[data-testid='quick-entry-actions'] button, .quick-entry-actions button").nth(2);
     this.compactLimitAlert = page.locator(".compact-limit-alert");
 
     // Weekly Limit

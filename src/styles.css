@@ -2319,6 +2319,7 @@ hr {
   .page-heading h1 {
     font-size: 26px;
     letter-spacing: -0.8px;
+  }
   .purchase-dialog {
     width: 100%;
     max-width: 100%;
@@ -2398,10 +2399,10 @@ hr {
     min-width: 0;
     min-height: 42px;
     border-radius: 11px;
-    border: 1px solid #d0ded6;
+    border: 1px solid var(--border);
     padding: 8px 10px;
     font-size: 14px;
-    background-color: #fff;
+    background-color: var(--input-bg);
   }
   .report-stats {
     grid-template-columns: 1fr 1fr;

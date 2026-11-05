@@ -62,24 +62,22 @@ test.describe("App Shell & Navigation", () => {
     await expect(shell.addExpenseBtn).toContainText("Add expense");
   });
 
-  test("toggles theme between Light and Dark mode with persistence", async ({ app }) => {
+  test("enforces Dark mode by default across reloads without theme toggle button", async ({ app }) => {
     const shell = new AppShellPage(app.page);
 
-    // Switch to Dark
-    await shell.toggleTheme();
+    // No theme toggle button should be visible
+    await expect(shell.themeToggleBtn).toHaveCount(0);
+
+    // Initial theme must be dark
     const isDark = await app.page.evaluate(() => document.documentElement.getAttribute("data-theme") === "dark");
     expect(isDark).toBe(true);
-    await expect(shell.toast).toBeVisible();
+    const hasPDark = await app.page.evaluate(() => document.documentElement.classList.contains("p-dark"));
+    expect(hasPDark).toBe(true);
 
-    // Reload to verify persistence
+    // Reload to verify dark mode persistence
     await app.page.reload();
     const isDarkAfterReload = await app.page.evaluate(() => document.documentElement.getAttribute("data-theme") === "dark");
     expect(isDarkAfterReload).toBe(true);
-
-    // Switch back to Light
-    await shell.toggleTheme();
-    const isLight = await app.page.evaluate(() => document.documentElement.getAttribute("data-theme") === "light");
-    expect(isLight).toBe(true);
   });
 
   test("changes month filter on period toolbar", async ({ app }) => {
