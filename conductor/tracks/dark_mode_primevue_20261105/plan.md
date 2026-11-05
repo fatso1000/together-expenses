@@ -26,20 +26,20 @@
   - [x] Verify navigation tests pass (Green Phase).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 3753a1f
 
-## Phase 3: Dark-First Styling Audit & CSS Token Consolidation
-- [ ] Task: Write Tests for Dark Theme CSS Token Integrity
-  - [ ] Create tests in `tests/dark-styles.test.ts` asserting obsidian dark CSS variables are defined directly in `:root`.
-  - [ ] Assert that no critical components rely on deprecated light-mode-only variables.
-  - [ ] Confirm tests fail (Red Phase).
-- [ ] Task: Refactor `:root` CSS Variables to Dark Palette and Purge Light Rules
-  - [ ] In `src/styles.css`, promote the obsidian dark color tokens and glass surface variables directly into `:root`.
-  - [ ] Remove obsolete `[data-theme="dark"]` duplicate overrides and delete dead light-mode CSS rules.
-  - [ ] Verify body and root styles default to `#0b1412` background and `#e2ede8` text.
-- [ ] Task: Audit and Update Component Classes and Colors for Dark Mode
-  - [ ] Audit views (`Dashboard.vue`, `Expenses.vue`, `Reports.vue`, `Products.vue`, `Shops.vue`, `Settings.vue`, `AiChat.vue`) and components for hardcoded light backgrounds (`#fff`, `bg-white`) or low-contrast dark text.
-  - [ ] Standardize background surfaces, borders, cards, and text colors to semantic tokens (`--surface`, `--glass-card-bg`, `--border`, `--muted`).
-  - [ ] Verify dark style integrity tests pass (Green Phase).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 3: Dark-First Styling Audit & CSS Token Consolidation [checkpoint: 332d43b]
+- [x] Task: Write Tests for Dark Theme CSS Token Integrity 332d43b
+  - [x] Create tests in `tests/dark-styles.test.ts` asserting obsidian dark CSS variables are defined directly in `:root`.
+  - [x] Assert that no critical components rely on deprecated light-mode-only variables.
+  - [x] Confirm tests fail (Red Phase).
+- [x] Task: Refactor `:root` CSS Variables to Dark Palette and Purge Light Rules 332d43b
+  - [x] In `src/styles.css`, promote the obsidian dark color tokens and glass surface variables directly into `:root`.
+  - [x] Remove obsolete `[data-theme="dark"]` duplicate overrides and delete dead light-mode CSS rules.
+  - [x] Verify body and root styles default to `#0b1412` background and `#e2ede8` text.
+- [x] Task: Audit and Update Component Classes and Colors for Dark Mode 332d43b
+  - [x] Audit views (`Dashboard.vue`, `Expenses.vue`, `Reports.vue`, `Products.vue`, `Shops.vue`, `Settings.vue`, `AiChat.vue`) and components for hardcoded light backgrounds (`#fff`, `bg-white`) or low-contrast dark text.
+  - [x] Standardize background surfaces, borders, cards, and text colors to semantic tokens (`--surface`, `--glass-card-bg`, `--border`, `--muted`).
+  - [x] Verify dark style integrity tests pass (Green Phase).
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 332d43b
 
 ## Phase 4: Adapt Foundational Inputs & Buttons to PrimeVue / PrimeUI
 - [ ] Task: Write Tests for PrimeVue Input and Button Component Integration
