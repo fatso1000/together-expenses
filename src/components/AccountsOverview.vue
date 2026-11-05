@@ -664,12 +664,12 @@ async function saveDeposit() {
 }
 
 .bottom-drawer {
-  background: var(--surface-drawer, #ffffff);
-  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
+  background: var(--surface-drawer, #182c26);
+  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
   width: 100vw;
   max-width: 100vw;
   border-radius: 24px 24px 0 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
   display: flex;
   flex-direction: column;
   max-height: 92dvh;

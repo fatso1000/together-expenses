@@ -825,12 +825,12 @@ async function submit() {
   max-width: 100vw;
   height: 94dvh;
   max-height: 94dvh;
-  background: var(--surface-drawer, #ffffff);
-  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
+  background: var(--surface-drawer, #182c26);
+  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
   border-radius: 28px 28px 0 0;
   color: inherit;
   padding: 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -954,7 +954,7 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: var(--surface-card-hover, #ffffff);
+  background: var(--surface-card-hover, #14241f);
   border-bottom: 1px solid var(--border);
 }
 
@@ -1086,7 +1086,7 @@ async function submit() {
 }
 
 .account-toggle-card:hover {
-  background: var(--surface-card-hover, #ffffff);
+  background: var(--surface-card-hover, #14241f);
   border-color: var(--accent);
 }
 
@@ -1236,15 +1236,15 @@ async function submit() {
 }
 
 .inline-modal {
-  background: var(--surface-drawer, #ffffff);
-  border: 1px solid var(--surface-drawer-border, rgba(21, 61, 53, 0.12));
+  background: var(--surface-drawer, #182c26);
+  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
   border-radius: 28px 28px 0 0;
   padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
   width: 100vw;
   max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 30px rgba(13, 36, 30, 0.12));
+  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
   will-change: transform;
   animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1307,7 +1307,7 @@ async function submit() {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: var(--surface-card-hover, #ffffff);
+    background: var(--surface-card-hover, #14241f);
     border-bottom: 1px solid var(--border);
   }
 

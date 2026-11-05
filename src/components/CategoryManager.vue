@@ -416,8 +416,8 @@ async function remove(id: string) {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: #ffffff;
-  border: 1px solid #e4eae7;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -451,8 +451,8 @@ async function remove(id: string) {
   max-height: 160px;
   overflow-y: auto;
   padding: 6px;
-  background: #ffffff;
-  border: 1px solid #e2e8e4;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 10px;
 }
 
@@ -465,19 +465,19 @@ async function remove(id: string) {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: #4b6058;
+  color: var(--muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .icon-choice:hover {
-  background: #eff5f2;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .icon-choice.selected {
-  background: #153d35;
-  color: #ffffff;
-  border-color: #153d35;
+  background: var(--accent);
+  color: #0b1412;
+  border-color: var(--accent);
 }
 
 .color-swatches {
@@ -504,9 +504,9 @@ async function remove(id: string) {
 }
 
 .color-swatch.selected {
-  border-color: #153d35;
+  border-color: var(--accent);
   transform: scale(1.15);
-  box-shadow: 0 0 0 2px #ffffff;
+  box-shadow: 0 0 0 2px #0b1412;
 }
 
 .color-swatch .check-icon {
@@ -549,8 +549,8 @@ async function remove(id: string) {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #ffffff;
-  border: 1px solid #e7ede9;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   flex-wrap: wrap;
   gap: 8px;

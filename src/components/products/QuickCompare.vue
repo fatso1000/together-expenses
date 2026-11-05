@@ -325,10 +325,11 @@ pre {
   display: grid;
   gap: 5px;
   padding: 10px;
-  background: #fffffff2;
-  color: #153d35;
+  background: var(--surface, rgba(16, 28, 24, 0.95));
+  color: #e2ede8;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 2px 12px #0003;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 .result-overlay b {
   font-size: 1.25rem;

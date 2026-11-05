@@ -228,7 +228,8 @@ function exportCsv() {
 
 .period-segmented {
   display: flex;
-  background: #ebf0ec;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 4px;
   gap: 4px;
@@ -245,14 +246,14 @@ function exportCsv() {
   font-size: 13px;
   font-weight: 600;
   background: transparent;
-  color: #4b6058;
+  color: var(--muted);
   transition: all 0.15s ease;
 }
 
 .period-segmented button.selected {
-  background: #ffffff;
-  color: #153d35;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  background: var(--surface, rgba(16, 28, 24, 0.72));
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .week-banner {
@@ -262,11 +263,11 @@ function exportCsv() {
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
-  background: #edf6f0;
-  border: 1px solid #c8e2d2;
+  background: rgba(42, 194, 148, 0.12);
+  border: 1px solid rgba(42, 194, 148, 0.25);
   border-radius: 12px;
   font-size: 13px;
-  color: #1d4d38;
+  color: #e2ede8;
 }
 
 .week-banner-metric {
