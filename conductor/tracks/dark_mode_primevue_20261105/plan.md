@@ -15,16 +15,16 @@
   - [x] Ensure clean initialization on application startup.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 006141f
 
-## Phase 2: Universal Route Navigation Scroll Reset
-- [ ] Task: Write Tests for Route Navigation Scroll Reset
-  - [ ] Create test in `tests/navigation-scroll.test.ts` mocking router transitions and asserting that scroll coordinates reset to `(0, 0)`.
-  - [ ] Test both window scroll reset and workspace container (`.workspace`) scroll reset.
-  - [ ] Confirm tests fail (Red Phase).
-- [ ] Task: Implement Router `scrollBehavior` and Workspace Scroll-to-Top Reset
-  - [ ] Add `scrollBehavior(to, from, savedPosition)` in `src/main.ts` returning `{ top: 0, left: 0 }`.
-  - [ ] Add `router.afterEach` hook or route watcher in `src/App.vue` resetting `.workspace` container scroll position to `(0, 0)`.
-  - [ ] Verify navigation tests pass (Green Phase).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 2: Universal Route Navigation Scroll Reset [checkpoint: 3753a1f]
+- [x] Task: Write Tests for Route Navigation Scroll Reset 3753a1f
+  - [x] Create test in `tests/navigation-scroll.test.ts` mocking router transitions and asserting that scroll coordinates reset to `(0, 0)`.
+  - [x] Test both window scroll reset and workspace container (`.workspace`) scroll reset.
+  - [x] Confirm tests fail (Red Phase).
+- [x] Task: Implement Router `scrollBehavior` and Workspace Scroll-to-Top Reset 3753a1f
+  - [x] Add `scrollBehavior(to, from, savedPosition)` in `src/main.ts` returning `{ top: 0, left: 0 }`.
+  - [x] Add `router.afterEach` hook or route watcher in `src/App.vue` resetting `.workspace` container scroll position to `(0, 0)`.
+  - [x] Verify navigation tests pass (Green Phase).
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 3753a1f
 
 ## Phase 3: Dark-First Styling Audit & CSS Token Consolidation
 - [ ] Task: Write Tests for Dark Theme CSS Token Integrity
