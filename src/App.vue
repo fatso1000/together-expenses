@@ -19,6 +19,7 @@ import { useExpenses } from "@/stores/expenses";
 import { useI18n } from "@/lib/i18n";
 import DatePicker from "primevue/datepicker";
 import Select from 'primevue/select';
+import Button from 'primevue/button';
 
 const store = useExpenses();
 const route = useRoute();
@@ -127,9 +128,9 @@ const selectedMonth = computed<Date | null>({
             <span class="lang-code">{{ locale.toUpperCase() }}</span>
           </button>
 
-          <button class="primary add-expense" @click="store.openExpense()">
+          <Button class="primary add-expense" @click="store.openExpense()">
             <Plus :size="19" />{{ t("common.addExpense") }}
-          </button>
+          </Button>
         </div>
       </div>
       <div

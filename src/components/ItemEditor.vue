@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import { Plus } from "lucide-vue-next";
+import Button from "primevue/button";
 import type { ItemInput, Product, Expense } from "@/lib/types";
 import { priceHistory } from "@/lib/products";
 import PurchaseItemRow from "@/components/products/PurchaseItemRow.vue";
@@ -66,14 +67,14 @@ function useSaved() {
           </option>
         </select></label
       >
-      <button
+      <Button
         type="button"
         class="secondary"
         :disabled="!selected || items.length >= 200"
         @click="useSaved"
       >
         <Plus :size="18" />{{ t('common.add') }}
-      </button>
+      </Button>
     </div>
     <PurchaseItemRow
       v-for="(item, index) in items"
@@ -86,13 +87,13 @@ function useSaved() {
       @change="update"
       @remove="remove(item.id)"
     />
-    <button
+    <Button
       type="button"
       class="secondary wide"
       :disabled="items.length >= 200"
       @click="add()"
     >
       <Plus :size="18" />{{ t('expenses.addItem') }}
-    </button>
+    </Button>
   </div>
 </template>

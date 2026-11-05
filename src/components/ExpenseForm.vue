@@ -40,6 +40,9 @@ import CategoryIcon from "@/components/CategoryIcon.vue";
 import ItemEditor from "@/components/ItemEditor.vue";
 import ReceiptReader from "@/components/ReceiptReader.vue";
 import CategoryManager from "@/components/CategoryManager.vue";
+import InputText from "primevue/inputtext";
+import Textarea from "primevue/textarea";
+import Button from "primevue/button";
 
 const props = defineProps<{ expense?: Expense }>();
 const emit = defineEmits<{ close: [] }>();
@@ -464,12 +467,13 @@ async function submit() {
           <form @submit.prevent="submit">
             <label>
               {{ t('expenses.merchant') }}
-              <input
+              <InputText
                 v-model="form.merchant"
                 list="saved-shops"
                 maxlength="100"
                 :placeholder="t('shops.placeholder')"
                 required
+                fluid
               />
             </label>
             <datalist id="saved-shops">
@@ -592,10 +596,11 @@ async function submit() {
               <div v-if="lines.length" class="discount-container">
                 <label class="discount-field">
                   {{ t('expenses.discountFieldLabel') }}
-                  <input
+                  <InputText
                     v-model="discount"
                     inputmode="decimal"
                     placeholder="0.00"
+                    fluid
                   />
                   <small class="muted">
                     {{ t('expenses.discountHint') }}
@@ -607,12 +612,13 @@ async function submit() {
             <!-- Quick Amount Input -->
             <label v-if="!itemized && mode !== 'items'">
               Total · {{ form.currency }}
-              <input
+              <InputText
                 v-model="form.amount"
                 class="amount-input"
                 inputmode="decimal"
                 placeholder="0.00"
                 required
+                fluid
               />
             </label>
 
@@ -657,20 +663,21 @@ async function submit() {
 
             <details>
               <summary>{{ t('expenses.notes') }}</summary>
-              <textarea
+              <Textarea
                 v-model="form.note"
                 maxlength="500"
                 rows="2"
                 :aria-label="t('expenses.notes')"
+                fluid
               />
             </details>
 
             <p v-if="error" class="error-note" role="alert">{{ error }}</p>
 
             <div class="save-bar">
-              <button class="primary wide" :disabled="busy">
+              <Button class="primary wide" :disabled="busy" type="submit">
                 {{ busy ? t('common.saving') : t('common.save') }}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
