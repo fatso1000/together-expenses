@@ -57,11 +57,11 @@
   - [x] Verify component tests pass (Green Phase).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) a2c031a
 
-## Phase 5: Full Regression Testing & Verification Pass
-- [ ] Task: Run Comprehensive Automated Test Suites (Unit & E2E)
-  - [ ] Execute all unit tests (`tsx --test tests/*.test.ts`) and ensure 100% pass rate.
-  - [ ] Run Playwright E2E suites (`playwright test`) to verify key flows (adding expense, filtering, navigation, drawer opening).
-- [ ] Task: Execute Cross-Route Verification and Theme Consistency Audit
-  - [ ] Verify all routes render cleanly in dark mode without visual glitches or unreadable contrast.
-  - [ ] Confirm scroll position resets to top on every navigation across desktop and mobile viewport sizes.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 5: Full Regression Testing & Verification Pass [checkpoint: 8be8998]
+- [x] Task: Run Comprehensive Automated Test Suites (Unit & E2E) 8be8998
+  - [x] Execute all unit tests (`tsx --test tests/*.test.ts`) and ensure 100% pass rate.
+  - [x] Run Playwright E2E suites (`playwright test`) to verify key flows (adding expense, filtering, navigation, drawer opening).
+- [x] Task: Execute Cross-Route Verification and Theme Consistency Audit 8be8998
+  - [x] Verify all routes render cleanly in dark mode without visual glitches or unreadable contrast.
+  - [x] Confirm scroll position resets to top on every navigation across desktop and mobile viewport sizes.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 8be8998
