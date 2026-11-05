@@ -41,21 +41,21 @@
   - [x] Verify dark style integrity tests pass (Green Phase).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) 332d43b
 
-## Phase 4: Adapt Foundational Inputs & Buttons to PrimeVue / PrimeUI
-- [ ] Task: Write Tests for PrimeVue Input and Button Component Integration
-  - [ ] Create tests in `tests/primevue-inputs.test.ts` testing PrimeVue Button, InputText, InputNumber, and Textarea integration in form contexts.
-  - [ ] Assert `v-model` binding updates, validation, and accessibility attributes.
-  - [ ] Confirm tests fail (Red Phase).
-- [ ] Task: Migrate ExpenseForm and ItemEditor Inputs to PrimeVue Components
-  - [ ] Replace standard `<input type="text">` with PrimeVue `InputText` in `src/components/ExpenseForm.vue` and `src/components/ItemEditor.vue`.
-  - [ ] Replace standard `<input type="number">` with PrimeVue `InputNumber` where appropriate.
-  - [ ] Replace standard `<textarea>` with PrimeVue `Textarea` for expense notes.
-  - [ ] Ensure full styling compatibility with existing layout and Tailwind utilities.
-- [ ] Task: Migrate Primary Action Buttons to PrimeVue Button Component
-  - [ ] Replace standard primary buttons (e.g. "Add Expense", form submit, quick actions) with PrimeVue `Button`.
-  - [ ] Retain Lucide icons and button labels while preserving responsive styling.
-  - [ ] Verify component tests pass (Green Phase).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 4: Adapt Foundational Inputs & Buttons to PrimeVue / PrimeUI [checkpoint: a2c031a]
+- [x] Task: Write Tests for PrimeVue Input and Button Component Integration a2c031a
+  - [x] Create tests in `tests/primevue-inputs.test.ts` testing PrimeVue Button, InputText, InputNumber, and Textarea integration in form contexts.
+  - [x] Assert `v-model` binding updates, validation, and accessibility attributes.
+  - [x] Confirm tests fail (Red Phase).
+- [x] Task: Migrate ExpenseForm and ItemEditor Inputs to PrimeVue Components a2c031a
+  - [x] Replace standard `<input type="text">` with PrimeVue `InputText` in `src/components/ExpenseForm.vue` and `src/components/ItemEditor.vue`.
+  - [x] Replace standard `<input type="number">` with PrimeVue `InputNumber` where appropriate.
+  - [x] Replace standard `<textarea>` with PrimeVue `Textarea` for expense notes.
+  - [x] Ensure full styling compatibility with existing layout and Tailwind utilities.
+- [x] Task: Migrate Primary Action Buttons to PrimeVue Button Component a2c031a
+  - [x] Replace standard primary buttons (e.g. "Add Expense", form submit, quick actions) with PrimeVue `Button`.
+  - [x] Retain Lucide icons and button labels while preserving responsive styling.
+  - [x] Verify component tests pass (Green Phase).
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) a2c031a
 
 ## Phase 5: Full Regression Testing & Verification Pass
 - [ ] Task: Run Comprehensive Automated Test Suites (Unit & E2E)
