@@ -2,13 +2,13 @@
 
 ## Phase 1: Code Styleguides & Governance Testing (TDD Setup)
 
-- [ ] Task: Create failing governance tests for UI architecture standards
-  - [ ] Create `tests/tailwind-primevue-governance.test.ts` to validate that styleguides explicitly mandate Tailwind & PrimeVue and ban new custom CSS
-  - [ ] Run `npx tsx --test tests/tailwind-primevue-governance.test.ts` and confirm failure (Red Phase)
-- [ ] Task: Update styleguides and architectural documentation
-  - [ ] Update `conductor/code_styleguides/vue.md` with explicit rules, anti-patterns, and code examples for Tailwind CSS 4 and PrimeVue 5 UI construction
-  - [ ] Synchronize `conductor/tech-stack.md` and `conductor/product-guidelines.md` to reinforce the standard
-  - [ ] Re-run governance test and confirm it passes (Green Phase)
+- [x] Task: Create failing governance tests for UI architecture standards (c4d2004)
+  - [x] Create `tests/tailwind-primevue-governance.test.ts` to validate that styleguides explicitly mandate Tailwind & PrimeVue and ban new custom CSS
+  - [x] Run `npx tsx --test tests/tailwind-primevue-governance.test.ts` and confirm failure (Red Phase)
+- [x] Task: Update styleguides and architectural documentation (c4d2004)
+  - [x] Update `conductor/code_styleguides/vue.md` with explicit rules, anti-patterns, and code examples for Tailwind CSS 4 and PrimeVue 5 UI construction
+  - [x] Synchronize `conductor/tech-stack.md` and `conductor/product-guidelines.md` to reinforce the standard
+  - [x] Re-run governance test and confirm it passes (Green Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Settings Views Tailwind & PrimeVue Migration
