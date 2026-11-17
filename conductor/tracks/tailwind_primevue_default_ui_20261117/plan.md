@@ -29,14 +29,14 @@
 
 ## Phase 3: Shared Container Cleanup & Styling Audit
 
-- [ ] Task: Write failing tests for legacy panel and container class pruning
-  - [ ] Add test cases verifying that key view containers use Tailwind utilities instead of legacy `.panel` classes
-  - [ ] Run test to confirm failure (Red Phase)
-- [ ] Task: Refactor legacy container patterns and prune unused custom CSS
-  - [ ] Audit `src/views/Dashboard.vue` and shared views for legacy styling
-  - [ ] Apply Tailwind utilities (`rounded-2xl`, `border`, `bg-[var(--surface)]`, `p-4`)
-  - [ ] Prune superseded rules from `src/styles.css`
-  - [ ] Re-run tests to confirm pass (Green Phase)
+- [x] Task: Write failing tests for legacy panel and container class pruning (8eb009e)
+  - [x] Add test cases verifying that key view containers use Tailwind utilities instead of legacy `.panel` classes
+  - [x] Run test to confirm failure (Red Phase)
+- [x] Task: Refactor legacy container patterns and prune unused custom CSS (686e027)
+  - [x] Audit `src/views/Dashboard.vue` and shared views for legacy styling
+  - [x] Apply Tailwind utilities (`rounded-2xl`, `border`, `bg-[var(--surface)]`, `p-4`)
+  - [x] Prune superseded rules from `src/styles.css`
+  - [x] Re-run tests to confirm pass (Green Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Full Suite Verification & Build Validation
