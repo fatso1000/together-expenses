@@ -9,6 +9,6 @@
   *Link: [./tracks/dark_mode_primevue_20261105/index.md](./tracks/dark_mode_primevue_20261105/index.md)*
 
 ---
-- [ ] **Track: Make the app default UI construction based on Tailwind CSS 4 and PrimeVue instead of creating new CSS**
+- [~] **Track: Make the app default UI construction based on Tailwind CSS 4 and PrimeVue instead of creating new CSS**
   *Link: [./tracks/tailwind_primevue_default_ui_20261117/index.md](./tracks/tailwind_primevue_default_ui_20261117/index.md)*
 
