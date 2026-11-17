@@ -49,3 +49,35 @@ test("tech-stack.md and product-guidelines.md establish Tailwind and PrimeVue as
     "product-guidelines.md must reference Tailwind and PrimeVue for UI construction",
   );
 });
+
+test("Settings views adopt Tailwind utility classes and PrimeVue Button components instead of custom CSS", () => {
+  const accountsPath = path.resolve(__dirname, "../src/views/settings/AccountsSettings.vue");
+  const dataPath = path.resolve(__dirname, "../src/views/settings/DataSettings.vue");
+  const aiPath = path.resolve(__dirname, "../src/views/settings/AiSettings.vue");
+  const settingsHubPath = path.resolve(__dirname, "../src/views/Settings.vue");
+
+  const accountsContent = fs.readFileSync(accountsPath, "utf-8");
+  const dataContent = fs.readFileSync(dataPath, "utf-8");
+  const aiContent = fs.readFileSync(aiPath, "utf-8");
+  const hubContent = fs.readFileSync(settingsHubPath, "utf-8");
+
+  // AccountsSettings
+  assert.match(accountsContent, /import\s+Button\s+from\s+["']primevue\/button["']/, "AccountsSettings must import PrimeVue Button");
+  assert.match(accountsContent, /<Button\b[^>]*type="submit"/, "AccountsSettings must use PrimeVue Button for submit");
+  assert.doesNotMatch(accountsContent, /class="[^"]*\baccounts-config-panel\b[^"]*"/, "AccountsSettings must not use legacy accounts-config-panel class");
+  assert.doesNotMatch(accountsContent, /class="[^"]*\bform-pair\b[^"]*"/, "AccountsSettings must replace form-pair with Tailwind grid/flex");
+
+  // DataSettings
+  assert.match(dataContent, /import\s+Button\s+from\s+["']primevue\/button["']/, "DataSettings must import PrimeVue Button");
+  assert.match(dataContent, /<Button\b[^>]*@click="backup"/, "DataSettings must use PrimeVue Button for backup action");
+  assert.match(dataContent, /<Button\b[^>]*@click="clear"/, "DataSettings must use PrimeVue Button for clear action");
+
+  // AiSettings
+  assert.match(aiContent, /import\s+Button\s+from\s+["']primevue\/button["']/, "AiSettings must import PrimeVue Button");
+  assert.match(aiContent, /<Button\b[^>]*@click="testOllama"/, "AiSettings must use PrimeVue Button for testOllama");
+  assert.doesNotMatch(aiContent, /class="[^"]*\bollama-config-panel\b[^"]*"/, "AiSettings must not use legacy ollama-config-panel class");
+
+  // Settings Hub
+  assert.match(hubContent, /class="[^"]*\bgrid\b[^"]*"/, "Settings Hub must use Tailwind grid");
+  assert.doesNotMatch(hubContent, /<style\s+scoped>/, "Settings Hub must use pure Tailwind utilities without custom scoped styles");
+});
