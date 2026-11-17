@@ -13,18 +13,18 @@
 
 ## Phase 2: Settings Views Tailwind & PrimeVue Migration
 
-- [ ] Task: Write failing tests for Settings views Tailwind and PrimeVue adoption
-  - [ ] Add assertions in `tests/tailwind-primevue-governance.test.ts` verifying that `AccountsSettings.vue`, `AiSettings.vue`, `DataSettings.vue`, and `Settings.vue` replace legacy custom classes with Tailwind utilities and PrimeVue components
-  - [ ] Run test to confirm failures on unmigrated components (Red Phase)
-- [ ] Task: Migrate `AccountsSettings.vue` and `DataSettings.vue`
-  - [ ] Refactor form layouts, buttons, and rate rows to Tailwind utility classes and PrimeVue `<Button>`
-  - [ ] Prune redundant custom scoped CSS blocks
-  - [ ] Verify component behavior and reactivity
-- [ ] Task: Migrate `AiSettings.vue` and `Settings.vue` Hub
-  - [ ] Refactor Ollama status banner, actions row, and form controls to Tailwind classes
-  - [ ] Refactor `Settings.vue` hub grid and card layouts to Tailwind utilities
-  - [ ] Prune obsolete custom scoped styles
-  - [ ] Re-run tests to confirm all Settings assertions pass (Green Phase)
+- [x] Task: Write failing tests for Settings views Tailwind and PrimeVue adoption (b47366c)
+  - [x] Add assertions in `tests/tailwind-primevue-governance.test.ts` verifying that `AccountsSettings.vue`, `AiSettings.vue`, `DataSettings.vue`, and `Settings.vue` replace legacy custom classes with Tailwind utilities and PrimeVue components
+  - [x] Run test to confirm failures on unmigrated components (Red Phase)
+- [x] Task: Migrate `AccountsSettings.vue` and `DataSettings.vue` (50c1fd4)
+  - [x] Refactor form layouts, buttons, and rate rows to Tailwind utility classes and PrimeVue `<Button>`
+  - [x] Prune redundant custom scoped CSS blocks
+  - [x] Verify component behavior and reactivity
+- [x] Task: Migrate `AiSettings.vue` and `Settings.vue` Hub (50c1fd4)
+  - [x] Refactor Ollama status banner, actions row, and form controls to Tailwind classes
+  - [x] Refactor `Settings.vue` hub grid and card layouts to Tailwind utilities
+  - [x] Prune obsolete custom scoped styles
+  - [x] Re-run tests to confirm all Settings assertions pass (Green Phase)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Shared Container Cleanup & Styling Audit
