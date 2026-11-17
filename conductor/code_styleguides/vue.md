@@ -83,3 +83,53 @@ Do **NOT** place `<script>` before `<template>`. Any PR or new component placing
   - Always provide `aria-label` or accessible names for icon-only buttons.
   - Ensure visible keyboard `:focus-visible` styling with ring offsets.
   - Maintain readable color contrast against dark surfaces.
+
+---
+
+## 6. Default UI Construction: Tailwind CSS 4 & PrimeVue
+
+- **Mandatory Default**: All new or refactored UI construction MUST use Tailwind CSS 4 utility classes and PrimeVue components.
+- **Prohibited New Custom CSS**: You MUST NOT write or create new custom CSS classes, custom class blocks, or element selectors in `src/styles.css` or component `<style>` blocks. Any styling need that can be satisfied with Tailwind utility classes or PrimeVue theme tokens must not use custom CSS.
+- **PrimeVue Component Adoption**: Always prefer official PrimeVue components (`Button`, `InputText`, `Select`, `DatePicker`, `Card`, `Panel`, `Dialog`, `Drawer`, `Badge`) over raw HTML equivalents.
+- **Tailwind-First Layouts**: Construct containers, grids, flexboxes, margins, padding, and typography using Tailwind utilities:
+  - Containers: `rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm`
+  - Two-column responsive forms: `grid grid-cols-1 md:grid-cols-2 gap-4`
+  - Header actions and toolbars: `flex items-center justify-between gap-3`
+  - Action buttons: `<Button class="w-full sm:w-auto" severity="primary" ... />`
+
+### Correct Pattern:
+```vue
+<template>
+  <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-4">
+    <div class="flex items-center gap-3">
+      <Wallet class="text-accent" :size="20" />
+      <h2 class="text-lg font-bold text-text">{{ title }}</h2>
+    </div>
+    <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="submit">
+      <div class="space-y-1">
+        <label class="text-xs font-semibold uppercase tracking-wider text-muted">Amount</label>
+        <InputText v-model="amount" class="w-full" placeholder="0.00" />
+      </div>
+      <div class="flex items-end">
+        <Button type="submit" label="Save Changes" severity="primary" class="w-full" />
+      </div>
+    </form>
+  </div>
+</template>
+```
+
+### Prohibited Anti-Pattern:
+```vue
+<!-- DO NOT write bespoke custom CSS classes or scoped style blocks for standard layouts -->
+<template>
+  <div class="my-custom-box">
+    <button class="my-custom-btn">Save</button>
+  </div>
+</template>
+
+<style scoped>
+.my-custom-box { display: flex; padding: 20px; background: #121212; }
+.my-custom-btn { background: green; color: white; border-radius: 8px; }
+</style>
+```
+

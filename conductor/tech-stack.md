@@ -8,11 +8,11 @@
 - **Icons**: Lucide Vue Next (`lucide-vue-next` 0.468) & PrimeIcons (`@primeicons/vue`)
 
 ## Styling & Design System
-- **Framework**: Tailwind CSS 4 (`@tailwindcss/vite`, `@tailwindcss/postcss`)
-- **UI Component Library**: PrimeVue 5 with Aura preset (`@primeuix/themes/aura`)
+- **Framework**: Tailwind CSS 4 (`@tailwindcss/vite`, `@tailwindcss/postcss`) — Mandatory default UI construction framework for layout, spacing, and styling.
+- **UI Component Library**: PrimeVue 5 with Aura preset (`@primeuix/themes/aura`) — Mandatory default UI component library for buttons, inputs, panels, cards, and dialogs.
 - **Theme Adapter**: `tailwindcss-primeui` (configured for obsidian dark mode `.p-dark`)
 - **Typography**: `@fontsource-variable/dm-sans` & `@fontsource-variable/manrope`
-- **Design Strategy**: Clean, modern obsidian dark mode by default; performant transitions and layout without heavy 3D or shader overhead
+- **Design Strategy**: Clean, modern obsidian dark mode by default; construct UI using Tailwind utilities and PrimeVue components instead of creating custom CSS classes.
 
 ## Build & Tooling
 - **Bundler**: Vite 6.4.5 (`@vitejs/plugin-vue`)
