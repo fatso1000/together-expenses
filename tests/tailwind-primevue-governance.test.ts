@@ -81,3 +81,37 @@ test("Settings views adopt Tailwind utility classes and PrimeVue Button componen
   assert.match(hubContent, /class="[^"]*\bgrid\b[^"]*"/, "Settings Hub must use Tailwind grid");
   assert.doesNotMatch(hubContent, /<style\s+scoped>/, "Settings Hub must use pure Tailwind utilities without custom scoped styles");
 });
+
+test("Dashboard.vue follows SFC block order and migrates containers to Tailwind utilities", () => {
+  const dashboardPath = path.resolve(__dirname, "../src/views/Dashboard.vue");
+  const dashboardContent = fs.readFileSync(dashboardPath, "utf-8");
+
+  // Strict SFC block order: <template> first
+  const templateIdx = dashboardContent.indexOf("<template>");
+  const scriptIdx = dashboardContent.indexOf("<script");
+  assert.ok(templateIdx < scriptIdx, "Dashboard.vue must place <template> before <script>");
+
+  // Legacy panel class removed from dashboard sections
+  assert.doesNotMatch(
+    dashboardContent,
+    /<section[^>]*class="[^"]*\bpanel\b[^"]*"[^>]*>\s*<h2>\{\{\s*t\(['"]dashboard\.recentExpenses['"]\)/,
+    "recentExpenses section should not use legacy .panel class",
+  );
+  assert.doesNotMatch(
+    dashboardContent,
+    /<section[^>]*class="[^"]*\bpanel\b[^"]*"[^>]*>\s*<h2>\{\{\s*t\(['"]dashboard\.byCategory['"]\)/,
+    "byCategory section should not use legacy .panel class",
+  );
+  assert.doesNotMatch(
+    dashboardContent,
+    /<section[^>]*class="[^"]*\bpanel\b[^"]*"[^>]*>\s*<h2>\{\{\s*t\(['"]dashboard\.weeklySpending['"]\)/,
+    "weeklySpending section should not use legacy .panel class",
+  );
+
+  // Scoped styles for alert removed in favor of Tailwind
+  assert.doesNotMatch(
+    dashboardContent,
+    /\.compact-limit-alert\s*\{/,
+    "Dashboard.vue should not use custom CSS for compact-limit-alert",
+  );
+});
