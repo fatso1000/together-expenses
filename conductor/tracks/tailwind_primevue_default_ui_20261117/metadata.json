@@ -1,0 +1,8 @@
+{
+  "id": "tailwind_primevue_default_ui_20261117",
+  "name": "Make the app default UI construction based on Tailwind CSS 4 and PrimeVue instead of creating new CSS",
+  "type": "refactor",
+  "status": "new",
+  "created_at": "2026-11-17T20:29:00Z",
+  "updated_at": "2026-11-17T20:29:00Z"
+}
