@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  reactive,
-  ref,
-  shallowRef,
-  computed,
-  onMounted,
-  useTemplateRef,
-} from "vue";
+import { reactive, ref, shallowRef, computed, useTemplateRef } from "vue";
 import {
   X,
   Zap,
@@ -33,7 +26,7 @@ import {
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, signedMoney, today, money } from "@/lib/finance";
 import { itemsTotal, validQuantity } from "@/lib/purchases";
-import { findProduct } from "@/lib/products";
+import { findProduct, normalizeUnit } from "@/lib/products";
 import { type ReceiptSuggestion } from "@/lib/receipt";
 import { t, categoryLabel } from "@/lib/i18n";
 import CategoryIcon from "@/components/CategoryIcon.vue";
@@ -43,12 +36,16 @@ import CategoryManager from "@/components/CategoryManager.vue";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import Button from "primevue/button";
+import Drawer from "primevue/drawer";
+import DatePicker from "primevue/datepicker";
+import Select from "primevue/select";
+import Checkbox from "primevue/checkbox";
 
 const props = defineProps<{ expense?: Expense }>();
 const emit = defineEmits<{ close: [] }>();
 const store = useExpenses();
 const source = props.expense ?? store.repeat;
-const dialog = useTemplateRef<HTMLDialogElement>("dialog");
+const drawerIsOpen = ref(true);
 
 const mode = shallowRef<"quick" | "items" | "receipt">(
   source?.items?.length ? "items" : props.expense ? "quick" : store.entryMode,
@@ -64,6 +61,47 @@ const form = reactive({
   accountId: (source?.accountId ?? "global") as AccountId,
 });
 
+const maxDate = new Date();
+const minDate = new Date(2000, 0, 1);
+
+const selectedDate = computed<Date | null>({
+  get() {
+    if (!form.date) return null;
+    const parts = form.date.split("-").map(Number);
+    if (
+      parts.length < 3 ||
+      isNaN(parts[0]) ||
+      isNaN(parts[1]) ||
+      isNaN(parts[2])
+    ) {
+      return null;
+    }
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  },
+  set(val: Date | null) {
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      const year = val.getFullYear();
+      const month = String(val.getMonth() + 1).padStart(2, "0");
+      const day = String(val.getDate()).padStart(2, "0");
+      form.date = `${year}-${month}-${day}`;
+    } else {
+      form.date = "";
+    }
+  },
+});
+
+const categoryOptions = computed(() =>
+  store.categoryDefinitions.map((catDef) => ({
+    label: categoryLabel(catDef.name),
+    value: catDef.name,
+  })),
+);
+
+const accountOptions = computed(() => [
+  { value: "global" as AccountId, label: t("accounts.globalEveryday") },
+  { value: "nz" as AccountId, label: t("accounts.nzSavings") },
+]);
+
 const lines = ref<ItemInput[]>(
   (source?.items ?? []).map((item) => ({
     id: item.id,
@@ -71,7 +109,7 @@ const lines = ref<ItemInput[]>(
     price: (item.unitPrice / 100).toFixed(2),
     quantity: String(item.quantity),
     productId: item.productId,
-    unit: item.unit ?? "each",
+    unit: normalizeUnit(item.unit),
     size: String(item.size ?? 1),
     discount: item.discount ? (item.discount / 100).toFixed(2) : "",
   })),
@@ -152,7 +190,7 @@ function readLines(): PurchaseItem[] {
       unitPrice,
       quantity,
       size,
-      unit: item.unit ?? "each",
+      unit: normalizeUnit(item.unit),
       discount: itemDiscount,
       ...(product ? { productId: product.id } : {}),
     };
@@ -160,10 +198,25 @@ function readLines(): PurchaseItem[] {
 }
 
 function discountCents(): number {
-  const trimmed = discount.value.trim();
-  if (!trimmed || /^0(?:\.0{1,2})?$/.test(trimmed)) return 0;
-  return Math.abs(signedMoney(trimmed));
+  try {
+    const trimmed = discount.value.trim();
+    if (!trimmed || /^0(?:\.0{1,2})?$/.test(trimmed)) return 0;
+    return Math.abs(signedMoney(trimmed));
+  } catch {
+    // The field is free text while typing, so invalid input must not break
+    // rendering. Submit still reports the validation error.
+    return 0;
+  }
 }
+
+const linesSubtotal = computed(() => {
+  try {
+    return itemsTotal(readLines());
+  } catch {
+    // Incomplete rows are normal while editing and are reported on submit.
+    return 0;
+  }
+});
 
 const calculated = computed(() => {
   try {
@@ -231,7 +284,7 @@ function applyReceipt(value: ReceiptSuggestion, imageUrl?: string) {
     price: (item.unitPrice / 100).toFixed(2),
     quantity: String(item.quantity),
     productId: item.productId,
-    unit: item.unit ?? "each",
+    unit: normalizeUnit(item.unit),
     size: String(item.size ?? 1),
     discount: item.discount ? (item.discount / 100).toFixed(2) : "",
   }));
@@ -243,8 +296,6 @@ function onCategoryCreated(categoryName: string) {
   form.category = categoryName;
   showCategoryManager.value = false;
 }
-
-onMounted(() => dialog.value?.showModal());
 
 async function submit() {
   busy.value = true;
@@ -294,28 +345,23 @@ async function submit() {
 </script>
 
 <template>
-  <dialog
-    ref="dialog"
+  <Drawer
+    v-model:visible="drawerIsOpen"
+    position="bottom"
     class="expense-drawer-dialog"
-    @cancel.prevent="!busy && emit('close')"
+    style="height: auto; max-height: 94dvh"
+    :dismissable="!busy"
+    :closeOnEscape="!busy"
+    @after-hide="emit('close')"
   >
-    <!-- Drawer Drag Handle Indicator -->
-    <div class="drawer-handle-bar" aria-hidden="true">
-      <div class="drawer-handle" />
-    </div>
-
     <!-- Sticky Drawer Header -->
-    <header class="drawer-header">
+    <template #header>
       <div class="drawer-title-area">
         <h2>
-          {{
-            expense
-              ? t('expenses.editExpense')
-              : t('expenses.newExpense')
-          }}
+          {{ expense ? t("expenses.editExpense") : t("expenses.newExpense") }}
         </h2>
         <!-- Receipt Dock Quick Button -->
-        <button
+        <Button
           v-if="receipt || receiptImage"
           type="button"
           class="receipt-quick-pill"
@@ -323,21 +369,23 @@ async function submit() {
           @click="toggleDock"
         >
           <FileText :size="14" />
-          <span>{{ t('expenses.receiptPreview') }}</span>
+          <span>{{ t("expenses.receiptPreview") }}</span>
           <component :is="dockOpen ? ChevronUp : ChevronDown" :size="14" />
-        </button>
+        </Button>
       </div>
+    </template>
 
-      <button
+    <template #closebutton="{ closeCallback }">
+      <Button
         class="icon-button close-btn"
         :disabled="busy"
         aria-label="Close expense drawer"
         type="button"
-        @click="emit('close')"
+        @click="closeCallback"
       >
         <X />
-      </button>
-    </header>
+      </Button>
+    </template>
 
     <!-- Scrollable Drawer Content -->
     <div class="drawer-body">
@@ -346,27 +394,27 @@ async function submit() {
         <div class="drawer-col-form">
           <!-- Mode Tabs -->
           <div class="entry-tabs" aria-label="Entry method">
-            <button
+            <Button
               type="button"
               :aria-pressed="mode === 'quick'"
               @click="mode = 'quick'"
             >
-              <Zap :size="17" />{{ t('dashboard.quickAmount') }}
-            </button>
-            <button
+              <Zap :size="17" />{{ t("dashboard.quickAmount") }}
+            </Button>
+            <Button
               type="button"
               :aria-pressed="mode === 'items'"
               @click="mode = 'items'"
             >
-              <ListPlus :size="17" />{{ t('dashboard.addItems') }}
-            </button>
-            <button
+              <ListPlus :size="17" />{{ t("dashboard.addItems") }}
+            </Button>
+            <Button
               type="button"
               :aria-pressed="mode === 'receipt'"
               @click="mode = 'receipt'"
             >
-              <ScanLine :size="17" />{{ t('dashboard.scanReceipt') }}
-            </button>
+              <ScanLine :size="17" />{{ t("dashboard.scanReceipt") }}
+            </Button>
           </div>
 
           <!-- Mobile Quick Receipt Preview Dock -->
@@ -378,7 +426,7 @@ async function submit() {
           >
             <div class="dock-header">
               <div class="dock-tabs">
-                <button
+                <Button
                   type="button"
                   class="dock-tab"
                   :class="{ selected: previewTab === 'transcript' }"
@@ -387,9 +435,9 @@ async function submit() {
                     dockOpen = true;
                   "
                 >
-                  <FileText :size="14" />{{ t('expenses.transcriptTab') }}
-                </button>
-                <button
+                  <FileText :size="14" />{{ t("expenses.transcriptTab") }}
+                </Button>
+                <Button
                   v-if="receiptImage"
                   type="button"
                   class="dock-tab"
@@ -399,35 +447,39 @@ async function submit() {
                     dockOpen = true;
                   "
                 >
-                  <ImageIcon :size="14" />{{ t('expenses.photoTab') }}
-                </button>
+                  <ImageIcon :size="14" />{{ t("expenses.photoTab") }}
+                </Button>
               </div>
               <div class="dock-actions">
-                <button
+                <Button
                   v-if="previewTab === 'image'"
                   type="button"
                   class="preview-action-btn"
                   @click="isZoomed = !isZoomed"
                 >
                   <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{ isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn') }}</span>
-                </button>
-                <button
+                  <span>{{
+                    isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn")
+                  }}</span>
+                </Button>
+                <Button
                   v-if="previewTab === 'transcript'"
                   type="button"
                   class="preview-action-btn"
                   @click="copyTranscript"
                 >
                   <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{ copySuccess ? t('expenses.copied') : t('expenses.copy') }}</span>
-                </button>
-                <button
+                  <span>{{
+                    copySuccess ? t("expenses.copied") : t("expenses.copy")
+                  }}</span>
+                </Button>
+                <Button
                   type="button"
                   class="text-button dock-toggle"
                   @click="dockOpen = !dockOpen"
                 >
-                  {{ dockOpen ? t('common.close') : t('common.view') }}
-                </button>
+                  {{ dockOpen ? t("common.close") : t("common.view") }}
+                </Button>
               </div>
             </div>
 
@@ -466,7 +518,7 @@ async function submit() {
           <!-- Form Inputs -->
           <form @submit.prevent="submit">
             <label>
-              {{ t('expenses.merchant') }}
+              {{ t("expenses.merchant") }}
               <InputText
                 v-model="form.merchant"
                 list="saved-shops"
@@ -484,84 +536,150 @@ async function submit() {
               />
             </datalist>
 
-            <label>
-              {{ t('expenses.date') }}
-              <input
-                v-model="form.date"
-                type="date"
-                :max="today()"
-                min="2000-01-01"
+            <label for="expense-date">
+              {{ t("expenses.date") }}
+              <DatePicker
+                id="expense-date"
+                inputId="expense-date"
+                v-model="selectedDate"
+                dateFormat="yy-mm-dd"
+                :maxDate="maxDate"
+                :minDate="minDate"
+                showIcon
+                iconDisplay="input"
+                fluid
                 required
               />
             </label>
 
             <!-- Prominent Account Selector (Global vs NZ Savings) -->
             <div class="account-selector-group">
-              <span class="account-group-label">{{ t('bulk.paidFrom') }}</span>
+              <span class="account-group-label">{{ t("bulk.paidFrom") }}</span>
+              <!-- <div class="account-select-wrap">
+                <Select
+                  id="account-select"
+                  inputId="account-select"
+                  v-model="form.accountId"
+                  :options="accountOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="t('bulk.paidFrom')"
+                  fluid
+                  class="account-select"
+                >
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value" class="account-select-val">
+                      <component
+                        :is="slotProps.value === 'global' ? Wallet : PiggyBank"
+                        :size="16"
+                      />
+                      <span>{{
+                        slotProps.value === "global"
+                          ? t("accounts.globalEveryday")
+                          : t("accounts.nzSavings")
+                      }}</span>
+                    </div>
+                  </template>
+                  <template #option="slotProps">
+                    <div class="account-select-opt">
+                      <component
+                        :is="slotProps.option.value === 'global' ? Wallet : PiggyBank"
+                        :size="16"
+                      />
+                      <span>{{ slotProps.option.label }}</span>
+                    </div>
+                  </template>
+                </Select>
+              </div> -->
               <div
                 class="account-toggle-grid"
                 role="radiogroup"
                 aria-label="Paid From Account"
               >
-                <button
+                <Button
                   type="button"
-                  class="account-toggle-card"
-                  :class="{ selected: form.accountId === 'global' }"
+                  :variant="
+                    form.accountId === 'global' ? undefined : 'outlined'
+                  "
+                  class="justify-start!"
                   :aria-checked="form.accountId === 'global'"
                   role="radio"
                   @click="form.accountId = 'global'"
                 >
-                  <div class="account-toggle-icon global-icon">
+                  <div class="account-toggle-icon">
                     <Wallet :size="18" />
                   </div>
                   <div class="account-toggle-info">
-                    <strong>{{ t('accounts.globalEveryday') }}</strong>
+                    <strong>{{ t("accounts.globalEveryday") }}</strong>
                     <small>Everyday capital & weekly limit</small>
                   </div>
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
-                  class="account-toggle-card"
-                  :class="{ selected: form.accountId === 'nz' }"
+                  :variant="form.accountId === 'nz' ? undefined : 'outlined'"
+                  class="justify-start!"
                   :aria-checked="form.accountId === 'nz'"
                   role="radio"
                   @click="form.accountId = 'nz'"
                 >
-                  <div class="account-toggle-icon nz-icon">
+                  <div class="account-toggle-icon">
                     <PiggyBank :size="18" />
                   </div>
                   <div class="account-toggle-info">
-                    <strong>{{ t('accounts.nzSavings') }}</strong>
-                    <small>{{ t('accounts.salarySavings') }}</small>
+                    <strong>{{ t("accounts.nzSavings") }}</strong>
+                    <small>{{ t("accounts.salarySavings") }}</small>
                   </div>
-                </button>
+                </Button>
               </div>
-              <p class="account-badge-hint" :class="form.accountId">
-                <span v-if="form.accountId === 'nz'">
-                  🏦 {{ t('expenses.nzHint') }}
-                </span>
-                <span v-else>
-                  💳 {{ t('expenses.globalHint') }}
-                </span>
-              </p>
             </div>
 
             <!-- Category Picker with Custom Categories -->
             <fieldset class="category-picker">
               <div class="category-picker-header">
-                <legend>{{ t('expenses.category') }}</legend>
-                <button
+                <legend>{{ t("expenses.category") }}</legend>
+                <Button
                   type="button"
-                  class="text-button new-cat-link"
+                  size="small"
                   @click="openCategoryManager(true)"
                 >
-                  <Plus :size="14" />{{ t('categories.newCategory') }}
-                </button>
+                  <Plus :size="14" />{{ t("categories.newCategory") }}
+                </Button>
+              </div>
+
+              <div class="category-select-wrapper">
+                <Select
+                  id="category-select"
+                  inputId="category-select"
+                  v-model="form.category"
+                  :options="categoryOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="t('expenses.category')"
+                  fluid
+                  class="category-select"
+                >
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value" class="category-select-val">
+                      <CategoryIcon :category="slotProps.value" :size="18" />
+                      <span>{{ categoryLabel(slotProps.value) }}</span>
+                    </div>
+                    <span v-else>{{ slotProps.placeholder }}</span>
+                  </template>
+                  <template #option="slotProps">
+                    <div class="category-select-opt">
+                      <CategoryIcon
+                        :category="slotProps.option.value"
+                        :size="18"
+                      />
+                      <span>{{ slotProps.option.label }}</span>
+                    </div>
+                  </template>
+                </Select>
               </div>
 
               <div class="category-options">
-                <button
+                <Button
                   v-for="catDef in store.categoryDefinitions"
                   :key="catDef.id"
                   type="button"
@@ -570,16 +688,16 @@ async function submit() {
                 >
                   <CategoryIcon :category="catDef.name" :size="20" />
                   <span>{{ categoryLabel(catDef.name) }}</span>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   class="add-category-btn"
                   :title="t('categories.newCategory')"
                   @click="openCategoryManager(true)"
                 >
                   <Plus :size="20" />
-                  <span>+ {{ t('categories.newCategory') }}</span>
-                </button>
+                  <span>{{ t("categories.newCategory") }}</span>
+                </Button>
               </div>
             </fieldset>
 
@@ -595,7 +713,7 @@ async function submit() {
               <!-- Streamlined Receipt Discount Input -->
               <div v-if="lines.length" class="discount-container">
                 <label class="discount-field">
-                  {{ t('expenses.discountFieldLabel') }}
+                  {{ t("expenses.discountFieldLabel") }}
                   <InputText
                     v-model="discount"
                     inputmode="decimal"
@@ -603,7 +721,7 @@ async function submit() {
                     fluid
                   />
                   <small class="muted">
-                    {{ t('expenses.discountHint') }}
+                    {{ t("expenses.discountHint") }}
                   </small>
                 </label>
               </div>
@@ -625,11 +743,11 @@ async function submit() {
             <!-- Itemized Total Breakdown -->
             <div v-else-if="itemized" class="purchase-total-breakdown">
               <div v-if="discountCents() > 0" class="subtotal-row">
-                <span>{{ t('expenses.itemsSubtotal') }}</span>
-                <span>{{ money(itemsTotal(readLines()), form.currency) }}</span>
+                <span>{{ t("expenses.itemsSubtotal") }}</span>
+                <span>{{ money(linesSubtotal, form.currency) }}</span>
               </div>
               <div v-if="discountCents() > 0" class="discount-row">
-                <span>{{ t('expenses.receiptDiscount') }}</span>
+                <span>{{ t("expenses.receiptDiscount") }}</span>
                 <span>-{{ money(discountCents(), form.currency) }}</span>
               </div>
               <div class="purchase-total">
@@ -646,23 +764,23 @@ async function submit() {
             <div v-if="receipt" class="receipt-review">
               <p v-if="receiptNote" class="small">{{ receiptNote }}</p>
               <p v-if="receipt.amount !== null">
-                {{ t('expenses.receiptTotal') }}
+                {{ t("expenses.receiptTotal") }}
                 <strong>{{ money(receipt.amount, form.currency) }}</strong>
               </p>
               <p v-if="totalMismatch" class="error-note">
-                {{ t('expenses.itemsMismatch') }}
+                {{ t("expenses.itemsMismatch") }}
               </p>
               <p v-if="!receipt.date" class="small">
                 Date not detected — check the date above.
               </p>
               <label class="check">
-                <input v-model="reviewed" type="checkbox" />
-                {{ t('expenses.checkItemsPrompt') }}
+                <Checkbox v-model="reviewed" binary inputId="reviewed-check" />
+                <span>{{ t("expenses.checkItemsPrompt") }}</span>
               </label>
             </div>
 
             <details>
-              <summary>{{ t('expenses.notes') }}</summary>
+              <summary>{{ t("expenses.notes") }}</summary>
               <Textarea
                 v-model="form.note"
                 maxlength="500"
@@ -674,9 +792,9 @@ async function submit() {
 
             <p v-if="error" class="error-note" role="alert">{{ error }}</p>
 
-            <div class="save-bar">
-              <Button class="primary wide" :disabled="busy" type="submit">
-                {{ busy ? t('common.saving') : t('common.save') }}
+            <div class="mt-4">
+              <Button class="primary" fluid :disabled="busy" type="submit">
+                {{ busy ? t("common.saving") : t("common.save") }}
               </Button>
             </div>
           </form>
@@ -688,7 +806,7 @@ async function submit() {
           <div v-if="receipt || receiptImage" class="preview-stage-container">
             <div class="preview-stage-header">
               <div class="preview-stage-tabs">
-                <button
+                <Button
                   v-if="receiptImage"
                   type="button"
                   class="preview-tab-btn"
@@ -696,31 +814,35 @@ async function submit() {
                   @click="previewTab = 'image'"
                 >
                   <ImageIcon :size="15" />
-                  <span>{{ t('expenses.photoTab') }}</span>
-                </button>
-                <button
+                  <span>{{ t("expenses.photoTab") }}</span>
+                </Button>
+                <Button
                   type="button"
                   class="preview-tab-btn"
                   :class="{ active: previewTab === 'transcript' }"
                   @click="previewTab = 'transcript'"
                 >
                   <FileText :size="15" />
-                  <span>{{ t('expenses.transcriptTab') }}</span>
-                </button>
+                  <span>{{ t("expenses.transcriptTab") }}</span>
+                </Button>
               </div>
 
               <div class="preview-stage-controls">
-                <button
+                <Button
                   v-if="previewTab === 'image'"
                   type="button"
                   class="control-pill"
-                  :title="isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn')"
+                  :title="
+                    isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn')
+                  "
                   @click="isZoomed = !isZoomed"
                 >
                   <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{ isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn') }}</span>
-                </button>
-                <button
+                  <span>{{
+                    isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn")
+                  }}</span>
+                </Button>
+                <Button
                   v-if="previewTab === 'transcript'"
                   type="button"
                   class="control-pill"
@@ -728,8 +850,10 @@ async function submit() {
                   @click="copyTranscript"
                 >
                   <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{ copySuccess ? t('expenses.copied') : t('expenses.copy') }}</span>
-                </button>
+                  <span>{{
+                    copySuccess ? t("expenses.copied") : t("expenses.copy")
+                  }}</span>
+                </Button>
               </div>
             </div>
 
@@ -747,7 +871,11 @@ async function submit() {
                 :class="{ 'zoomed-img': isZoomed }"
               />
               <span class="preview-zoom-tip">
-                {{ isZoomed ? t('expenses.clickZoomOut') : t('expenses.clickZoomIn') }}
+                {{
+                  isZoomed
+                    ? t("expenses.clickZoomOut")
+                    : t("expenses.clickZoomIn")
+                }}
               </span>
             </div>
 
@@ -772,18 +900,18 @@ async function submit() {
             <div class="placeholder-icon-wrap">
               <ScanLine :size="38" />
             </div>
-            <h3>{{ t('expenses.receiptStagePrompt') }}</h3>
+            <h3>{{ t("expenses.receiptStagePrompt") }}</h3>
             <p>
-              {{ t('expenses.receiptStageDesc') }}
+              {{ t("expenses.receiptStageDesc") }}
             </p>
-            <button
+            <Button
               type="button"
               class="secondary prompt-scan-btn"
               @click="mode = 'receipt'"
             >
               <ScanLine :size="16" />
-              <span>{{ t('expenses.scanReceiptNow') }}</span>
-            </button>
+              <span>{{ t("expenses.scanReceiptNow") }}</span>
+            </Button>
           </div>
         </aside>
       </div>
@@ -800,15 +928,14 @@ async function submit() {
           <div class="drawer-handle" />
         </div>
         <div class="inline-modal-header">
-          <h3>{{ t('categories.title') }}</h3>
-          <button
+          <h3>{{ t("categories.title") }}</h3>
+          <Button
             type="button"
-            class="icon-button"
             aria-label="Close category manager"
             @click="showCategoryManager = false"
           >
             <X />
-          </button>
+          </Button>
         </div>
         <CategoryManager
           :start-in-create-mode="categoryCreateMode"
@@ -817,38 +944,10 @@ async function submit() {
         />
       </div>
     </div>
-  </dialog>
+  </Drawer>
 </template>
 
 <style scoped>
-/* Bottom Drawer Layout */
-.expense-drawer-dialog {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  margin: auto 0 0 0;
-  width: 100vw;
-  max-width: 100vw;
-  height: 94dvh;
-  max-height: 94dvh;
-  background: var(--surface-drawer, #182c26);
-  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
-  border-radius: 28px 28px 0 0;
-  color: inherit;
-  padding: 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  will-change: transform;
-  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.expense-drawer-dialog::backdrop {
-  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
-}
-
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -868,7 +967,7 @@ async function submit() {
 .drawer-handle {
   width: 44px;
   height: 5px;
-  background: rgba(120, 150, 135, 0.45);
+  background: var(--border);
   border-radius: 10px;
 }
 
@@ -910,7 +1009,7 @@ async function submit() {
 
 .receipt-quick-pill.active {
   background: var(--green);
-  color: #ffffff;
+  color: var(--text-heading);
   border-color: var(--green);
 }
 
@@ -949,7 +1048,7 @@ async function submit() {
 
 /* Mobile Quick Receipt Dock */
 .quick-receipt-dock {
-  background: var(--surface-card, #f8faf8);
+  background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: 14px;
   overflow: hidden;
@@ -961,7 +1060,7 @@ async function submit() {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: var(--surface-card-hover, #14241f);
+  background: var(--surface-card-hover);
   border-bottom: 1px solid var(--border);
 }
 
@@ -984,7 +1083,7 @@ async function submit() {
 
 .dock-tab.selected {
   background: var(--green);
-  color: #ffffff;
+  color: var(--text-heading);
 }
 
 .dock-actions {
@@ -1082,23 +1181,44 @@ async function submit() {
 .account-toggle-card {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  background: var(--surface-card, #f8faf8);
+  background: var(--surface-card);
   border: 1.5px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.18s ease, border-color 0.18s ease;
+  font-weight: normal;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.account-select-wrap {
+  margin-bottom: 8px;
+}
+
+.category-select-wrapper {
+  margin-bottom: 12px;
+}
+
+.category-select-val,
+.category-select-opt,
+.account-select-val,
+.account-select-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .account-toggle-card:hover {
-  background: var(--surface-card-hover, #14241f);
+  background: var(--surface-card-hover);
   border-color: var(--accent);
 }
 
 .account-toggle-card.selected {
-  background: rgba(42, 194, 148, 0.14);
+  background: var(--success-bg);
   border-color: var(--accent);
   box-shadow: 0 2px 8px var(--accent-glow);
 }
@@ -1113,19 +1233,11 @@ async function submit() {
   flex-shrink: 0;
 }
 
-.global-icon {
-  background: rgba(42, 194, 148, 0.15);
-  color: var(--accent);
-}
-
-.nz-icon {
-  background: rgba(235, 198, 128, 0.2);
-  color: #c48c31;
-}
-
 .account-toggle-info {
   display: flex;
   flex-direction: column;
+  justify-content: start;
+  align-items: baseline;
   min-width: 0;
 }
 
@@ -1136,7 +1248,6 @@ async function submit() {
 
 .account-toggle-info small {
   font-size: 11px;
-  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1153,7 +1264,7 @@ async function submit() {
 }
 
 .account-badge-hint.nz {
-  border-left-color: #c48c31;
+  border-left-color: var(--warning-colour);
 }
 
 /* Categories & Custom Button */
@@ -1235,7 +1346,7 @@ async function submit() {
 .inline-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
+  background: var(--surface-backdrop);
   z-index: 1100;
   display: flex;
   align-items: flex-end;
@@ -1243,15 +1354,15 @@ async function submit() {
 }
 
 .inline-modal {
-  background: var(--surface-drawer, #182c26);
-  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
+  background: var(--surface-drawer);
+  border: 1px solid var(--surface-drawer-border);
   border-radius: 28px 28px 0 0;
   padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
   width: 100vw;
   max-width: 100vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
+  box-shadow: var(--surface-drawer-shadow);
   will-change: transform;
   animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1295,11 +1406,11 @@ async function submit() {
     position: sticky;
     top: 0;
     max-height: calc(94dvh - 120px);
-    background: var(--surface-card, #f8faf8);
+    background: var(--surface-card);
     border: 1px solid var(--border);
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 4px 18px rgba(21, 61, 53, 0.05);
+    box-shadow: var(--glass-card-shadow);
   }
 
   .preview-stage-container {
@@ -1314,7 +1425,7 @@ async function submit() {
     justify-content: space-between;
     align-items: center;
     padding: 10px 14px;
-    background: var(--surface-card-hover, #14241f);
+    background: var(--surface-card-hover);
     border-bottom: 1px solid var(--border);
   }
 
@@ -1339,7 +1450,7 @@ async function submit() {
 
   .preview-tab-btn.active {
     background: var(--green);
-    color: #ffffff;
+    color: var(--text-heading);
   }
 
   .preview-stage-controls {
@@ -1375,7 +1486,7 @@ async function submit() {
     justify-content: center;
     position: relative;
     cursor: zoom-in;
-    background: #101915;
+    background: var(--surface-card);
     min-height: 440px;
   }
 
@@ -1391,7 +1502,7 @@ async function submit() {
     max-height: calc(94dvh - 220px);
     object-fit: contain;
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--glass-card-shadow);
     transition: transform 0.2s ease;
   }
 
@@ -1406,8 +1517,8 @@ async function submit() {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.75);
-    color: #ffffff;
+    background: var(--glass-backdrop);
+    color: var(--text-heading);
     font-size: 11px;
     padding: 4px 8px;
     border-radius: 6px;
@@ -1447,7 +1558,7 @@ async function submit() {
     width: 72px;
     height: 72px;
     border-radius: 20px;
-    background: rgba(42, 194, 148, 0.15);
+    background: var(--success-bg);
     color: var(--accent);
     display: flex;
     align-items: center;
