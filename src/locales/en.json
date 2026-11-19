@@ -13,7 +13,9 @@
     "settingsCategories": "Categories",
     "settingsFrequent": "Frequent Payments",
     "settingsAi": "AI Settings",
-    "settingsData": "Data & Backup"
+    "settingsData": "Data & Backup",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar"
   },
   "common": {
     "addExpense": "Add expense",

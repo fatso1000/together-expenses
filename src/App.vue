@@ -1,5 +1,5 @@
 <template>
-  <SidebarLayout class="max-h-svh relative!">
+  <SidebarLayout class="max-h-svh relative!" :style="appBackgroundStyle">
     <Sidebar
       id="menu-demo"
       variant="inset"
@@ -9,7 +9,9 @@
     >
       <SidebarSpacer />
       <SidebarAside>
-        <SidebarPanel>
+        <SidebarPanel
+          :class="isMobile ? 'bg-[var(--surface-drawer)]!' : 'bg-transparent!'"
+        >
           <SidebarHeader>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -31,10 +33,10 @@
                         :to="item.path"
                         :aria-label="item.label"
                         :class="{ active: currentTab === item.path }"
-                        class="inline-flex w-full items-center gap-2"
+                        class="inline-flex w-full items-center gap-2 overflow-hidden whitespace-nowrap"
                       >
-                        <component :is="item.icon" :size="20" />
-                        <span>{{ item.label }}</span>
+                        <component :is="item.icon" :size="20" class="shrink-0" />
+                        <span class="truncate">{{ item.label }}</span>
                       </RouterLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -57,10 +59,10 @@
                         :to="item.path"
                         :aria-label="item.label"
                         :class="{ active: currentTab === item.path }"
-                        class="inline-flex w-full items-center gap-2"
+                        class="inline-flex w-full items-center gap-2 overflow-hidden whitespace-nowrap"
                       >
-                        <component :is="item.icon" :size="20" />
-                        <span>{{ item.label }}</span>
+                        <component :is="item.icon" :size="20" class="shrink-0" />
+                        <span class="truncate">{{ item.label }}</span>
                       </RouterLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -73,14 +75,27 @@
       </SidebarAside>
     </Sidebar>
 
-    <SidebarMain class="overflow-hidden">
+    <SidebarMain class="overflow-hidden bg-black/40! border border-white/8">
       <div class="workspace-scroll flex-1 overflow-y-auto flex flex-col px-4 pb-4 gap-4">
         <div
           class="page-heading sticky top-0 z-10 -mx-4 px-4 py-3.5 backdrop-blur-md bg-[var(--p-sidebar-main-inset-background)]/90 border-b border-[var(--border)] flex items-center justify-between gap-4"
         >
-          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight m-0">
-            {{ pageHeading }}
-          </h1>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <SidebarTrigger
+              target="menu-demo"
+              variant="text"
+              severity="secondary"
+              :aria-label="sidebarToggleLabel"
+              :title="sidebarToggleLabel"
+              class="shrink-0"
+            >
+              <PanelLeftClose v-if="open" :size="20" />
+              <PanelLeftOpen v-else :size="20" />
+            </SidebarTrigger>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight m-0 truncate">
+              {{ pageHeading }}
+            </h1>
+          </div>
           <div class="flex items-center gap-2">
             <Button class="add-expense" @click="store.openExpense()">
               <Plus :size="19" />
@@ -240,6 +255,8 @@ import {
   CalendarClock,
   Bot,
   Database,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-vue-next";
 import ExpenseForm from "@/components/ExpenseForm.vue";
 import { useExpenses } from "@/stores/expenses";
@@ -263,6 +280,7 @@ import SidebarMenu from "primevue/sidebarmenu";
 import SidebarMenuItem from "primevue/sidebarmenuitem";
 import SidebarMenuButton from "primevue/sidebarmenubutton";
 import SidebarRail from "primevue/sidebarrail";
+import SidebarTrigger from "primevue/sidebartrigger";
 
 const store = useExpenses();
 const route = useRoute();
@@ -270,6 +288,29 @@ const { t } = useI18n();
 
 const isMobile = ref(false);
 const open = ref(true);
+
+const GRAIN_SVG_DATA_URI =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.075'/%3E%3C/svg%3E";
+
+const appBackgroundStyle: Record<string, string> = {
+  "--p-sidebar-layout-background": "transparent",
+  "--p-sidebar-main-inset-background": "#16201d",
+  backgroundColor: "#1c2220",
+  backgroundImage: [
+    `url("${GRAIN_SVG_DATA_URI}")`,
+    "radial-gradient(circle at 14% 12%, rgba(216, 224, 220, 0.16) 0%, transparent 46%)",
+    "radial-gradient(circle at 86% 16%, color-mix(in srgb, var(--accent) 16%, transparent) 0%, transparent 52%)",
+    "radial-gradient(circle at 76% 88%, color-mix(in srgb, var(--green) 18%, transparent) 0%, transparent 56%)",
+    "radial-gradient(circle at 24% 82%, rgba(164, 176, 170, 0.13) 0%, transparent 50%)",
+    "linear-gradient(135deg, #28302d 0%, #1f2724 38%, #182420 72%, #141a18 100%)",
+  ].join(", "),
+  backgroundRepeat: "repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat",
+  backgroundSize: "160px 160px, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%",
+};
+
+const sidebarToggleLabel = computed(() =>
+  open.value ? t("nav.collapseSidebar") : t("nav.expandSidebar"),
+);
 let mql: MediaQueryList | null = null;
 let onMqlChange: ((event: MediaQueryListEvent) => void) | null = null;
 

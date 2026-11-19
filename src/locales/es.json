@@ -13,7 +13,9 @@
     "settingsCategories": "Categorías",
     "settingsFrequent": "Pagos Frecuentes",
     "settingsAi": "Ajustes de IA",
-    "settingsData": "Datos y Copias"
+    "settingsData": "Datos y Copias",
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Contraer barra lateral"
   },
   "common": {
     "addExpense": "Cargar gasto",
