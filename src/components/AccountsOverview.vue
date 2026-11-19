@@ -1,5 +1,382 @@
+<template>
+  <Card class="mb-6" aria-label="Financial accounts and net worth">
+    <template #content>
+      <div class="grid gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-[var(--success-bg)] text-accent flex items-center justify-center shrink-0">
+              <ArrowRightLeft :size="20" />
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-text m-0">{{ t("accounts.title") }}</h2>
+              <p class="text-xs text-muted m-0">
+                {{ t("accounts.subtitle") }}
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 ml-auto sm:ml-0">
+            <Button
+              type="button"
+              severity="secondary"
+              size="small"
+              class="inline-flex items-center gap-1.5"
+              @click="openAddDeposit"
+            >
+              <Plus :size="15" />
+              <span>{{ t("accounts.addSavings") }}</span>
+            </Button>
+            <Button
+              v-if="store.savingsRecords.length"
+              type="button"
+              severity="secondary"
+              size="small"
+              :title="t('accounts.manageDeposits')"
+              class="inline-flex items-center gap-1.5"
+              @click="showManageDepositsModal = true"
+            >
+              <History :size="15" />
+              <span>{{ t("accounts.manageDeposits") }}</span>
+            </Button>
+            <RouterLink
+              to="/settings/accounts"
+              class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-muted hover:bg-[var(--surface-card-hover)] hover:text-accent transition-colors"
+              aria-label="Configure accounts"
+            >
+              <Settings :size="17" />
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Hero Combined Total Money Card -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[var(--surface-card)] to-[var(--surface-card-hover)] border border-[var(--border)] shadow-sm">
+          <div class="grid gap-1">
+            <span class="text-xs uppercase tracking-wider text-accent font-semibold">
+              {{ t("accounts.heroLabel") }}
+            </span>
+            <strong class="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums text-text font-heading">
+              {{ store.displayMoney(store.totalMoney) }}
+            </strong>
+            <p
+              v-if="netWorthComparison"
+              class="text-xs inline-flex items-center gap-1.5 mt-1 mb-0 font-medium"
+              :class="netWorthComparison.isPositive ? 'text-accent' : 'text-muted'"
+            >
+              <TrendingUp v-if="netWorthComparison.isPositive" :size="14" />
+              <TrendingDown v-else :size="14" />
+              <span>{{ netWorthComparison.label }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Initial Global Baseline Status Callout -->
+        <div
+          v-if="spendComparison.hasBaseline"
+          class="flex items-start gap-3 px-4 py-3 rounded-xl border text-xs"
+          :class="
+            spendComparison.isOver
+              ? 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-colour)]'
+              : 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success-colour)]'
+          "
+        >
+          <div class="shrink-0 mt-0.5">
+            <AlertCircle v-if="spendComparison.isOver" :size="18" />
+            <CheckCircle2 v-else :size="18" />
+          </div>
+          <div class="grid gap-0.5">
+            <strong class="text-sm font-bold">
+              {{
+                spendComparison.isOver
+                  ? t("accounts.baselineOver")
+                  : t("accounts.baselineUnder")
+              }}
+            </strong>
+            <p class="text-xs m-0 opacity-90">{{ spendComparison.label }}</p>
+          </div>
+        </div>
+        <div
+          v-else
+          class="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] text-xs text-muted"
+        >
+          <Sparkles :size="14" class="shrink-0 text-accent" />
+          <span>{{ t("accounts.baselineEmpty") }}</span>
+        </div>
+
+        <!-- Dual Accounts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Global Spending Account -->
+          <article class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-sm font-semibold text-text">
+                <Wallet :size="16" />
+                <strong>Global Account</strong>
+              </div>
+              <Tag :value="t('accounts.everydayPurchases')" severity="secondary" />
+            </div>
+
+            <div class="grid gap-1.5">
+              <div class="grid">
+                <span class="text-[11px] text-muted">{{ t("accounts.currentBalance") }}</span>
+                <strong class="text-2xl font-bold tabular-nums text-text">
+                  {{ store.displayMoney(store.globalBalance) }}
+                </strong>
+              </div>
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+                <span class="text-muted">{{ t("accounts.everydaySpent") }}</span>
+                <span class="font-mono text-text">{{ store.displayMoney(store.balances.globalSpent) }}</span>
+              </div>
+              <div
+                v-if="store.initialGlobalNZD"
+                class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs"
+              >
+                <span class="text-muted">{{ t("accounts.initialBaseline") }}</span>
+                <span class="font-mono text-text">
+                  {{ store.displayMoney(store.initialGlobalNZD) }}
+                  <template v-if="store.initialGlobalUSD">
+                    (${{ (store.initialGlobalUSD / 100).toFixed(2) }} USD)
+                  </template>
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- NZ Savings Account -->
+          <article class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-sm font-semibold text-text">
+                <PiggyBank :size="16" />
+                <strong>NZ Account</strong>
+              </div>
+              <Tag :value="t('accounts.salarySavings')" severity="success" />
+            </div>
+
+            <div class="grid gap-1.5">
+              <div class="grid">
+                <span class="text-[11px] text-muted">{{ t("accounts.currentSavings") }}</span>
+                <strong class="text-2xl font-bold tabular-nums text-accent">
+                  {{ store.displayMoney(store.nzBalance) }}
+                </strong>
+              </div>
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+                <span class="text-muted">{{ t("accounts.spentFromSavings") }}</span>
+                <span class="font-mono text-text">{{ store.displayMoney(store.balances.nzSpent) }}</span>
+              </div>
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+                <span class="text-muted">{{ t("accounts.savingsDeposits") }}</span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="small"
+                  class="p-0! h-auto! font-mono text-xs underline"
+                  @click="showManageDepositsModal = true"
+                >
+                  {{ t("accounts.recordedDeposits", { count: store.savingsRecords.length }) }}
+                </Button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </template>
+
+    <!-- Add / Edit Savings Deposit Drawer -->
+    <Drawer
+      v-model:visible="showDepositModal"
+      position="bottom"
+      class="w-full! max-w-full!"
+      style="height: auto; max-height: 92dvh"
+      :dismissable="!depositBusy"
+      :closeOnEscape="!depositBusy"
+    >
+      <template #header>
+        <h3 class="text-lg font-bold m-0">
+          {{ editingDepositId ? t("accounts.editDepositTitle") : t("accounts.recordDepositTitle") }}
+        </h3>
+      </template>
+
+      <template #closebutton="{ closeCallback }">
+        <Button
+          type="button"
+          variant="text"
+          severity="secondary"
+          rounded
+          aria-label="Close"
+          :disabled="depositBusy"
+          @click="closeCallback"
+        >
+          <X :size="18" />
+        </Button>
+      </template>
+
+      <form class="grid gap-4 pb-2" @submit.prevent="saveDeposit">
+        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <span>{{ t("accounts.depositAmount") }}</span>
+          <InputText
+            v-model="depositAmount"
+            inputmode="decimal"
+            required
+            placeholder="e.g. 1200.00"
+            autofocus
+            fluid
+          />
+        </label>
+
+        <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <label for="deposit-date-input">{{ t("accounts.depositDate") }}</label>
+          <DatePicker
+            v-model="selectedDepositDate"
+            inputId="deposit-date-input"
+            dateFormat="yy-mm-dd"
+            showIcon
+            iconDisplay="input"
+            fluid
+            required
+          />
+        </div>
+
+        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <span>{{ t("accounts.depositNote") }}</span>
+          <InputText
+            v-model="depositNote"
+            placeholder="e.g. Weekly salary deposit, Bonus"
+            fluid
+          />
+        </label>
+
+        <p class="text-xs text-muted m-0">
+          {{ t("accounts.depositHint") }}
+        </p>
+
+        <Message v-if="depositError" severity="error" :closable="false">
+          {{ depositError }}
+        </Message>
+
+        <div class="flex flex-wrap items-center gap-3 pt-1">
+          <Button type="submit" severity="primary" :disabled="depositBusy">
+            {{ editingDepositId ? t("accounts.updateDeposit") : t("accounts.saveDeposit") }}
+          </Button>
+          <Button
+            type="button"
+            severity="secondary"
+            variant="outlined"
+            @click="showDepositModal = false"
+          >
+            {{ t("common.cancel") }}
+          </Button>
+        </div>
+      </form>
+    </Drawer>
+
+    <!-- Manage Savings Deposits Drawer -->
+    <Drawer
+      v-model:visible="showManageDepositsModal"
+      position="bottom"
+      class="w-full! max-w-full!"
+      style="height: auto; max-height: 92dvh"
+    >
+      <template #header>
+        <div class="grid gap-0.5">
+          <h3 class="text-lg font-bold m-0">{{ t("accounts.depositsTitle") }}</h3>
+          <span class="text-xs text-muted">
+            {{ t("accounts.depositsCount", { count: store.savingsRecords.length }) }}
+          </span>
+        </div>
+      </template>
+
+      <template #closebutton="{ closeCallback }">
+        <div class="flex items-center gap-2">
+          <Button
+            type="button"
+            severity="secondary"
+            size="small"
+            class="inline-flex items-center gap-1"
+            @click="openAddDeposit"
+          >
+            <Plus :size="14" />
+            <span>{{ t("accounts.newDeposit") }}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="text"
+            severity="secondary"
+            rounded
+            aria-label="Close"
+            @click="closeCallback"
+          >
+            <X :size="18" />
+          </Button>
+        </div>
+      </template>
+
+      <div class="pb-2">
+        <div
+          v-if="!store.savingsRecords.length"
+          class="flex flex-col items-center justify-center py-8 px-4 gap-3 text-muted text-center"
+        >
+          <PiggyBank :size="32" />
+          <p class="text-sm m-0">{{ t("accounts.noDeposits") }}</p>
+          <Button
+            type="button"
+            severity="secondary"
+            size="small"
+            class="inline-flex items-center gap-1.5"
+            @click="openAddDeposit"
+          >
+            <Plus :size="15" />
+            <span>{{ t("accounts.recordFirstDeposit") }}</span>
+          </Button>
+        </div>
+
+        <ul v-else class="list-none m-0 p-0 grid gap-2">
+          <li
+            v-for="deposit in sortedSavingsRecords"
+            :key="deposit.id"
+            class="flex items-center justify-between px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+          >
+            <div class="grid gap-0.5">
+              <strong class="text-base tabular-nums text-accent">
+                {{ store.displayMoney(deposit.amount) }}
+              </strong>
+              <span class="text-xs text-muted">
+                {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
+              </span>
+            </div>
+            <div class="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="text"
+                severity="secondary"
+                rounded
+                size="small"
+                title="Edit deposit"
+                aria-label="Edit deposit"
+                @click="openEditDeposit(deposit)"
+              >
+                <Pencil :size="15" />
+              </Button>
+              <Button
+                type="button"
+                variant="text"
+                severity="danger"
+                rounded
+                size="small"
+                title="Delete deposit"
+                aria-label="Delete deposit"
+                @click="deleteDeposit(deposit)"
+              >
+                <Trash2 :size="15" />
+              </Button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </Drawer>
+  </Card>
+</template>
+
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
+import { RouterLink } from "vue-router";
 import {
   Wallet,
   PiggyBank,
@@ -16,8 +393,15 @@ import {
   History,
   X,
 } from "lucide-vue-next";
+import Card from "primevue/card";
+import Button from "primevue/button";
+import Drawer from "primevue/drawer";
+import InputText from "primevue/inputtext";
+import DatePicker from "primevue/datepicker";
+import Tag from "primevue/tag";
+import Message from "primevue/message";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { parseMoney, today } from "@/lib/finance";
+import { parseMoney, today, parseIsoDate, formatIsoDate } from "@/lib/finance";
 import { t } from "@/lib/i18n";
 import type { SavingsRecord } from "@/lib/types";
 
@@ -33,14 +417,19 @@ const depositNote = shallowRef("");
 const depositBusy = shallowRef(false);
 const depositError = shallowRef("");
 
+const selectedDepositDate = computed<Date | null>({
+  get() {
+    return parseIsoDate(depositDate.value);
+  },
+  set(val: Date | null) {
+    depositDate.value = formatIsoDate(val) || today();
+  },
+});
+
 const sortedSavingsRecords = computed(() =>
   [...store.savingsRecords].sort(
     (a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
   ),
-);
-
-const hasInitialFunds = computed(
-  () => store.initialGlobalNZD > 0 || (store.accounts.nzInitialNZD ?? 0) > 0,
 );
 
 const spendComparison = computed(() => {
@@ -142,668 +531,3 @@ async function saveDeposit() {
   }
 }
 </script>
-
-<template>
-  <section class="panel accounts-panel" aria-label="Financial accounts and net worth">
-    <div class="accounts-header">
-      <div class="accounts-title-wrap">
-        <div class="accounts-icon-badge">
-          <ArrowRightLeft :size="20" />
-        </div>
-        <div>
-          <h2>{{ t('accounts.title') }}</h2>
-          <p class="small muted">
-            {{ t('accounts.subtitle') }}
-          </p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button
-          class="secondary btn-sm"
-          type="button"
-          @click="openAddDeposit"
-        >
-          <Plus :size="15" />{{ t('accounts.addSavings') }}
-        </button>
-        <button
-          v-if="store.savingsRecords.length"
-          class="secondary btn-sm"
-          type="button"
-          :title="t('accounts.manageDeposits')"
-          @click="showManageDepositsModal = true"
-        >
-          <History :size="15" />{{ t('accounts.manageDeposits') }}
-        </button>
-        <RouterLink to="/settings" class="icon-button" aria-label="Configure accounts">
-          <Settings :size="17" />
-        </RouterLink>
-      </div>
-    </div>
-
-    <!-- Hero Combined Total Money Card -->
-    <div class="hero-balance-card">
-      <div class="hero-balance-info">
-        <span class="hero-label">{{ t('accounts.heroLabel') }}</span>
-        <strong class="hero-amount">{{ store.displayMoney(store.totalMoney) }}</strong>
-        <p v-if="netWorthComparison" class="small net-status" :class="{ positive: netWorthComparison.isPositive }">
-          <TrendingUp v-if="netWorthComparison.isPositive" :size="14" />
-          <TrendingDown v-else :size="14" />
-          {{ netWorthComparison.label }}
-        </p>
-      </div>
-    </div>
-
-    <!-- Initial Global Baseline Status Callout -->
-    <div
-      v-if="spendComparison.hasBaseline"
-      class="baseline-callout"
-      :class="{ 'over-baseline': spendComparison.isOver, 'under-baseline': !spendComparison.isOver }"
-    >
-      <div class="baseline-icon">
-        <AlertCircle v-if="spendComparison.isOver" :size="18" />
-        <CheckCircle2 v-else :size="18" />
-      </div>
-      <div class="baseline-text">
-        <strong>
-          {{
-            spendComparison.isOver
-              ? t('accounts.baselineOver')
-              : t('accounts.baselineUnder')
-          }}
-        </strong>
-        <p class="small">{{ spendComparison.label }}</p>
-      </div>
-    </div>
-    <div v-else class="baseline-callout baseline-empty">
-      <p class="small">
-        <Sparkles :size="14" />
-        {{ t('accounts.baselineEmpty') }}
-      </p>
-    </div>
-
-    <!-- Dual Accounts Grid -->
-    <div class="accounts-grid">
-      <!-- Global Spending Account -->
-      <article class="account-card global-card">
-        <div class="account-card-header">
-          <div class="account-tag">
-            <Wallet :size="16" />
-            <strong>Global Account</strong>
-          </div>
-          <span class="account-badge">{{ t('accounts.everydayPurchases') }}</span>
-        </div>
-
-        <div class="account-stats">
-          <div class="account-balance">
-            <span class="stat-label">{{ t('accounts.currentBalance') }}</span>
-            <strong class="account-amount">{{ store.displayMoney(store.globalBalance) }}</strong>
-          </div>
-          <div class="account-initial-row">
-            <span class="muted small">{{ t('accounts.everydaySpent') }}</span>
-            <span class="small font-mono">{{ store.displayMoney(store.balances.globalSpent) }}</span>
-          </div>
-          <div v-if="store.initialGlobalNZD" class="account-initial-row">
-            <span class="muted small">{{ t('accounts.initialBaseline') }}</span>
-            <span class="small font-mono">
-              {{ store.displayMoney(store.initialGlobalNZD) }}
-              <template v-if="store.initialGlobalUSD">
-                (${{ (store.initialGlobalUSD / 100).toFixed(2) }} USD)
-              </template>
-            </span>
-          </div>
-        </div>
-      </article>
-
-      <!-- NZ Savings Account -->
-      <article class="account-card nz-card">
-        <div class="account-card-header">
-          <div class="account-tag">
-            <PiggyBank :size="16" />
-            <strong>NZ Account</strong>
-          </div>
-          <span class="account-badge savings-badge">{{ t('accounts.salarySavings') }}</span>
-        </div>
-
-        <div class="account-stats">
-          <div class="account-balance">
-            <span class="stat-label">{{ t('accounts.currentSavings') }}</span>
-            <strong class="account-amount nz-amount">{{ store.displayMoney(store.nzBalance) }}</strong>
-          </div>
-          <div class="account-initial-row">
-            <span class="muted small">{{ t('accounts.spentFromSavings') }}</span>
-            <span class="small font-mono">{{ store.displayMoney(store.balances.nzSpent) }}</span>
-          </div>
-          <div class="account-initial-row">
-            <span class="muted small">{{ t('accounts.savingsDeposits') }}</span>
-            <button
-              type="button"
-              class="text-button small font-mono link-manage-deposits"
-              @click="showManageDepositsModal = true"
-            >
-              {{ t('accounts.recordedDeposits', { count: store.savingsRecords.length }) }}
-            </button>
-          </div>
-        </div>
-      </article>
-    </div>
-
-    <!-- Add / Edit Savings Deposit Drawer -->
-    <Teleport to="body">
-      <div
-        v-if="showDepositModal"
-        class="drawer-backdrop"
-        @click.self="showDepositModal = false"
-      >
-      <div class="bottom-drawer" role="dialog" aria-modal="true">
-        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
-        <div class="drawer-header">
-          <h3>{{ editingDepositId ? t('accounts.editDepositTitle') : t('accounts.recordDepositTitle') }}</h3>
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Close"
-            @click="showDepositModal = false"
-          >
-            <X :size="18" />
-          </button>
-        </div>
-
-        <form class="drawer-content" @submit.prevent="saveDeposit">
-          <label>
-            {{ t('accounts.depositAmount') }}
-            <input
-              v-model="depositAmount"
-              inputmode="decimal"
-              required
-              placeholder="e.g. 1200.00"
-              autofocus
-            />
-          </label>
-          <label>
-            {{ t('accounts.depositDate') }}
-            <input v-model="depositDate" type="date" required />
-          </label>
-          <label>
-            {{ t('accounts.depositNote') }}
-            <input
-              v-model="depositNote"
-              placeholder="e.g. Weekly salary deposit, Bonus"
-            />
-          </label>
-          <p class="small muted">
-            {{ t('accounts.depositHint') }}
-          </p>
-
-          <p v-if="depositError" class="error-note" role="alert">{{ depositError }}</p>
-
-          <div class="entry-actions">
-            <button class="primary" :disabled="depositBusy">
-              {{ editingDepositId ? t('accounts.updateDeposit') : t('accounts.saveDeposit') }}
-            </button>
-            <button
-              type="button"
-              class="secondary"
-              @click="showDepositModal = false"
-            >
-              {{ t('common.cancel') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-    </Teleport>
-
-    <!-- Manage Savings Deposits Drawer -->
-    <Teleport to="body">
-      <div
-        v-if="showManageDepositsModal"
-        class="drawer-backdrop"
-        @click.self="showManageDepositsModal = false"
-      >
-      <div class="bottom-drawer" role="dialog" aria-modal="true">
-        <div class="drawer-handle-bar"><div class="drawer-handle"></div></div>
-        <div class="drawer-header">
-          <div class="drawer-title-group">
-            <h3>{{ t('accounts.depositsTitle') }}</h3>
-            <span class="small muted">{{ t('accounts.depositsCount', { count: store.savingsRecords.length }) }}</span>
-          </div>
-          <div class="row-actions">
-            <button class="secondary btn-sm" type="button" @click="openAddDeposit">
-              <Plus :size="14" />{{ t('accounts.newDeposit') }}
-            </button>
-            <button
-              class="icon-button"
-              type="button"
-              aria-label="Close"
-              @click="showManageDepositsModal = false"
-            >
-              <X :size="18" />
-            </button>
-          </div>
-        </div>
-
-        <div class="drawer-content deposits-list-stage">
-          <div v-if="!store.savingsRecords.length" class="empty-deposits">
-            <PiggyBank :size="32" />
-            <p>{{ t('accounts.noDeposits') }}</p>
-            <button class="secondary btn-sm" type="button" @click="openAddDeposit">
-              <Plus :size="15" />{{ t('accounts.recordFirstDeposit') }}
-            </button>
-          </div>
-          <ul v-else class="deposits-list">
-            <li
-              v-for="deposit in sortedSavingsRecords"
-              :key="deposit.id"
-              class="deposit-item"
-            >
-              <div class="deposit-meta">
-                <strong>{{ store.displayMoney(deposit.amount) }}</strong>
-                <span class="small muted">
-                  {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
-                </span>
-              </div>
-              <div class="deposit-actions">
-                <button
-                  class="icon-button"
-                  type="button"
-                  title="Edit deposit"
-                  aria-label="Edit deposit"
-                  @click="openEditDeposit(deposit)"
-                >
-                  <Pencil :size="15" />
-                </button>
-                <button
-                  class="icon-button"
-                  type="button"
-                  title="Delete deposit"
-                  aria-label="Delete deposit"
-                  @click="deleteDeposit(deposit)"
-                >
-                  <Trash2 :size="15" />
-                </button>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    </Teleport>
-  </section>
-</template>
-
-<style scoped>
-.accounts-panel {
-  display: grid;
-  gap: 16px;
-}
-
-.accounts-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.accounts-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.accounts-icon-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #e2ede6;
-  color: #153d35;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.accounts-title-wrap h2 {
-  font-size: 18px;
-  font-weight: 750;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-sm {
-  min-height: 34px;
-  padding: 4px 10px;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.hero-balance-card {
-  padding: 18px 20px;
-  background: linear-gradient(135deg, #153d35 0%, #1e5247 100%);
-  color: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(21, 61, 53, 0.15);
-}
-
-.hero-balance-info {
-  display: grid;
-  gap: 4px;
-}
-
-.hero-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #c9ef88;
-  font-weight: 600;
-}
-
-.hero-amount {
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.8px;
-  font-variant-numeric: tabular-nums;
-}
-
-.net-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #e0eae3;
-  margin: 2px 0 0;
-  font-weight: 500;
-}
-
-.net-status.positive {
-  color: #c9ef88;
-}
-
-.baseline-callout {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-}
-
-.baseline-callout.under-baseline {
-  background: #edf7f0;
-  border: 1px solid #c2e5cf;
-  color: #1b5336;
-}
-
-.baseline-callout.over-baseline {
-  background: #fdf2f0;
-  border: 1px solid #f6c4be;
-  color: #8c2a1c;
-}
-
-.baseline-callout.baseline-empty {
-  background: #f4f6f5;
-  border: 1px dashed #d0dcd5;
-  color: #556c62;
-}
-
-.baseline-icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.baseline-text {
-  display: grid;
-  gap: 2px;
-}
-
-.baseline-text p {
-  margin: 0;
-}
-
-.accounts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.account-card {
-  padding: 14px 16px;
-  background: #f8faf9;
-  border: 1px solid #e1e8e4;
-  border-radius: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.account-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.account-tag {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #153d35;
-}
-
-.account-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  background: #e6ede8;
-  border-radius: 12px;
-  color: #3b5046;
-}
-
-.account-badge.savings-badge {
-  background: #e1f2e8;
-  color: #1e5239;
-}
-
-.account-stats {
-  display: grid;
-  gap: 6px;
-}
-
-.account-balance {
-  display: grid;
-}
-
-.stat-label {
-  font-size: 11px;
-  color: #63776d;
-}
-
-.account-amount {
-  font-size: 22px;
-  font-weight: 750;
-  color: #153d35;
-  font-variant-numeric: tabular-nums;
-}
-
-.nz-amount {
-  color: #1e5239;
-}
-
-.account-initial-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 6px;
-  padding-top: 4px;
-  border-top: 1px dashed #e1e8e4;
-}
-
-.link-manage-deposits {
-  padding: 0;
-  color: #1e5239;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-/* Full Width Bottom Drawer Styles */
-.drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--surface-backdrop, rgba(10, 24, 20, 0.45));
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0;
-}
-
-.bottom-drawer {
-  background: var(--surface-drawer, #182c26);
-  border: 1px solid var(--surface-drawer-border, rgba(255, 255, 255, 0.14));
-  width: 100vw;
-  max-width: 100vw;
-  border-radius: 24px 24px 0 0;
-  box-shadow: var(--surface-drawer-shadow, 0 -8px 32px rgba(0, 0, 0, 0.55));
-  display: flex;
-  flex-direction: column;
-  max-height: 92dvh;
-  overflow: hidden;
-  will-change: transform;
-  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.drawer-handle-bar {
-  display: flex;
-  justify-content: center;
-  padding: 10px 0 4px;
-  cursor: grab;
-}
-
-.drawer-handle {
-  width: 44px;
-  height: 5px;
-  background: #d2ded7;
-  border-radius: 10px;
-}
-
-.drawer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 22px 14px;
-  border-bottom: 1px solid #edf2ef;
-}
-
-.drawer-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 750;
-}
-
-.drawer-title-group {
-  display: grid;
-  gap: 2px;
-}
-
-.drawer-content {
-  padding: 20px 22px calc(24px + env(safe-area-inset-bottom));
-  overflow-y: auto;
-  display: grid;
-  gap: 16px;
-}
-
-.deposits-list-stage {
-  padding: 14px 22px calc(24px + env(safe-area-inset-bottom));
-}
-
-.empty-deposits {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
-  gap: 10px;
-  color: #63776d;
-}
-
-.deposits-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.deposit-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #f8faf9;
-  border: 1px solid #e1e8e4;
-  border-radius: 12px;
-}
-
-.deposit-meta {
-  display: grid;
-  gap: 2px;
-}
-
-.deposit-meta strong {
-  font-size: 16px;
-  color: #1e5239;
-  font-variant-numeric: tabular-nums;
-}
-
-.deposit-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-@media (max-width: 480px) {
-  .accounts-title-wrap h2 {
-    font-size: 17px;
-  }
-  .accounts-icon-badge {
-    width: 34px;
-    height: 34px;
-  }
-  .header-actions {
-    margin-left: auto;
-  }
-  .hero-balance-card {
-    padding: 16px;
-    border-radius: 14px;
-  }
-  .hero-amount {
-    font-size: 28px;
-    letter-spacing: -0.5px;
-  }
-  .accounts-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .account-card {
-    padding: 12px 14px;
-  }
-  .drawer-content {
-    padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
-  }
-}
-</style>

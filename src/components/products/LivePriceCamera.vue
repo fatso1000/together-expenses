@@ -1,6 +1,53 @@
+<template>
+  <div class="grid gap-3 mb-4">
+    <div class="relative">
+      <video
+        ref="video"
+        autoplay
+        muted
+        playsinline
+        aria-label="Live price label camera"
+        class="block w-full object-contain bg-[var(--surface-card)] rounded-2xl"
+      />
+      <div class="absolute left-[10%] top-[25%] w-[80%] h-[50%] border-2 border-accent rounded-lg pointer-events-none" />
+      <div class="absolute bottom-2 left-2 right-2">
+        <slot />
+      </div>
+    </div>
+
+    <p v-if="!error" class="text-sm text-text m-0" role="status">{{ status }}</p>
+    <Message v-else severity="error" :closable="false">
+      {{ error }}
+    </Message>
+
+    <div>
+      <Button
+        type="button"
+        severity="secondary"
+        class="inline-flex items-center gap-2"
+        @click="
+          stop();
+          emit('close');
+        "
+      >
+        <CameraOff :size="18" />
+        <span>Stop camera & edit</span>
+      </Button>
+    </div>
+
+    <p class="text-xs text-muted m-0">
+      Point at one product name, pack size and price. Editing a field pauses the
+      camera. Frames stay on this device.
+    </p>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, onUnmounted, useTemplateRef } from "vue";
 import { CameraOff } from "lucide-vue-next";
+import Button from "primevue/button";
+import Message from "primevue/message";
+
 const emit = defineEmits<{ text: [text: string]; close: [] }>();
 const video = useTemplateRef<HTMLVideoElement>("video");
 const status = shallowRef("Opening camera…");
@@ -12,6 +59,7 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let session:
   | Awaited<ReturnType<(typeof import("@/lib/ocr"))["createOcrSession"]>>
   | undefined;
+
 function stop() {
   running.value = false;
   controller.abort();
@@ -20,12 +68,14 @@ function stop() {
   session?.close();
   if (video.value) video.value.srcObject = null;
 }
+
 function visibility() {
   if (document.hidden) {
     stop();
     emit("close");
   }
 }
+
 onMounted(async () => {
   document.addEventListener("visibilitychange", visibility);
   try {
@@ -59,6 +109,7 @@ onMounted(async () => {
     stop();
   }
 });
+
 async function scan() {
   if (!running.value || !session || !video.value) return;
   const canvas = document.createElement("canvas");
@@ -89,81 +140,16 @@ async function scan() {
     emit("text", text);
     status.value = "Live · hold the label steady";
     timer = setTimeout(scan, 2000);
-  } catch (reason) {
+  } catch {
     if (!controller.signal.aborted) {
       error.value = "Could not read this view. Try a photo or enter the price.";
       stop();
     }
   }
 }
+
 onUnmounted(() => {
   stop();
   document.removeEventListener("visibilitychange", visibility);
 });
 </script>
-<template>
-  <div class="live-camera">
-    <div class="camera-stage">
-      <video
-        ref="video"
-        autoplay
-        muted
-        playsinline
-        aria-label="Live price label camera"
-      />
-      <div class="target-box"></div>
-      <div class="camera-overlay"><slot /></div>
-    </div>
-    <p v-if="!error" role="status">{{ status }}</p>
-    <p v-else role="alert" class="error-note">{{ error }}</p>
-    <button
-      type="button"
-      class="secondary"
-      @click="
-        stop();
-        emit('close');
-      "
-    >
-      <CameraOff :size="18" />Stop camera & edit
-    </button>
-    <p class="small muted">
-      Point at one product name, pack size and price. Editing a field pauses the
-      camera. Frames stay on this device.
-    </p>
-  </div>
-</template>
-<style scoped>
-.live-camera {
-  margin-bottom: 16px;
-}
-video {
-  display: block;
-  width: 100%;
-
-  object-fit: contain;
-  background: #15241d;
-  border-radius: 14px;
-}
-</style>
-
-<style scoped>
-.camera-stage {
-  position: relative;
-}
-.target-box {
-  position: absolute;
-  left: 10%;
-  top: 25%;
-  width: 80%;
-  height: 50%;
-  border: 2px solid #fff;
-  border-radius: 8px;
-  pointer-events: none;
-}
-.camera-overlay {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-}
-</style>

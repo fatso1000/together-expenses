@@ -1,5 +1,6 @@
 import type { PurchaseItem, Currency, Unit, Category } from "@/lib/types";
 import { validDate, itemsTotal } from "@/lib/purchases";
+import { normalizeUnit } from "@/lib/products";
 
 export interface ReceiptSuggestion {
   merchant: string;
@@ -53,7 +54,7 @@ function measureUnit(value: string): Unit {
   const unit = value.toLowerCase();
   if (["l", "ltr", "litre", "litres"].includes(unit)) return "L";
   if (["ka", "ky"].includes(unit)) return "kg";
-  return unit as Unit;
+  return normalizeUnit(unit);
 }
 
 const administrative =

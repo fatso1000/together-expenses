@@ -11,13 +11,19 @@ test("getSystemPromptForMode provides strict persona instructions", () => {
   const lowPrompt = getSystemPromptForMode("low");
   assert.match(lowPrompt, /Frugal/i);
   assert.match(lowPrompt, /discretionary/i);
+  assert.match(lowPrompt, /Account management/i);
+  assert.match(lowPrompt, /what can I improve/i);
 
   const mediumPrompt = getSystemPromptForMode("medium");
   assert.match(mediumPrompt, /Balanced/i);
+  assert.match(mediumPrompt, /Account management/i);
+  assert.match(mediumPrompt, /what can I improve/i);
 
   const highPrompt = getSystemPromptForMode("high");
   assert.match(highPrompt, /Growth/i);
   assert.match(highPrompt, /ROI/i);
+  assert.match(highPrompt, /Account management/i);
+  assert.match(highPrompt, /what can I improve/i);
 });
 
 test("parseAiChatStructuredResponse parses clean JSON", () => {

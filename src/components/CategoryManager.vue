@@ -1,12 +1,203 @@
+<template>
+  <div class="grid gap-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h3 class="text-base font-bold text-text m-0">{{ t("categories.managerTitle") }}</h3>
+        <p class="text-xs text-muted m-0">
+          {{ t("categories.subtitle") }}
+        </p>
+      </div>
+      <Button
+        v-if="!showEditor"
+        severity="secondary"
+        size="small"
+        type="button"
+        class="inline-flex items-center gap-1.5"
+        @click="startNew"
+      >
+        <Plus :size="16" />
+        <span>{{ t("categories.newCategory") }}</span>
+      </Button>
+    </div>
+
+    <!-- Category Editor Form -->
+    <div
+      v-if="showEditor"
+      class="p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-3.5"
+    >
+      <h4 class="text-sm font-bold text-text m-0">
+        {{ editing ? t("categories.editCategory") : t("categories.newCategory") }}
+      </h4>
+
+      <form class="grid gap-4" @submit.prevent="save">
+        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <span>{{ t("categories.categoryName") }}</span>
+          <InputText
+            v-model="name"
+            maxlength="50"
+            placeholder="e.g. Gym & Fitness"
+            required
+            autofocus
+            fluid
+          />
+        </label>
+
+        <!-- Live Preview -->
+        <div class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
+          <span class="text-xs text-muted font-medium">{{ t("categories.previewLabel") }}</span>
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+            :style="previewStyle"
+          >
+            <CategoryIcon :category="name || 'Category'" :size="18" />
+            <span>{{ name || "Category name" }}</span>
+          </div>
+        </div>
+
+        <!-- Icon Picker -->
+        <fieldset class="border-0 p-0 m-0 grid gap-2">
+          <legend class="text-xs font-semibold text-text mb-1">{{ t("categories.chooseIcon") }}</legend>
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1.5 max-h-40 overflow-y-auto p-1.5 rounded-xl bg-[var(--input-bg)] border border-[var(--border)]">
+            <Button
+              v-for="icon in availableIcons"
+              :key="icon.name"
+              type="button"
+              :severity="selectedIcon === icon.name ? 'primary' : 'secondary'"
+              :variant="selectedIcon === icon.name ? undefined : 'text'"
+              class="w-10! h-10! p-0! flex items-center justify-center"
+              :aria-label="icon.label"
+              :title="icon.label"
+              @click="selectedIcon = icon.name"
+            >
+              <component :is="icon.component" :size="20" />
+            </Button>
+          </div>
+        </fieldset>
+
+        <!-- Color Picker -->
+        <fieldset class="border-0 p-0 m-0 grid gap-2">
+          <legend class="text-xs font-semibold text-text mb-1">{{ t("categories.chooseColor") }}</legend>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button
+              v-for="color in curatedColors"
+              :key="color"
+              type="button"
+              rounded
+              class="w-8! h-8! p-0! flex items-center justify-center transition-transform"
+              :class="selectedColor === color ? 'ring-2 ring-accent scale-110' : ''"
+              :style="{ backgroundColor: color, borderColor: 'transparent' }"
+              :aria-label="`Color ${color}`"
+              @click="selectedColor = color"
+            >
+              <Check v-if="selectedColor === color" :size="14" class="text-white" />
+            </Button>
+            <div class="inline-flex items-center gap-1.5" :title="t('categories.customColour')">
+              <ColorPicker v-model="pickerColor" format="hex" />
+            </div>
+          </div>
+        </fieldset>
+
+        <Message v-if="error" severity="error" :closable="false">
+          {{ error }}
+        </Message>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <Button type="submit" severity="primary" :disabled="busy || !name.trim()">
+            {{ busy ? t("common.saving") : t("categories.saveCategory") }}
+          </Button>
+          <Button type="button" severity="secondary" variant="outlined" @click="cancelEdit">
+            {{ t("common.cancel") }}
+          </Button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Category List -->
+    <div class="grid gap-2">
+      <div
+        v-for="cat in store.categoryDefinitions"
+        :key="cat.id"
+        class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+      >
+        <div class="flex items-center gap-3">
+          <CategoryIcon :category="cat.name" :size="20" />
+          <div class="flex items-center gap-2">
+            <strong class="text-sm font-semibold text-text">
+              {{ cat.isDefault ? categoryLabel(cat.name) : cat.name }}
+            </strong>
+            <Tag
+              :value="cat.isDefault ? t('categories.preset') : t('categories.custom')"
+              :severity="cat.isDefault ? 'secondary' : 'success'"
+            />
+          </div>
+        </div>
+
+        <div v-if="!cat.isDefault" class="flex items-center gap-1">
+          <Button
+            variant="text"
+            severity="secondary"
+            rounded
+            size="small"
+            :aria-label="`Edit category ${cat.name}`"
+            type="button"
+            @click="startEdit(cat)"
+          >
+            <Pencil :size="16" />
+          </Button>
+          <Button
+            variant="text"
+            severity="danger"
+            rounded
+            size="small"
+            :aria-label="`Delete category ${cat.name}`"
+            type="button"
+            @click="removingId = cat.id"
+          >
+            <Trash2 :size="16" />
+          </Button>
+        </div>
+
+        <!-- Inline delete confirmation -->
+        <div
+          v-if="removingId === cat.id"
+          class="w-full mt-2 p-3 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] grid gap-2"
+        >
+          <p class="text-xs text-text m-0">
+            {{ t("categories.confirmDelete", { name: cat.name }) }}
+          </p>
+          <div class="flex items-center gap-2">
+            <Button
+              severity="secondary"
+              size="small"
+              type="button"
+              @click="removingId = ''"
+            >
+              {{ t("common.cancel") }}
+            </Button>
+            <Button
+              severity="danger"
+              size="small"
+              type="button"
+              :disabled="busy"
+              @click="remove(cat.id)"
+            >
+              {{ t("common.delete") }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import {
   Plus,
   Pencil,
   Trash2,
-  X,
   Check,
-  Tag,
+  Tag as TagIcon,
   ShoppingBasket,
   Fuel,
   ShoppingBag,
@@ -41,6 +232,11 @@ import {
   Package,
   Ellipsis,
 } from "lucide-vue-next";
+import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import ColorPicker from "primevue/colorpicker";
+import Tag from "primevue/tag";
+import Message from "primevue/message";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import type { CategoryDefinition } from "@/lib/types";
 import CategoryIcon from "@/components/CategoryIcon.vue";
@@ -85,26 +281,26 @@ const availableIcons = [
   { name: "Smartphone", label: "Mobile", component: Smartphone },
   { name: "Shirt", label: "Apparel", component: Shirt },
   { name: "Package", label: "Delivery", component: Package },
-  { name: "Tag", label: "General", component: Tag },
+  { name: "Tag", label: "General", component: TagIcon },
   { name: "Smile", label: "Fun", component: Smile },
   { name: "Ellipsis", label: "Other", component: Ellipsis },
 ];
 
 const curatedColors = [
-  "#3b7a57", // Forest green
-  "#75974e", // Olive / sage
-  "#2b72a8", // Deep blue
-  "#4a90e2", // Sky blue
-  "#5c52a8", // Indigo
-  "#8b7ba9", // Lavender
-  "#b8436b", // Rose berry
-  "#c0392b", // Crimson
-  "#b6816b", // Terracotta
-  "#b18b60", // Copper
-  "#b49c4c", // Amber gold
-  "#298d85", // Teal
-  "#2c3e50", // Charcoal
-  "#718469", // Gray-green
+  "#3b7a57",
+  "#75974e",
+  "#2b72a8",
+  "#4a90e2",
+  "#5c52a8",
+  "#8b7ba9",
+  "#b8436b",
+  "#c0392b",
+  "#b6816b",
+  "#b18b60",
+  "#b49c4c",
+  "#298d85",
+  "#2c3e50",
+  "#718469",
 ];
 
 const props = defineProps<{
@@ -117,10 +313,19 @@ const showEditor = computed(() => editing.value !== null || isCreating.value);
 const name = ref("");
 const selectedIcon = ref("Tag");
 const selectedColor = ref("#3b7a57");
-const customColor = ref("#3b7a57");
 const error = ref("");
 const busy = ref(false);
 const removingId = ref("");
+
+const pickerColor = computed<string>({
+  get() {
+    return selectedColor.value.replace(/^#/, "");
+  },
+  set(val: string) {
+    if (!val) return;
+    selectedColor.value = val.startsWith("#") ? val : `#${val}`;
+  },
+});
 
 function startNew() {
   isCreating.value = true;
@@ -128,7 +333,6 @@ function startNew() {
   name.value = "";
   selectedIcon.value = "Tag";
   selectedColor.value = "#3b7a57";
-  customColor.value = "#3b7a57";
   error.value = "";
 }
 
@@ -138,7 +342,6 @@ function startEdit(cat: CategoryDefinition) {
   name.value = cat.name;
   selectedIcon.value = cat.icon;
   selectedColor.value = cat.color;
-  customColor.value = cat.color;
   error.value = "";
 }
 
@@ -147,12 +350,6 @@ function cancelEdit() {
   editing.value = null;
   name.value = "";
   error.value = "";
-}
-
-function onCustomColorChange(event: Event) {
-  const hex = (event.target as HTMLInputElement).value;
-  selectedColor.value = hex;
-  customColor.value = hex;
 }
 
 const previewStyle = computed(() => ({
@@ -167,7 +364,6 @@ async function save() {
     return;
   }
 
-  // Check if name conflicts with default categories (unless editing itself)
   const isDefaultConflict = store.categoryDefinitions.some(
     (c) =>
       c.isDefault &&
@@ -211,393 +407,3 @@ async function remove(id: string) {
   }
 }
 </script>
-
-<template>
-  <div class="category-manager">
-    <div class="manager-header">
-      <div>
-        <h3>{{ t('categories.managerTitle') }}</h3>
-        <p class="small muted">
-          {{ t('categories.subtitle') }}
-        </p>
-      </div>
-      <button
-        v-if="!showEditor"
-        class="secondary compact-btn"
-        type="button"
-        @click="startNew"
-      >
-        <Plus :size="16" />{{ t('categories.newCategory') }}
-      </button>
-    </div>
-
-    <!-- Category Editor Form -->
-    <div v-if="showEditor" class="category-editor-panel">
-      <h4>{{ editing ? t('categories.editCategory') : t('categories.newCategory') }}</h4>
-
-      <form @submit.prevent="save">
-        <label>
-          {{ t('categories.categoryName') }}
-          <input
-            v-model="name"
-            type="text"
-            maxlength="50"
-            placeholder="e.g. Gym & Fitness"
-            required
-            autofocus
-          />
-        </label>
-
-        <!-- Live Preview -->
-        <div class="category-preview-bar">
-          <span class="preview-label">{{ t('categories.previewLabel') }}</span>
-          <div class="preview-badge" :style="previewStyle">
-            <CategoryIcon :category="name || 'Category'" :size="18" />
-            <span>{{ name || "Category name" }}</span>
-          </div>
-        </div>
-
-        <!-- Icon Picker -->
-        <fieldset class="icon-picker">
-          <legend>{{ t('categories.chooseIcon') }}</legend>
-          <div class="icon-grid">
-            <button
-              v-for="icon in availableIcons"
-              :key="icon.name"
-              type="button"
-              class="icon-choice"
-              :class="{ selected: selectedIcon === icon.name }"
-              :aria-label="icon.label"
-              :title="icon.label"
-              @click="selectedIcon = icon.name"
-            >
-              <component :is="icon.component" :size="20" />
-            </button>
-          </div>
-        </fieldset>
-
-        <!-- Color Picker -->
-        <fieldset class="color-picker">
-          <legend>{{ t('categories.chooseColor') }}</legend>
-          <div class="color-swatches">
-            <button
-              v-for="color in curatedColors"
-              :key="color"
-              type="button"
-              class="color-swatch"
-              :class="{ selected: selectedColor === color }"
-              :style="{ backgroundColor: color }"
-              :aria-label="`Color ${color}`"
-              @click="selectedColor = color"
-            >
-              <Check v-if="selectedColor === color" :size="14" class="check-icon" />
-            </button>
-            <label class="custom-color-picker" title="Pick custom color">
-              <span class="sr-only">{{ t('categories.customColour') }}</span>
-              <input
-                type="color"
-                :value="customColor"
-                @input="onCustomColorChange"
-              />
-              <span class="custom-color-indicator" :style="{ backgroundColor: selectedColor }" />
-            </label>
-          </div>
-        </fieldset>
-
-        <p v-if="error" class="error-note" role="alert">{{ error }}</p>
-
-        <div class="entry-actions">
-          <button type="submit" class="primary" :disabled="busy || !name.trim()">
-            {{ busy ? t('common.saving') : t('categories.saveCategory') }}
-          </button>
-          <button type="button" class="secondary" @click="cancelEdit">
-            {{ t('common.cancel') }}
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Category List -->
-    <div class="categories-list">
-      <div
-        v-for="cat in store.categoryDefinitions"
-        :key="cat.id"
-        class="category-list-item"
-        :class="{ 'is-custom': !cat.isDefault }"
-      >
-        <div class="cat-info">
-          <CategoryIcon :category="cat.name" :size="20" />
-          <div class="cat-details">
-            <strong>{{ cat.isDefault ? categoryLabel(cat.name) : cat.name }}</strong>
-            <span v-if="cat.isDefault" class="badge muted-badge">{{ t('categories.preset') }}</span>
-            <span v-else class="badge custom-badge">{{ t('categories.custom') }}</span>
-          </div>
-        </div>
-
-        <div v-if="!cat.isDefault" class="row-actions">
-          <button
-            class="icon-button"
-            :aria-label="`Edit category ${cat.name}`"
-            type="button"
-            @click="startEdit(cat)"
-          >
-            <Pencil :size="16" />
-          </button>
-          <button
-            class="icon-button"
-            :aria-label="`Delete category ${cat.name}`"
-            type="button"
-            @click="removingId = cat.id"
-          >
-            <Trash2 :size="16" />
-          </button>
-        </div>
-
-        <!-- Inline delete confirmation -->
-        <div v-if="removingId === cat.id" class="inline-confirm full-width">
-          <p class="small">
-            {{ t('categories.confirmDelete', { name: cat.name }) }}
-          </p>
-          <div class="confirm-actions">
-            <button class="secondary compact-btn" type="button" @click="removingId = ''">
-              {{ t('common.cancel') }}
-            </button>
-            <button
-              class="secondary danger compact-btn"
-              type="button"
-              :disabled="busy"
-              @click="remove(cat.id)"
-            >
-              {{ t('common.delete') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-.category-manager {
-  display: grid;
-  gap: 16px;
-}
-
-.manager-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.manager-header h3 {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.compact-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  min-height: auto;
-}
-
-.category-editor-panel {
-  background: #f8faf9;
-  border: 1px solid #e1e7e4;
-  border-radius: 16px;
-  padding: 16px;
-  display: grid;
-  gap: 14px;
-}
-
-.category-preview-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.preview-label {
-  font-size: 12px;
-  color: #6d7f78;
-  font-weight: 500;
-}
-
-.preview-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.icon-picker legend,
-.color-picker legend {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
-  gap: 6px;
-  max-height: 160px;
-  overflow-y: auto;
-  padding: 6px;
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-
-.icon-choice {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.icon-choice:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.icon-choice.selected {
-  background: var(--accent);
-  color: #0b1412;
-  border-color: var(--accent);
-}
-
-.color-swatches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.color-swatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.15s ease;
-}
-
-.color-swatch:hover {
-  transform: scale(1.1);
-}
-
-.color-swatch.selected {
-  border-color: var(--accent);
-  transform: scale(1.15);
-  box-shadow: 0 0 0 2px #0b1412;
-}
-
-.color-swatch .check-icon {
-  color: #ffffff;
-}
-
-.custom-color-picker {
-  position: relative;
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-}
-
-.custom-color-picker input[type="color"] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.custom-color-indicator {
-  display: block;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px dashed #97a8a1;
-}
-
-.categories-list {
-  display: grid;
-  gap: 8px;
-}
-
-.category-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.cat-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.cat-details {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.cat-details strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.badge {
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-
-.muted-badge {
-  background: #f0f3f1;
-  color: #72847c;
-}
-
-.custom-badge {
-  background: #e6f4ea;
-  color: #1e7e40;
-}
-
-.full-width {
-  width: 100%;
-  margin-top: 8px;
-}
-
-.confirm-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 6px;
-}
-</style>

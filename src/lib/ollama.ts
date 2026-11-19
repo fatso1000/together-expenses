@@ -1,6 +1,7 @@
 import type { PurchaseItem, Category, FrequentPayment, Expense } from "@/lib/types";
 import type { ReceiptSuggestion } from "@/lib/receipt";
 import { parseMoney, today } from "@/lib/finance";
+import { normalizeUnit } from "@/lib/products";
 
 const DEFAULT_HOST = "http://localhost:11434";
 const DEFAULT_MODEL = "gemma4:e4b";
@@ -269,7 +270,7 @@ Return ONLY valid JSON. No conversational text, no markdown backticks.`;
         unitPrice,
         quantity,
         discount,
-        unit: (rawItem.unit as any) || "each",
+        unit: normalizeUnit(rawItem.unit),
         size: Number(rawItem.size) || 1,
       });
     }

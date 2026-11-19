@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, shallowRef } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import {
   type Expense,
   type ExpenseDraft,
@@ -141,6 +141,36 @@ export const useExpenses = defineStore("expenses", () => {
   );
   const weekGlobalTotal = computed(() => total(weekGlobalExpenses.value));
   const weekNZTotal = computed(() => total(weekNZExpenses.value));
+  const currencyOptions = ref([
+    {
+      label: "NZD",
+      value: "NZD",
+      disabled: false,
+    },
+    {
+      label: "USD",
+      value: "USD",
+      disabled: !rates.rate,
+    },
+  ]);
+
+  watch(
+    () => rates.rate,
+    (currentRate) => {
+      currencyOptions.value = [
+        {
+          label: "NZD",
+          value: "NZD",
+          disabled: false,
+        },
+        {
+          label: "USD",
+          value: "USD",
+          disabled: !currentRate,
+        },
+      ];
+    },
+  );
 
   function previousWeek() {
     const current = new Date(`${weekDate.value || today()}T12:00:00`);
@@ -949,6 +979,7 @@ export const useExpenses = defineStore("expenses", () => {
     resetToCurrentWeek,
     saveSavingsRecord,
     removeSavingsRecord,
+    currencyOptions
   };
 });
 export function friendlyError(reason: unknown): string {

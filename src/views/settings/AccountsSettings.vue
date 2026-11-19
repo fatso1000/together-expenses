@@ -14,19 +14,21 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("settings.globalUsd") }}</span>
-          <input
+          <InputText
             v-model="usdInitial"
             inputmode="decimal"
             placeholder="e.g. 5000.00"
+            fluid
             @input="convertUsdToNzd"
           />
         </label>
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("settings.globalNzd") }}</span>
-          <input
+          <InputText
             v-model="nzdInitial"
             inputmode="decimal"
             placeholder="e.g. 8200.00"
+            fluid
           />
         </label>
       </div>
@@ -53,48 +55,56 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("settings.nzAccountNzd") }}</span>
-          <input
+          <InputText
             v-model="nzSavingsInitial"
             inputmode="decimal"
             placeholder="e.g. 2000.00"
+            fluid
           />
         </label>
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("settings.salaryNzd") }}</span>
-          <input
+          <InputText
             v-model="weeklySalaryInput"
             inputmode="decimal"
             placeholder="e.g. 1200.00"
+            fluid
           />
         </label>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("settings.salaryPaymentDay") }}</span>
-          <select v-model.number="payDayOfWeekInput">
-            <option :value="1">{{ t("days.1") }}</option>
-            <option :value="2">{{ t("days.2") }}</option>
-            <option :value="3">{{ t("days.3") }}</option>
-            <option :value="4">{{ t("days.4") }}</option>
-            <option :value="5">{{ t("days.5") }}</option>
-            <option :value="6">{{ t("days.6") }}</option>
-            <option :value="0">{{ t("days.0") }}</option>
-          </select>
-        </label>
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("weeklyLimit.pickFromDate") }}</span>
-          <input
-            v-model="payDateInput"
-            type="date"
-            @change="onPayDateChange"
+        <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <label for="accounts-pay-day">{{ t("settings.salaryPaymentDay") }}</label>
+          <Select
+            v-model="payDayOfWeekInput"
+            inputId="accounts-pay-day"
+            :options="dayOptions"
+            optionLabel="label"
+            optionValue="value"
+            fluid
           />
-        </label>
+        </div>
+        <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+          <label for="accounts-pay-date">{{ t("weeklyLimit.pickFromDate") }}</label>
+          <DatePicker
+            v-model="selectedPayDate"
+            inputId="accounts-pay-date"
+            dateFormat="yy-mm-dd"
+            showIcon
+            iconDisplay="input"
+            fluid
+          />
+        </div>
       </div>
+
       <p class="text-xs text-muted -mt-2 mb-3">
         {{ t("settings.salaryPaymentDayHint") }}
       </p>
-      <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+
+      <Message v-if="error" severity="error" :closable="false">
+        {{ error }}
+      </Message>
 
       <div class="flex justify-start pt-1">
         <Button
@@ -112,12 +122,16 @@
 </template>
 
 <script setup lang="ts">
-import { shallowRef, ref, watch } from "vue";
+import { shallowRef, ref, computed, watch } from "vue";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { parseOptionalMoney } from "@/lib/finance";
+import { parseOptionalMoney, parseIsoDate, formatIsoDate } from "@/lib/finance";
 import { Wallet, RefreshCw, Check } from "lucide-vue-next";
 import { t } from "@/lib/i18n";
 import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import Select from "primevue/select";
+import DatePicker from "primevue/datepicker";
+import Message from "primevue/message";
 import type { DayOfWeek } from "@/lib/types";
 
 const store = useExpenses();
@@ -131,6 +145,28 @@ const nzSavingsInitial = shallowRef("");
 const weeklySalaryInput = shallowRef("");
 const payDayOfWeekInput = ref<DayOfWeek>(1);
 const payDateInput = ref<string>("");
+
+const dayOptions = computed(() => [
+  { value: 1 as DayOfWeek, label: t("days.1") },
+  { value: 2 as DayOfWeek, label: t("days.2") },
+  { value: 3 as DayOfWeek, label: t("days.3") },
+  { value: 4 as DayOfWeek, label: t("days.4") },
+  { value: 5 as DayOfWeek, label: t("days.5") },
+  { value: 6 as DayOfWeek, label: t("days.6") },
+  { value: 0 as DayOfWeek, label: t("days.0") },
+]);
+
+const selectedPayDate = computed<Date | null>({
+  get() {
+    return parseIsoDate(payDateInput.value);
+  },
+  set(val: Date | null) {
+    payDateInput.value = formatIsoDate(val);
+    if (val instanceof Date && !Number.isNaN(val.getTime())) {
+      payDayOfWeekInput.value = val.getDay() as DayOfWeek;
+    }
+  },
+});
 
 watch(
   [() => store.accounts, () => store.salary],
@@ -153,15 +189,6 @@ watch(
   },
   { immediate: true, deep: true },
 );
-
-function onPayDateChange() {
-  if (payDateInput.value) {
-    const d = new Date(`${payDateInput.value}T12:00:00`);
-    if (!isNaN(d.getTime())) {
-      payDayOfWeekInput.value = d.getDay() as DayOfWeek;
-    }
-  }
-}
 
 function convertUsdToNzd() {
   if (!usdInitial.value.trim() || !store.rates.rate) return;

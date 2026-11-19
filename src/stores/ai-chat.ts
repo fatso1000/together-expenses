@@ -138,9 +138,15 @@ export const useAiChat = defineStore("ai-chat", () => {
         expensesStore.salary?.weeklyAverageNZD ??
         0;
 
+      const globalCapitalCents =
+        expensesStore.globalBalance ??
+        expensesStore.accounts?.globalInitialNZD ??
+        0;
+
       const nzSavingsCents =
         (expensesStore as unknown as { accountBalances?: { nz?: number } }).accountBalances?.nz ??
         expensesStore.nzBalance ??
+        expensesStore.accounts?.nzInitialNZD ??
         0;
 
       const summary = buildCompactFinancialSummary({
@@ -154,8 +160,12 @@ export const useAiChat = defineStore("ai-chat", () => {
           category: c.category,
           amountCents: c.amount,
         })),
-        globalCapitalCents: expensesStore.accounts?.globalInitialNZD || 0,
+        globalCapitalCents,
         nzSavingsCents,
+        globalInitialCents: expensesStore.accounts?.globalInitialNZD,
+        nzInitialCents: expensesStore.accounts?.nzInitialNZD,
+        globalSpentCents: expensesStore.balances?.globalSpent,
+        nzSpentCents: expensesStore.balances?.nzSpent,
       });
 
       const formattedContext = formatKnowledgeForPrompt(summary, relevantItems);

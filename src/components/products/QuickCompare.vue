@@ -1,13 +1,201 @@
+<template>
+  <Drawer
+    v-model:visible="drawerIsOpen"
+    position="bottom"
+    class="w-full! max-w-full!"
+    style="height: auto; max-height: 92dvh"
+    @after-hide="emit('close')"
+  >
+    <template #header>
+      <h2 class="text-lg font-bold m-0">{{ t("products.checkPrice") }}</h2>
+    </template>
+
+    <template #closebutton="{ closeCallback }">
+      <Button
+        type="button"
+        variant="text"
+        severity="secondary"
+        rounded
+        aria-label="Close price comparison"
+        @click="closeCallback"
+      >
+        <X :size="18" />
+      </Button>
+    </template>
+
+    <div class="grid gap-4 pb-2">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <Button
+          type="button"
+          severity="secondary"
+          :disabled="busy"
+          class="inline-flex items-center gap-2"
+          @click="live = !live"
+        >
+          <Camera :size="18" />
+          <span>{{ live ? "Pause camera" : "Live camera" }}</span>
+        </Button>
+
+        <Button
+          type="button"
+          severity="secondary"
+          variant="outlined"
+          :disabled="busy"
+          class="inline-flex items-center gap-2"
+          @click="photoInput?.click()"
+        >
+          <ImagePlus :size="18" />
+          <span>Photo</span>
+        </Button>
+        <input
+          ref="photoInput"
+          class="sr-only"
+          type="file"
+          accept="image/*"
+          :disabled="busy"
+          aria-label="Upload shelf label photo"
+          @change="photo"
+        />
+      </div>
+
+      <LivePriceCamera v-if="live" @text="apply" @close="live = false">
+        <div
+          class="grid gap-1.5 p-2.5 rounded-xl bg-[var(--surface)] text-text border border-[var(--border)] shadow-sm"
+          role="status"
+        >
+          <strong>{{ matched?.title || item.title || "Aim at one shelf label" }}</strong>
+          <b class="text-xl">{{ parsed ? money(parsed.unitPrice) : "Price not confirmed" }}</b>
+          <PriceWarning
+            :item="parsed"
+            :product="matched"
+            :expenses="store.expenses"
+          />
+          <small v-if="!matched" class="text-xs text-muted">
+            No saved match · confirm below to add
+          </small>
+        </div>
+      </LivePriceCamera>
+
+      <template v-if="preview && !live">
+        <p class="text-xs text-muted m-0">Tap the shelf label to isolate its name and price.</p>
+        <div class="relative w-fit max-w-full mx-auto mb-2">
+          <div
+            role="button"
+            tabindex="0"
+            class="relative block w-full overflow-hidden rounded-xl bg-[var(--surface-card)] cursor-crosshair focus-visible:outline-2 focus-visible:outline-accent"
+            aria-label="Select shelf label in photo"
+            @click="targetPhoto"
+            @keydown.enter.prevent="targetPhotoCenter"
+          >
+            <img :src="preview" alt="Product shelf photo" class="block w-auto max-w-full max-h-[380px]" />
+            <span
+              class="absolute border-3 border-accent pointer-events-none"
+              :style="{
+                left: focus.left + '%',
+                top: focus.top + '%',
+                width: focus.right - focus.left + '%',
+                height: focus.bottom - focus.top + '%',
+              }"
+            />
+          </div>
+          <div
+            class="absolute bottom-2 left-2 right-2 pointer-events-none grid gap-1.5 p-2.5 rounded-xl bg-[var(--surface)] text-text border border-[var(--border)] shadow-sm"
+            role="status"
+          >
+            <strong>{{ matched?.title || item.title || "Select a label" }}</strong>
+            <b class="text-xl">{{ parsed ? money(parsed.unitPrice) : "Price not confirmed" }}</b>
+            <PriceWarning
+              :item="parsed"
+              :product="matched"
+              :expenses="store.expenses"
+            />
+          </div>
+        </div>
+      </template>
+
+      <div v-if="busy" class="flex items-center gap-2 text-sm text-text" role="status">
+        <span>{{ status }}</span>
+        <Button type="button" variant="link" size="small" @click="controller?.abort()">
+          Cancel
+        </Button>
+      </div>
+
+      <Message v-if="failure" severity="error" :closable="false">
+        {{ failure }}
+      </Message>
+
+      <p class="text-xs text-muted m-0">
+        Confirm the product, price and pack size. Scans do not create expenses.
+      </p>
+
+      <div v-if="prices.length > 1" class="grid gap-2">
+        <p class="text-sm m-0">More than one price found. Which applies?</p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            v-for="price in prices"
+            :key="price"
+            type="button"
+            severity="secondary"
+            @click="
+              live = false;
+              item.price = (price / 100).toFixed(2);
+            "
+          >
+            {{ money(price) }}
+          </Button>
+        </div>
+      </div>
+
+      <div @focusin="live = false">
+        <PurchaseItemRow
+          :item="item"
+          :index="0"
+          :products="store.products"
+          :expenses="store.expenses"
+          @change="item = $event"
+          @remove="reset"
+        />
+      </div>
+
+      <div v-if="item.title.trim() && !matched">
+        <Button
+          type="button"
+          severity="primary"
+          :disabled="busy || store.syncBusy"
+          @click="addProduct"
+        >
+          {{ t("products.addProduct") }}
+        </Button>
+      </div>
+
+      <p v-if="!busy && status" class="text-xs text-muted m-0" role="status">
+        {{ status }}
+      </p>
+
+      <details v-if="recognized" class="grid gap-2">
+        <summary class="cursor-pointer text-sm font-medium text-text">
+          {{ t("products.readText") }}
+        </summary>
+        <pre class="whitespace-pre-wrap break-words text-xs font-mono m-0 pt-2">{{
+          recognized
+        }}</pre>
+      </details>
+    </div>
+  </Drawer>
+</template>
+
 <script setup lang="ts">
 import {
   computed,
   shallowRef,
   ref,
-  onMounted,
   onUnmounted,
   useTemplateRef,
 } from "vue";
 import { X, Camera, ImagePlus } from "lucide-vue-next";
+import Drawer from "primevue/drawer";
+import Button from "primevue/button";
+import Message from "primevue/message";
 import type { ItemInput } from "@/lib/types";
 import { useExpenses } from "@/stores/expenses";
 import { parsePriceTag } from "@/lib/price-tag";
@@ -18,9 +206,11 @@ import { money } from "@/lib/finance";
 import PurchaseItemRow from "@/components/products/PurchaseItemRow.vue";
 import LivePriceCamera from "@/components/products/LivePriceCamera.vue";
 import { t } from "@/lib/i18n";
+
 const emit = defineEmits<{ close: [] }>();
 const store = useExpenses();
-const dialog = useTemplateRef<HTMLDialogElement>("dialog");
+const drawerIsOpen = ref(true);
+const photoInput = useTemplateRef<HTMLInputElement>("photoInput");
 const live = shallowRef(false);
 const busy = shallowRef(false);
 const status = shallowRef("");
@@ -39,11 +229,13 @@ const item = ref<ItemInput>({
 const preview = shallowRef("");
 const selectedFile = shallowRef<File | null>(null);
 const focus = ref({ left: 0, top: 0, right: 100, bottom: 100 });
+
 const matched = computed(
   () =>
     store.products.find((p) => p.id === item.value.productId) ??
     findProduct(store.products, item.value.title),
 );
+
 const parsed = computed(() => {
   const price = Number(item.value.price);
   const size = Number(item.value.size);
@@ -74,6 +266,7 @@ const parsed = computed(() => {
     return null;
   return candidate;
 });
+
 async function addProduct() {
   live.value = false;
   try {
@@ -94,6 +287,7 @@ async function addProduct() {
       reason instanceof Error ? reason.message : "Could not add product.";
   }
 }
+
 function targetPhoto(event: MouseEvent) {
   if (busy.value) return;
   const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
@@ -106,17 +300,24 @@ function targetPhoto(event: MouseEvent) {
   focus.value = { left, top, right: left + 50, bottom: top + 20 };
   void readPhoto();
 }
+
+function targetPhotoCenter() {
+  if (busy.value) return;
+  focus.value = { left: 25, top: 40, right: 75, bottom: 60 };
+  void readPhoto();
+}
+
 let controller: AbortController | undefined;
-onMounted(() => dialog.value?.showModal());
+
 onUnmounted(() => {
   controller?.abort();
   if (preview.value) URL.revokeObjectURL(preview.value);
 });
+
 function apply(text: string) {
   const result = parsePriceTag(text, store.products);
   recognized.value = text;
   prices.value = result.prices;
-  // Multiple shelf prices can be regular/member/multibuy prices; require a choice.
   item.value = {
     ...item.value,
     title: result.title,
@@ -128,6 +329,7 @@ function apply(text: string) {
     discount: "",
   };
 }
+
 async function photo(event: Event) {
   live.value = false;
   const input = event.target as HTMLInputElement;
@@ -140,6 +342,7 @@ async function photo(event: Event) {
   input.value = "";
   await readPhoto();
 }
+
 async function readPhoto() {
   const file = selectedFile.value;
   if (!file) return;
@@ -167,6 +370,7 @@ async function readPhoto() {
     busy.value = false;
   }
 }
+
 function reset() {
   live.value = false;
   item.value = {
@@ -181,190 +385,3 @@ function reset() {
   prices.value = [];
 }
 </script>
-<template>
-  <dialog
-    ref="dialog"
-    class="expense-dialog purchase-dialog"
-    @cancel.prevent="emit('close')"
-  >
-    <div class="drawer-handle-bar" aria-hidden="true">
-      <div class="drawer-handle" />
-    </div>
-    <div class="section-heading">
-      <h2>{{ t('products.checkPrice') }}</h2>
-      <button
-        class="icon-button"
-        aria-label="Close price comparison"
-        @click="emit('close')"
-      >
-        <X />
-      </button>
-    </div>
-    <div class="entry-actions">
-      <button
-        type="button"
-        class="secondary"
-        :disabled="busy"
-        @click="live = !live"
-      >
-        <Camera :size="18" />{{ live ? "Pause camera" : "Live camera" }}</button
-      ><label class="secondary upload-button"
-        ><ImagePlus :size="18" />Photo<input
-          class="sr-only"
-          type="file"
-          accept="image/*"
-          :disabled="busy"
-          @change="photo"
-      /></label>
-    </div>
-    <LivePriceCamera v-if="live" @text="apply" @close="live = false">
-      <div class="result-overlay" role="status">
-        <strong>{{
-          matched?.title || item.title || "Aim at one shelf label"
-        }}</strong
-        ><b>{{ parsed ? money(parsed.unitPrice) : "Price not confirmed" }}</b
-        ><PriceWarning
-          :item="parsed"
-          :product="matched"
-          :expenses="store.expenses"
-        /><small v-if="!matched">No saved match · confirm below to add</small>
-      </div>
-    </LivePriceCamera>
-    <template v-if="preview && !live">
-      <p class="small">Tap the shelf label to isolate its name and price.</p>
-      <div class="photo-wrapper">
-        <button
-          type="button"
-          class="photo-stage"
-          aria-label="Select shelf label in photo"
-          @click="targetPhoto"
-        >
-          <img :src="preview" alt="Product shelf photo" />
-          <span
-            class="photo-target"
-            :style="{
-              left: focus.left + '%',
-              top: focus.top + '%',
-              width: focus.right - focus.left + '%',
-              height: focus.bottom - focus.top + '%',
-            }"
-          ></span>
-        </button>
-        <div class="result-overlay static-overlay" role="status">
-          <strong>{{ matched?.title || item.title || "Select a label" }}</strong
-          ><b>{{ parsed ? money(parsed.unitPrice) : "Price not confirmed" }}</b
-          ><PriceWarning
-            :item="parsed"
-            :product="matched"
-            :expenses="store.expenses"
-          />
-        </div></div
-    ></template>
-    <p v-if="busy" role="status">
-      {{ status }}
-      <button class="text-button" @click="controller?.abort()">Cancel</button>
-    </p>
-    <p v-if="failure" class="error-note" role="alert">{{ failure }}</p>
-    <p class="small muted">
-      Confirm the product, price and pack size. Scans do not create expenses.
-    </p>
-    <div v-if="prices.length > 1" class="price-choices">
-      <p>More than one price found. Which applies?</p>
-      <button
-        v-for="price in prices"
-        :key="price"
-        class="secondary"
-        @click="
-          live = false;
-          item.price = (price / 100).toFixed(2);
-        "
-      >
-        {{ money(price) }}
-      </button>
-    </div>
-    <div @focusin="live = false">
-      <PurchaseItemRow
-        :item="item"
-        :index="0"
-        :products="store.products"
-        :expenses="store.expenses"
-        @change="item = $event"
-        @remove="reset"
-      />
-    </div>
-    <button
-      v-if="item.title.trim() && !matched"
-      type="button"
-      :disabled="busy || store.syncBusy"
-      @click="addProduct"
-    >
-      {{ t('products.addProduct') }}
-    </button>
-    <p v-if="!busy && status" class="small" role="status">{{ status }}</p>
-    <details v-if="recognized">
-      <summary>{{ t('products.readText') }}</summary>
-      <pre>{{ recognized }}</pre>
-    </details>
-  </dialog>
-</template>
-<style scoped>
-.price-choices {
-  margin: 12px 0;
-}
-.price-choices button {
-  margin: 4px;
-}
-pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-</style>
-
-<style scoped>
-.result-overlay {
-  display: grid;
-  gap: 5px;
-  padding: 10px;
-  background: var(--surface, rgba(16, 28, 24, 0.95));
-  color: #e2ede8;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-.result-overlay b {
-  font-size: 1.25rem;
-}
-.photo-stage {
-  display: block;
-  position: relative;
-  width: 100%;
-  padding: 0;
-  overflow: hidden;
-  background: #15241d;
-}
-.photo-stage img {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  max-height: 380px;
-}
-.photo-target {
-  position: absolute;
-  border: 3px solid #16a36a;
-  pointer-events: none;
-}
-.photo-wrapper {
-  width: fit-content;
-  max-width: 100%;
-  margin-inline: auto;
-  position: relative;
-  margin-bottom: 16px;
-}
-.static-overlay {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  right: 8px;
-  pointer-events: none;
-}
-</style>

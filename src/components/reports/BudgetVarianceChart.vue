@@ -1,5 +1,61 @@
+<template>
+  <div class="w-full">
+    <div v-if="varianceRows.length" class="grid gap-3">
+      <div
+        v-for="row in varianceRows"
+        :key="row.category"
+        class="p-3.5 rounded-xl border grid gap-2"
+        :class="
+          row.isOver
+            ? 'bg-[var(--danger-bg)] border-[var(--danger-border)]'
+            : 'bg-[var(--surface-card)] border-[var(--border)]'
+        "
+      >
+        <div class="flex items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2 text-sm text-text">
+            <CategoryIcon :category="row.category" />
+            <strong>{{ categoryLabel(row.category) }}</strong>
+          </div>
+          <Tag
+            :value="
+              row.isOver
+                ? `+${store.displayMoney(row.diff)} ${t('weeklyLimit.overBudget', { amount: '' }).trim()}`
+                : `${store.displayMoney(row.diff)} ${t('weeklyLimit.leftBudget', { amount: '' }).trim()}`
+            "
+            :severity="row.isOver ? 'danger' : 'success'"
+          />
+        </div>
+
+        <div class="w-full h-2.5 rounded-md bg-[var(--border)] overflow-hidden">
+          <div
+            class="h-full rounded-md transition-[width] duration-300 ease-out"
+            :class="row.isOver ? 'bg-[var(--danger-colour)]' : 'bg-[var(--success-colour)]'"
+            :style="{ width: `${row.percent}%` }"
+          />
+        </div>
+
+        <div class="flex justify-between text-xs text-muted">
+          <span>
+            {{ t("weeklyLimit.spent") }}: <strong class="text-text">{{ store.displayMoney(row.spent) }}</strong>
+          </span>
+          <span>
+            {{ t("weeklyLimit.limit") }}: <strong class="text-text">{{ store.displayMoney(row.allocated) }}</strong>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="p-6 text-center">
+      <p class="text-xs text-muted m-0">
+        {{ t("reports.configureLimitsPrompt") }} <strong>{{ t("weeklyLimit.title") }}</strong>.
+      </p>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { computed } from "vue";
+import Tag from "primevue/tag";
 import { useExpenses } from "@/stores/expenses";
 import { total } from "@/lib/finance";
 import type { Expense } from "@/lib/types";
@@ -8,7 +64,7 @@ import { useI18n } from "@/lib/i18n";
 
 const props = defineProps<{
   expenses: Expense[];
-  multiplier?: number; // e.g. 1 for week, 4.33 for month, 52 for year
+  multiplier?: number;
   periodTitle?: string;
 }>();
 
@@ -45,144 +101,3 @@ const varianceRows = computed(() => {
   });
 });
 </script>
-
-<template>
-  <div class="variance-chart-wrap">
-    <div v-if="varianceRows.length" class="variance-list">
-      <div
-        v-for="row in varianceRows"
-        :key="row.category"
-        class="variance-row"
-        :class="{ 'is-over': row.isOver }"
-      >
-        <div class="row-header">
-          <div class="category-info">
-            <CategoryIcon :category="row.category" />
-            <strong>{{ categoryLabel(row.category) }}</strong>
-          </div>
-          <div class="variance-badge" :class="{ 'badge-over': row.isOver, 'badge-under': !row.isOver }">
-            {{
-              row.isOver
-                ? `+${store.displayMoney(row.diff)} ${t('weeklyLimit.overBudget', { amount: '' }).trim()}`
-                : `${store.displayMoney(row.diff)} ${t('weeklyLimit.leftBudget', { amount: '' }).trim()}`
-            }}
-          </div>
-        </div>
-
-        <!-- Dual Bar Comparison -->
-        <div class="variance-bar-track">
-          <div
-            class="variance-bar-fill"
-            :class="{ 'bar-over': row.isOver, 'bar-under': !row.isOver }"
-            :style="{ width: `${row.percent}%` }"
-          />
-        </div>
-
-        <div class="variance-amounts-row">
-          <span class="small muted">
-            {{ t('weeklyLimit.spent') }}: <strong>{{ store.displayMoney(row.spent) }}</strong>
-          </span>
-          <span class="small muted">
-            {{ t('weeklyLimit.limit') }}: <strong>{{ store.displayMoney(row.allocated) }}</strong>
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <div v-else class="empty-variance">
-      <p class="muted small">
-        {{ t('reports.configureLimitsPrompt') }} <strong>{{ t('weeklyLimit.title') }}</strong>.
-      </p>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-.variance-chart-wrap {
-  width: 100%;
-}
-
-.variance-list {
-  display: grid;
-  gap: 12px;
-}
-
-.variance-row {
-  padding: 12px 14px;
-  background: #f8faf9;
-  border: 1px solid #e1e8e4;
-  border-radius: 12px;
-  display: grid;
-  gap: 8px;
-}
-
-.variance-row.is-over {
-  background: #fdf5f4;
-  border-color: #f7c3bc;
-}
-
-.row-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.category-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #153d35;
-}
-
-.variance-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 10px;
-}
-
-.badge-under {
-  background: #e3f2e8;
-  color: #1a5637;
-}
-
-.badge-over {
-  background: #fce4e0;
-  color: #9c2e20;
-}
-
-.variance-bar-track {
-  width: 100%;
-  height: 10px;
-  background: #e0eae4;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.variance-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.variance-bar-fill.bar-under {
-  background: #27ae60;
-}
-
-.variance-bar-fill.bar-over {
-  background: #e74c3c;
-}
-
-.variance-amounts-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.empty-variance {
-  padding: 24px;
-  text-align: center;
-}
-</style>

@@ -215,6 +215,51 @@ test("sendMessage processes spending query and saves assistant structured output
   }
 });
 
+test("sendMessage formats financial accounts and cashflow context for account management queries", async () => {
+  mockStorageStore.clear();
+  setActivePinia(createPinia());
+  const store = useAiChat();
+
+  let capturedPrompt = "";
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse((init?.body as string) || "{}");
+    capturedPrompt = body.prompt || "";
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        response: JSON.stringify({
+          outOfScope: false,
+          budgetMode: "medium",
+          verdict: "Allocate $200 weekly surplus to emergency buffer",
+          reply: "Your accounts have positive cashflow. Boost local savings.",
+          dataInsights: ["Net cashflow is positive"],
+          actionPlan: [
+            {
+              action: "optimize",
+              target: "NZ Savings Account",
+              estimatedSavingsNZD: 200,
+              impact: "Strengthen 3-month runway",
+            },
+          ],
+        }),
+      }),
+    } as unknown as Response;
+  }) as typeof fetch;
+
+  try {
+    await store.sendMessage("what can I improve in my accounts and cashflow?");
+    assert.equal(store.messages.length, 2);
+    assert.ok(capturedPrompt.includes("[ACCOUNT_MANAGEMENT]"));
+    assert.ok(capturedPrompt.includes("Total Capital:"));
+    assert.ok(capturedPrompt.includes("Net weekly cashflow:"));
+    assert.equal(store.messages[1].structured?.verdict, "Allocate $200 weekly surplus to emergency buffer");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("sendMessage captures error when local LLM query fails", async () => {
   mockStorageStore.clear();
   setActivePinia(createPinia());

@@ -115,3 +115,65 @@ test("Dashboard.vue follows SFC block order and migrates containers to Tailwind 
     "Dashboard.vue should not use custom CSS for compact-limit-alert",
   );
 });
+
+function walkVueFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkVueFiles(fullPath));
+    } else if (entry.name.endsWith(".vue")) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+test("all Vue SFCs in src/ place <template> before <script> and replace legacy native controls with PrimeVue components", () => {
+  const srcDir = path.resolve(__dirname, "../src");
+  const vueFiles = walkVueFiles(srcDir);
+  assert.ok(vueFiles.length > 0, "Expected Vue SFC files in src/");
+
+  for (const file of vueFiles) {
+    const rel = path.relative(srcDir, file);
+    const content = fs.readFileSync(file, "utf-8");
+
+    const templateIdx = content.indexOf("<template>");
+    const scriptIdx = content.indexOf("<script");
+    assert.ok(
+      templateIdx !== -1 && scriptIdx !== -1 && templateIdx < scriptIdx,
+      `${rel} must place <template> before <script>`,
+    );
+
+    assert.doesNotMatch(
+      content,
+      /<button\b/,
+      `${rel} must use PrimeVue <Button> instead of raw <button>`,
+    );
+    assert.doesNotMatch(
+      content,
+      /<select\b/,
+      `${rel} must use PrimeVue <Select> instead of raw <select>`,
+    );
+    assert.doesNotMatch(
+      content,
+      /<textarea\b/,
+      `${rel} must use PrimeVue <Textarea> instead of raw <textarea>`,
+    );
+    assert.doesNotMatch(
+      content,
+      /<dialog\b/,
+      `${rel} must use PrimeVue <Drawer> or <Dialog> instead of raw <dialog>`,
+    );
+
+    const rawInputs = [...content.matchAll(/<input\b[^>]*>/g)].map((m) => m[0]);
+    const nonFileInputs = rawInputs.filter(
+      (tag) => !/type=["']file["']/.test(tag),
+    );
+    assert.equal(
+      nonFileInputs.length,
+      0,
+      `${rel} must not contain raw <input> elements (found: ${nonFileInputs.join(", ")})`,
+    );
+  }
+});

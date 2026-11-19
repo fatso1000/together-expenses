@@ -1,3 +1,638 @@
+<template>
+  <Drawer
+    v-model:visible="drawerIsOpen"
+    position="bottom"
+    class="expense-drawer-dialog w-full! max-w-full!"
+    style="height: auto; max-height: 94dvh"
+    :dismissable="!busy"
+    :closeOnEscape="!busy"
+    @after-hide="emit('close')"
+  >
+    <!-- Sticky Drawer Header -->
+    <template #header>
+      <div class="flex flex-wrap items-center gap-3">
+        <h2 class="text-xl font-bold m-0">
+          {{ expense ? t("expenses.editExpense") : t("expenses.newExpense") }}
+        </h2>
+        <Button
+          v-if="receipt || receiptImage"
+          type="button"
+          size="small"
+          :severity="dockOpen ? 'primary' : 'secondary'"
+          :variant="dockOpen ? undefined : 'outlined'"
+          rounded
+          class="inline-flex items-center gap-1.5 text-xs"
+          @click="toggleDock"
+        >
+          <FileText :size="14" />
+          <span>{{ t("expenses.receiptPreview") }}</span>
+          <component :is="dockOpen ? ChevronUp : ChevronDown" :size="14" />
+        </Button>
+      </div>
+    </template>
+
+    <template #closebutton="{ closeCallback }">
+      <Button
+        class="close-btn"
+        variant="text"
+        severity="secondary"
+        rounded
+        :disabled="busy"
+        aria-label="Close expense drawer"
+        type="button"
+        @click="closeCallback"
+      >
+        <X :size="18" />
+      </Button>
+    </template>
+
+    <!-- Scrollable Drawer Content -->
+    <div class="p-4 sm:px-8 sm:py-5">
+      <div class="flex flex-col lg:grid lg:grid-cols-[minmax(460px,1.15fr)_minmax(380px,0.85fr)] gap-6 lg:gap-8 items-start">
+        <!-- LEFT COLUMN: Form controls -->
+        <div class="flex flex-col gap-4 min-w-0 w-full">
+          <!-- Mode Tabs -->
+          <div
+            class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[var(--input-bg)] border border-[var(--border)]"
+            aria-label="Entry method"
+          >
+            <Button
+              type="button"
+              size="small"
+              :severity="mode === 'quick' ? 'primary' : 'secondary'"
+              :variant="mode === 'quick' ? undefined : 'text'"
+              :aria-pressed="mode === 'quick'"
+              class="inline-flex items-center justify-center gap-1.5"
+              @click="mode = 'quick'"
+            >
+              <Zap :size="17" />
+              <span>{{ t("dashboard.quickAmount") }}</span>
+            </Button>
+            <Button
+              type="button"
+              size="small"
+              :severity="mode === 'items' ? 'primary' : 'secondary'"
+              :variant="mode === 'items' ? undefined : 'text'"
+              :aria-pressed="mode === 'items'"
+              class="inline-flex items-center justify-center gap-1.5"
+              @click="mode = 'items'"
+            >
+              <ListPlus :size="17" />
+              <span>{{ t("dashboard.addItems") }}</span>
+            </Button>
+            <Button
+              type="button"
+              size="small"
+              :severity="mode === 'receipt' ? 'primary' : 'secondary'"
+              :variant="mode === 'receipt' ? undefined : 'text'"
+              :aria-pressed="mode === 'receipt'"
+              class="inline-flex items-center justify-center gap-1.5"
+              @click="mode = 'receipt'"
+            >
+              <ScanLine :size="17" />
+              <span>{{ t("dashboard.scanReceipt") }}</span>
+            </Button>
+          </div>
+
+          <!-- Mobile Quick Receipt Preview Dock -->
+          <section
+            v-if="receipt || receiptImage"
+            ref="dockRef"
+            class="lg:hidden rounded-xl bg-[var(--surface-card)] border border-[var(--border)] overflow-hidden"
+          >
+            <div class="flex items-center justify-between px-3 py-2 bg-[var(--surface-card-hover)] border-b border-[var(--border)]">
+              <div class="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  size="small"
+                  :severity="previewTab === 'transcript' ? 'primary' : 'secondary'"
+                  :variant="previewTab === 'transcript' ? undefined : 'text'"
+                  class="inline-flex items-center gap-1.5 text-xs"
+                  @click="
+                    previewTab = 'transcript';
+                    dockOpen = true;
+                  "
+                >
+                  <FileText :size="14" />
+                  <span>{{ t("expenses.transcriptTab") }}</span>
+                </Button>
+                <Button
+                  v-if="receiptImage"
+                  type="button"
+                  size="small"
+                  :severity="previewTab === 'image' ? 'primary' : 'secondary'"
+                  :variant="previewTab === 'image' ? undefined : 'text'"
+                  class="inline-flex items-center gap-1.5 text-xs"
+                  @click="
+                    previewTab = 'image';
+                    dockOpen = true;
+                  "
+                >
+                  <ImageIcon :size="14" />
+                  <span>{{ t("expenses.photoTab") }}</span>
+                </Button>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <Button
+                  v-if="previewTab === 'image'"
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  variant="outlined"
+                  class="inline-flex items-center gap-1 text-xs"
+                  @click="isZoomed = !isZoomed"
+                >
+                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
+                  <span>{{ isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn") }}</span>
+                </Button>
+                <Button
+                  v-if="previewTab === 'transcript'"
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  variant="outlined"
+                  class="inline-flex items-center gap-1 text-xs"
+                  @click="copyTranscript"
+                >
+                  <component :is="copySuccess ? Check : Copy" :size="14" />
+                  <span>{{ copySuccess ? t("expenses.copied") : t("expenses.copy") }}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="small"
+                  variant="text"
+                  class="text-xs"
+                  @click="dockOpen = !dockOpen"
+                >
+                  {{ dockOpen ? t("common.close") : t("common.view") }}
+                </Button>
+              </div>
+            </div>
+
+            <div v-if="dockOpen" class="p-3 max-h-60 overflow-y-auto">
+              <div
+                v-if="previewTab === 'transcript'"
+                class="cursor-copy"
+                title="Click to copy transcript"
+                @click="copyTranscript"
+              >
+                <pre class="m-0 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">{{
+                  receipt?.text || "No transcript available."
+                }}</pre>
+              </div>
+              <div
+                v-else-if="previewTab === 'image' && receiptImage"
+                class="flex justify-center"
+                :class="isZoomed ? 'cursor-zoom-out overflow-auto' : 'cursor-zoom-in overflow-hidden'"
+                title="Click image to zoom in/out"
+                @click="isZoomed = !isZoomed"
+              >
+                <img
+                  :src="receiptImage"
+                  alt="Scanned receipt preview"
+                  class="block mx-auto rounded-lg object-contain transition-transform"
+                  :class="isZoomed ? 'w-[220%] max-w-none max-h-none cursor-zoom-out' : 'max-w-full max-h-52'"
+                />
+              </div>
+            </div>
+          </section>
+
+          <!-- Receipt Reader (Scanner) on small screen when in receipt mode -->
+          <div v-if="mode === 'receipt'" class="lg:hidden">
+            <ReceiptReader @result="applyReceipt" />
+          </div>
+
+          <!-- Form Inputs -->
+          <form class="grid gap-4" @submit.prevent="submit">
+            <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <span>{{ t("expenses.merchant") }}</span>
+              <InputText
+                v-model="form.merchant"
+                list="saved-shops"
+                maxlength="100"
+                :placeholder="t('shops.placeholder')"
+                required
+                fluid
+              />
+            </label>
+            <datalist id="saved-shops">
+              <option
+                v-for="shop in store.shops"
+                :key="shop.id"
+                :value="shop.name"
+              />
+            </datalist>
+
+            <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <label for="expense-date">{{ t("expenses.date") }}</label>
+              <DatePicker
+                id="expense-date"
+                inputId="expense-date"
+                v-model="selectedDate"
+                dateFormat="yy-mm-dd"
+                :maxDate="maxDate"
+                :minDate="minDate"
+                showIcon
+                iconDisplay="input"
+                fluid
+                required
+              />
+            </div>
+
+            <!-- Account Selector (Global vs NZ Savings) -->
+            <div class="flex flex-col gap-2">
+              <label for="account-select" class="text-xs font-semibold text-text">
+                {{ t("bulk.paidFrom") }}
+              </label>
+              <Select
+                id="account-select"
+                inputId="account-select"
+                v-model="form.accountId"
+                :options="accountOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="t('bulk.paidFrom')"
+                fluid
+              >
+                <template #value="slotProps">
+                  <div v-if="slotProps.value" class="flex items-center gap-2">
+                    <component
+                      :is="slotProps.value === 'global' ? Wallet : PiggyBank"
+                      :size="16"
+                      class="text-accent"
+                    />
+                    <span>{{
+                      slotProps.value === "global"
+                        ? t("accounts.globalEveryday")
+                        : t("accounts.nzSavings")
+                    }}</span>
+                  </div>
+                </template>
+                <template #option="slotProps">
+                  <div class="flex items-center gap-2.5">
+                    <component
+                      :is="slotProps.option.value === 'global' ? Wallet : PiggyBank"
+                      :size="16"
+                      class="text-accent"
+                    />
+                    <div class="flex flex-col">
+                      <span class="font-medium">{{ slotProps.option.label }}</span>
+                      <small class="text-[11px] text-muted">{{ slotProps.option.hint }}</small>
+                    </div>
+                  </div>
+                </template>
+              </Select>
+            </div>
+
+            <!-- Category Picker with Custom Categories -->
+            <fieldset class="border-0 p-0 m-0 grid gap-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <legend class="text-xs font-semibold text-text m-0">
+                  {{ t("expenses.category") }}
+                </legend>
+                <Button
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  variant="outlined"
+                  class="inline-flex items-center gap-1"
+                  @click="openCategoryManager(true)"
+                >
+                  <Plus :size="14" />
+                  <span>{{ t("categories.newCategory") }}</span>
+                </Button>
+              </div>
+
+              <Select
+                id="category-select"
+                inputId="category-select"
+                v-model="form.category"
+                :options="categoryOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="t('expenses.category')"
+                fluid
+              >
+                <template #value="slotProps">
+                  <div v-if="slotProps.value" class="flex items-center gap-2">
+                    <CategoryIcon :category="slotProps.value" :size="18" />
+                    <span>{{ categoryLabel(slotProps.value) }}</span>
+                  </div>
+                  <span v-else>{{ slotProps.placeholder }}</span>
+                </template>
+                <template #option="slotProps">
+                  <div class="flex items-center gap-2">
+                    <CategoryIcon :category="slotProps.option.value" :size="18" />
+                    <span>{{ slotProps.option.label }}</span>
+                  </div>
+                </template>
+              </Select>
+
+              <div class="grid grid-cols-5 gap-1.5">
+                <Button
+                  v-for="catDef in store.categoryDefinitions"
+                  :key="catDef.id"
+                  type="button"
+                  :severity="form.category === catDef.name ? 'primary' : 'secondary'"
+                  :variant="form.category === catDef.name ? undefined : 'outlined'"
+                  :aria-pressed="form.category === catDef.name"
+                  class="flex-col! gap-1! py-2! px-1! min-h-[70px]! text-[11px]!"
+                  @click="form.category = catDef.name"
+                >
+                  <CategoryIcon :category="catDef.name" :size="20" />
+                  <span class="truncate max-w-full">{{ categoryLabel(catDef.name) }}</span>
+                </Button>
+                <Button
+                  type="button"
+                  severity="secondary"
+                  variant="outlined"
+                  class="flex-col! gap-1! py-2! px-1! min-h-[70px]! text-[11px]! border-dashed!"
+                  :title="t('categories.newCategory')"
+                  @click="openCategoryManager(true)"
+                >
+                  <Plus :size="20" />
+                  <span class="truncate max-w-full">{{ t("categories.newCategory") }}</span>
+                </Button>
+              </div>
+            </fieldset>
+
+            <!-- Itemized Items Editor -->
+            <template v-if="mode !== 'quick'">
+              <ItemEditor
+                v-model:items="lines"
+                :products="store.products"
+                :expenses="store.expenses"
+                :exclude-expense-id="expense?.id"
+              />
+
+              <!-- Streamlined Receipt Discount Input -->
+              <div v-if="lines.length" class="my-1">
+                <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+                  <span>{{ t("expenses.discountFieldLabel") }}</span>
+                  <InputText
+                    v-model="discount"
+                    inputmode="decimal"
+                    placeholder="0.00"
+                    fluid
+                  />
+                  <small class="text-[11px] text-muted">
+                    {{ t("expenses.discountHint") }}
+                  </small>
+                </label>
+              </div>
+            </template>
+
+            <!-- Quick Amount Input -->
+            <label
+              v-if="!itemized && mode !== 'items'"
+              class="flex flex-col gap-1.5 text-xs font-medium text-muted"
+            >
+              <span>Total · {{ form.currency }}</span>
+              <InputText
+                v-model="form.amount"
+                class="text-3xl! font-bold! h-16! font-heading!"
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+                fluid
+              />
+            </label>
+
+            <!-- Itemized Total Breakdown -->
+            <div
+              v-else-if="itemized"
+              class="grid gap-1.5 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+            >
+              <div v-if="discountCents() > 0" class="flex justify-between text-xs text-muted">
+                <span>{{ t("expenses.itemsSubtotal") }}</span>
+                <span>{{ money(linesSubtotal, form.currency) }}</span>
+              </div>
+              <div
+                v-if="discountCents() > 0"
+                class="flex justify-between text-xs font-medium text-[var(--danger-colour)]"
+              >
+                <span>{{ t("expenses.receiptDiscount") }}</span>
+                <span>-{{ money(discountCents(), form.currency) }}</span>
+              </div>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-sm text-text">Total</span>
+                <strong class="text-xl font-bold tabular-nums font-heading">
+                  {{ calculated === null ? "Check items" : money(calculated, form.currency) }}
+                </strong>
+              </div>
+            </div>
+
+            <!-- Receipt Review Section -->
+            <div
+              v-if="receipt"
+              class="p-3 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] grid gap-2"
+            >
+              <p v-if="receiptNote" class="text-xs m-0">{{ receiptNote }}</p>
+              <p v-if="receipt.amount !== null" class="text-sm m-0">
+                {{ t("expenses.receiptTotal") }}
+                <strong>{{ money(receipt.amount, form.currency) }}</strong>
+              </p>
+              <Message v-if="totalMismatch" severity="error" :closable="false">
+                {{ t("expenses.itemsMismatch") }}
+              </Message>
+              <p v-if="!receipt.date" class="text-xs text-muted m-0">
+                Date not detected — check the date above.
+              </p>
+              <div class="flex items-center gap-2">
+                <Checkbox v-model="reviewed" binary inputId="reviewed-check" />
+                <label for="reviewed-check" class="text-xs text-muted cursor-pointer">
+                  {{ t("expenses.checkItemsPrompt") }}
+                </label>
+              </div>
+            </div>
+
+            <details class="grid gap-2">
+              <summary class="cursor-pointer text-sm font-medium text-text py-1">
+                {{ t("expenses.notes") }}
+              </summary>
+              <Textarea
+                v-model="form.note"
+                maxlength="500"
+                rows="2"
+                :aria-label="t('expenses.notes')"
+                fluid
+                class="mt-2"
+              />
+            </details>
+
+            <Message v-if="error" severity="error" :closable="false">
+              {{ error }}
+            </Message>
+
+            <div class="mt-2">
+              <Button class="primary" fluid :disabled="busy" type="submit">
+                {{ busy ? t("common.saving") : t("common.save") }}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        <!-- RIGHT COLUMN: Receipt Photo & Transcript Stage (Desktop / Wide Screen) -->
+        <aside class="hidden lg:flex flex-col sticky top-0 max-h-[calc(94dvh-120px)] w-full bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+          <!-- When Receipt or Photo Exists -->
+          <div v-if="receipt || receiptImage" class="flex flex-col h-full min-h-[500px]">
+            <div class="flex items-center justify-between px-3.5 py-2.5 bg-[var(--surface-card-hover)] border-b border-[var(--border)]">
+              <div class="flex items-center gap-2">
+                <Button
+                  v-if="receiptImage"
+                  type="button"
+                  size="small"
+                  :severity="previewTab === 'image' ? 'primary' : 'secondary'"
+                  :variant="previewTab === 'image' ? undefined : 'text'"
+                  class="inline-flex items-center gap-1.5"
+                  @click="previewTab = 'image'"
+                >
+                  <ImageIcon :size="15" />
+                  <span>{{ t("expenses.photoTab") }}</span>
+                </Button>
+                <Button
+                  type="button"
+                  size="small"
+                  :severity="previewTab === 'transcript' ? 'primary' : 'secondary'"
+                  :variant="previewTab === 'transcript' ? undefined : 'text'"
+                  class="inline-flex items-center gap-1.5"
+                  @click="previewTab = 'transcript'"
+                >
+                  <FileText :size="15" />
+                  <span>{{ t("expenses.transcriptTab") }}</span>
+                </Button>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <Button
+                  v-if="previewTab === 'image'"
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  variant="outlined"
+                  :title="isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn')"
+                  class="inline-flex items-center gap-1"
+                  @click="isZoomed = !isZoomed"
+                >
+                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
+                  <span>{{ isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn") }}</span>
+                </Button>
+                <Button
+                  v-if="previewTab === 'transcript'"
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  variant="outlined"
+                  title="Copy transcript text to clipboard"
+                  class="inline-flex items-center gap-1"
+                  @click="copyTranscript"
+                >
+                  <component :is="copySuccess ? Check : Copy" :size="14" />
+                  <span>{{ copySuccess ? t("expenses.copied") : t("expenses.copy") }}</span>
+                </Button>
+              </div>
+            </div>
+
+            <!-- Photo Viewer -->
+            <div
+              v-if="previewTab === 'image' && receiptImage"
+              class="flex-1 overflow-auto p-4 flex flex-col relative bg-[var(--surface-card)] min-h-[440px]"
+              :class="isZoomed ? 'cursor-zoom-out items-start justify-start' : 'cursor-zoom-in items-center justify-center'"
+              title="Click photo to zoom in or out"
+              @click="isZoomed = !isZoomed"
+            >
+              <img
+                :src="receiptImage"
+                alt="Scanned receipt photo preview"
+                class="block rounded-lg shadow-sm transition-transform"
+                :class="
+                  isZoomed
+                    ? 'w-[220%] max-w-none max-h-none cursor-zoom-out'
+                    : 'max-w-full max-h-[calc(94dvh-220px)] object-contain'
+                "
+              />
+              <span class="absolute bottom-3 right-3 bg-black/70 text-white text-[11px] px-2 py-1 rounded pointer-events-none">
+                {{ isZoomed ? t("expenses.clickZoomOut") : t("expenses.clickZoomIn") }}
+              </span>
+            </div>
+
+            <!-- Transcript Viewer -->
+            <div
+              v-else-if="previewTab === 'transcript'"
+              class="flex-1 overflow-y-auto p-4 bg-[var(--surface)] cursor-copy"
+              title="Click to copy transcript"
+              @click="copyTranscript"
+            >
+              <pre class="m-0 font-mono text-xs leading-relaxed whitespace-pre-wrap">{{
+                receipt?.text || "No transcript available."
+              }}</pre>
+            </div>
+          </div>
+
+          <!-- When in Receipt Scan Mode on Desktop -->
+          <div v-else-if="mode === 'receipt'" class="p-5 h-full overflow-y-auto">
+            <ReceiptReader @result="applyReceipt" />
+          </div>
+
+          <!-- Empty Preview Prompt on Desktop -->
+          <div
+            v-else
+            class="flex flex-col items-center justify-center text-center p-10 gap-3.5 h-full min-h-[440px]"
+          >
+            <div class="w-18 h-18 rounded-2xl bg-[var(--success-bg)] text-accent flex items-center justify-center">
+              <ScanLine :size="38" />
+            </div>
+            <h3 class="text-lg font-bold m-0 text-text">
+              {{ t("expenses.receiptStagePrompt") }}
+            </h3>
+            <p class="text-xs text-muted m-0 max-w-xs leading-relaxed">
+              {{ t("expenses.receiptStageDesc") }}
+            </p>
+            <Button
+              type="button"
+              severity="secondary"
+              class="inline-flex items-center gap-2 mt-1"
+              @click="mode = 'receipt'"
+            >
+              <ScanLine :size="16" />
+              <span>{{ t("expenses.scanReceiptNow") }}</span>
+            </Button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Inline Category Manager Bottom Drawer -->
+    <Drawer
+      v-model:visible="showCategoryManager"
+      position="bottom"
+      class="w-full! max-w-full!"
+      style="height: auto; max-height: 85dvh"
+    >
+      <template #header>
+        <h3 class="text-lg font-bold m-0">{{ t("categories.title") }}</h3>
+      </template>
+      <template #closebutton="{ closeCallback }">
+        <Button
+          type="button"
+          variant="text"
+          severity="secondary"
+          rounded
+          aria-label="Close category manager"
+          @click="closeCallback"
+        >
+          <X :size="18" />
+        </Button>
+      </template>
+      <CategoryManager
+        :start-in-create-mode="categoryCreateMode"
+        @close="showCategoryManager = false"
+        @created="onCategoryCreated"
+      />
+    </Drawer>
+  </Drawer>
+</template>
+
 <script setup lang="ts">
 import { reactive, ref, shallowRef, computed, useTemplateRef } from "vue";
 import {
@@ -24,7 +659,14 @@ import {
   type AccountId,
 } from "@/lib/types";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { parseMoney, signedMoney, today, money } from "@/lib/finance";
+import {
+  parseMoney,
+  signedMoney,
+  today,
+  money,
+  parseIsoDate,
+  formatIsoDate,
+} from "@/lib/finance";
 import { itemsTotal, validQuantity } from "@/lib/purchases";
 import { findProduct, normalizeUnit } from "@/lib/products";
 import { type ReceiptSuggestion } from "@/lib/receipt";
@@ -40,6 +682,7 @@ import Drawer from "primevue/drawer";
 import DatePicker from "primevue/datepicker";
 import Select from "primevue/select";
 import Checkbox from "primevue/checkbox";
+import Message from "primevue/message";
 
 const props = defineProps<{ expense?: Expense }>();
 const emit = defineEmits<{ close: [] }>();
@@ -66,27 +709,10 @@ const minDate = new Date(2000, 0, 1);
 
 const selectedDate = computed<Date | null>({
   get() {
-    if (!form.date) return null;
-    const parts = form.date.split("-").map(Number);
-    if (
-      parts.length < 3 ||
-      isNaN(parts[0]) ||
-      isNaN(parts[1]) ||
-      isNaN(parts[2])
-    ) {
-      return null;
-    }
-    return new Date(parts[0], parts[1] - 1, parts[2]);
+    return parseIsoDate(form.date);
   },
   set(val: Date | null) {
-    if (val instanceof Date && !isNaN(val.getTime())) {
-      const year = val.getFullYear();
-      const month = String(val.getMonth() + 1).padStart(2, "0");
-      const day = String(val.getDate()).padStart(2, "0");
-      form.date = `${year}-${month}-${day}`;
-    } else {
-      form.date = "";
-    }
+    form.date = formatIsoDate(val);
   },
 });
 
@@ -98,8 +724,16 @@ const categoryOptions = computed(() =>
 );
 
 const accountOptions = computed(() => [
-  { value: "global" as AccountId, label: t("accounts.globalEveryday") },
-  { value: "nz" as AccountId, label: t("accounts.nzSavings") },
+  {
+    value: "global" as AccountId,
+    label: t("accounts.globalEveryday"),
+    hint: "Everyday capital & weekly limit",
+  },
+  {
+    value: "nz" as AccountId,
+    label: t("accounts.nzSavings"),
+    hint: t("accounts.salarySavings"),
+  },
 ]);
 
 const lines = ref<ItemInput[]>(
@@ -115,7 +749,6 @@ const lines = ref<ItemInput[]>(
   })),
 );
 
-// Streamlined discount input (strictly positive deduction)
 const discount = shallowRef(
   source?.adjustment && source.adjustment < 0
     ? (Math.abs(source.adjustment) / 100).toFixed(2)
@@ -129,7 +762,6 @@ const receiptImage = shallowRef<string>("");
 const reviewed = shallowRef(false);
 const receiptNote = shallowRef("");
 
-// Quick receipt preview dock state
 const previewTab = shallowRef<"transcript" | "image">("image");
 const dockOpen = shallowRef(false);
 const isZoomed = shallowRef(false);
@@ -145,7 +777,6 @@ function toggleDock() {
   }
 }
 
-// Inline category creator modal state
 const showCategoryManager = shallowRef(false);
 const categoryCreateMode = shallowRef(false);
 
@@ -203,8 +834,6 @@ function discountCents(): number {
     if (!trimmed || /^0(?:\.0{1,2})?$/.test(trimmed)) return 0;
     return Math.abs(signedMoney(trimmed));
   } catch {
-    // The field is free text while typing, so invalid input must not break
-    // rendering. Submit still reports the validation error.
     return 0;
   }
 }
@@ -213,7 +842,6 @@ const linesSubtotal = computed(() => {
   try {
     return itemsTotal(readLines());
   } catch {
-    // Incomplete rows are normal while editing and are reported on submit.
     return 0;
   }
 });
@@ -343,1253 +971,3 @@ async function submit() {
   }
 }
 </script>
-
-<template>
-  <Drawer
-    v-model:visible="drawerIsOpen"
-    position="bottom"
-    class="expense-drawer-dialog"
-    style="height: auto; max-height: 94dvh"
-    :dismissable="!busy"
-    :closeOnEscape="!busy"
-    @after-hide="emit('close')"
-  >
-    <!-- Sticky Drawer Header -->
-    <template #header>
-      <div class="drawer-title-area">
-        <h2>
-          {{ expense ? t("expenses.editExpense") : t("expenses.newExpense") }}
-        </h2>
-        <!-- Receipt Dock Quick Button -->
-        <Button
-          v-if="receipt || receiptImage"
-          type="button"
-          class="receipt-quick-pill"
-          :class="{ active: dockOpen }"
-          @click="toggleDock"
-        >
-          <FileText :size="14" />
-          <span>{{ t("expenses.receiptPreview") }}</span>
-          <component :is="dockOpen ? ChevronUp : ChevronDown" :size="14" />
-        </Button>
-      </div>
-    </template>
-
-    <template #closebutton="{ closeCallback }">
-      <Button
-        class="icon-button close-btn"
-        :disabled="busy"
-        aria-label="Close expense drawer"
-        type="button"
-        @click="closeCallback"
-      >
-        <X />
-      </Button>
-    </template>
-
-    <!-- Scrollable Drawer Content -->
-    <div class="drawer-body">
-      <div class="drawer-layout-columns">
-        <!-- LEFT COLUMN: Form controls -->
-        <div class="drawer-col-form">
-          <!-- Mode Tabs -->
-          <div class="entry-tabs" aria-label="Entry method">
-            <Button
-              type="button"
-              :aria-pressed="mode === 'quick'"
-              @click="mode = 'quick'"
-            >
-              <Zap :size="17" />{{ t("dashboard.quickAmount") }}
-            </Button>
-            <Button
-              type="button"
-              :aria-pressed="mode === 'items'"
-              @click="mode = 'items'"
-            >
-              <ListPlus :size="17" />{{ t("dashboard.addItems") }}
-            </Button>
-            <Button
-              type="button"
-              :aria-pressed="mode === 'receipt'"
-              @click="mode = 'receipt'"
-            >
-              <ScanLine :size="17" />{{ t("dashboard.scanReceipt") }}
-            </Button>
-          </div>
-
-          <!-- Mobile Quick Receipt Preview Dock -->
-          <section
-            v-if="receipt || receiptImage"
-            ref="dockRef"
-            class="quick-receipt-dock mobile-only-dock"
-            :class="{ expanded: dockOpen }"
-          >
-            <div class="dock-header">
-              <div class="dock-tabs">
-                <Button
-                  type="button"
-                  class="dock-tab"
-                  :class="{ selected: previewTab === 'transcript' }"
-                  @click="
-                    previewTab = 'transcript';
-                    dockOpen = true;
-                  "
-                >
-                  <FileText :size="14" />{{ t("expenses.transcriptTab") }}
-                </Button>
-                <Button
-                  v-if="receiptImage"
-                  type="button"
-                  class="dock-tab"
-                  :class="{ selected: previewTab === 'image' }"
-                  @click="
-                    previewTab = 'image';
-                    dockOpen = true;
-                  "
-                >
-                  <ImageIcon :size="14" />{{ t("expenses.photoTab") }}
-                </Button>
-              </div>
-              <div class="dock-actions">
-                <Button
-                  v-if="previewTab === 'image'"
-                  type="button"
-                  class="preview-action-btn"
-                  @click="isZoomed = !isZoomed"
-                >
-                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{
-                    isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn")
-                  }}</span>
-                </Button>
-                <Button
-                  v-if="previewTab === 'transcript'"
-                  type="button"
-                  class="preview-action-btn"
-                  @click="copyTranscript"
-                >
-                  <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{
-                    copySuccess ? t("expenses.copied") : t("expenses.copy")
-                  }}</span>
-                </Button>
-                <Button
-                  type="button"
-                  class="text-button dock-toggle"
-                  @click="dockOpen = !dockOpen"
-                >
-                  {{ dockOpen ? t("common.close") : t("common.view") }}
-                </Button>
-              </div>
-            </div>
-
-            <div v-if="dockOpen" class="dock-view">
-              <div
-                v-if="previewTab === 'transcript'"
-                class="dock-text-scroll"
-                title="Click to copy transcript"
-                @click="copyTranscript"
-              >
-                <pre>{{ receipt?.text || "No transcript available." }}</pre>
-              </div>
-              <div
-                v-else-if="previewTab === 'image' && receiptImage"
-                class="dock-img-stage"
-                :class="{ 'is-zoomed': isZoomed }"
-                title="Click image to zoom in/out"
-                @click="isZoomed = !isZoomed"
-              >
-                <img
-                  :src="receiptImage"
-                  alt="Scanned receipt preview"
-                  :class="{ zoomed: isZoomed }"
-                />
-              </div>
-            </div>
-          </section>
-
-          <!-- Receipt Reader (Scanner) in main column on small screen / when in receipt mode -->
-          <ReceiptReader
-            v-if="mode === 'receipt'"
-            class="mobile-receipt-reader"
-            @result="applyReceipt"
-          />
-
-          <!-- Form Inputs -->
-          <form @submit.prevent="submit">
-            <label>
-              {{ t("expenses.merchant") }}
-              <InputText
-                v-model="form.merchant"
-                list="saved-shops"
-                maxlength="100"
-                :placeholder="t('shops.placeholder')"
-                required
-                fluid
-              />
-            </label>
-            <datalist id="saved-shops">
-              <option
-                v-for="shop in store.shops"
-                :key="shop.id"
-                :value="shop.name"
-              />
-            </datalist>
-
-            <label for="expense-date">
-              {{ t("expenses.date") }}
-              <DatePicker
-                id="expense-date"
-                inputId="expense-date"
-                v-model="selectedDate"
-                dateFormat="yy-mm-dd"
-                :maxDate="maxDate"
-                :minDate="minDate"
-                showIcon
-                iconDisplay="input"
-                fluid
-                required
-              />
-            </label>
-
-            <!-- Prominent Account Selector (Global vs NZ Savings) -->
-            <div class="account-selector-group">
-              <span class="account-group-label">{{ t("bulk.paidFrom") }}</span>
-              <!-- <div class="account-select-wrap">
-                <Select
-                  id="account-select"
-                  inputId="account-select"
-                  v-model="form.accountId"
-                  :options="accountOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  :placeholder="t('bulk.paidFrom')"
-                  fluid
-                  class="account-select"
-                >
-                  <template #value="slotProps">
-                    <div v-if="slotProps.value" class="account-select-val">
-                      <component
-                        :is="slotProps.value === 'global' ? Wallet : PiggyBank"
-                        :size="16"
-                      />
-                      <span>{{
-                        slotProps.value === "global"
-                          ? t("accounts.globalEveryday")
-                          : t("accounts.nzSavings")
-                      }}</span>
-                    </div>
-                  </template>
-                  <template #option="slotProps">
-                    <div class="account-select-opt">
-                      <component
-                        :is="slotProps.option.value === 'global' ? Wallet : PiggyBank"
-                        :size="16"
-                      />
-                      <span>{{ slotProps.option.label }}</span>
-                    </div>
-                  </template>
-                </Select>
-              </div> -->
-              <div
-                class="account-toggle-grid"
-                role="radiogroup"
-                aria-label="Paid From Account"
-              >
-                <Button
-                  type="button"
-                  :variant="
-                    form.accountId === 'global' ? undefined : 'outlined'
-                  "
-                  class="justify-start!"
-                  :aria-checked="form.accountId === 'global'"
-                  role="radio"
-                  @click="form.accountId = 'global'"
-                >
-                  <div class="account-toggle-icon">
-                    <Wallet :size="18" />
-                  </div>
-                  <div class="account-toggle-info">
-                    <strong>{{ t("accounts.globalEveryday") }}</strong>
-                    <small>Everyday capital & weekly limit</small>
-                  </div>
-                </Button>
-
-                <Button
-                  type="button"
-                  :variant="form.accountId === 'nz' ? undefined : 'outlined'"
-                  class="justify-start!"
-                  :aria-checked="form.accountId === 'nz'"
-                  role="radio"
-                  @click="form.accountId = 'nz'"
-                >
-                  <div class="account-toggle-icon">
-                    <PiggyBank :size="18" />
-                  </div>
-                  <div class="account-toggle-info">
-                    <strong>{{ t("accounts.nzSavings") }}</strong>
-                    <small>{{ t("accounts.salarySavings") }}</small>
-                  </div>
-                </Button>
-              </div>
-            </div>
-
-            <!-- Category Picker with Custom Categories -->
-            <fieldset class="category-picker">
-              <div class="category-picker-header">
-                <legend>{{ t("expenses.category") }}</legend>
-                <Button
-                  type="button"
-                  size="small"
-                  @click="openCategoryManager(true)"
-                >
-                  <Plus :size="14" />{{ t("categories.newCategory") }}
-                </Button>
-              </div>
-
-              <div class="category-select-wrapper">
-                <Select
-                  id="category-select"
-                  inputId="category-select"
-                  v-model="form.category"
-                  :options="categoryOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  :placeholder="t('expenses.category')"
-                  fluid
-                  class="category-select"
-                >
-                  <template #value="slotProps">
-                    <div v-if="slotProps.value" class="category-select-val">
-                      <CategoryIcon :category="slotProps.value" :size="18" />
-                      <span>{{ categoryLabel(slotProps.value) }}</span>
-                    </div>
-                    <span v-else>{{ slotProps.placeholder }}</span>
-                  </template>
-                  <template #option="slotProps">
-                    <div class="category-select-opt">
-                      <CategoryIcon
-                        :category="slotProps.option.value"
-                        :size="18"
-                      />
-                      <span>{{ slotProps.option.label }}</span>
-                    </div>
-                  </template>
-                </Select>
-              </div>
-
-              <div class="category-options">
-                <Button
-                  v-for="catDef in store.categoryDefinitions"
-                  :key="catDef.id"
-                  type="button"
-                  :aria-pressed="form.category === catDef.name"
-                  @click="form.category = catDef.name"
-                >
-                  <CategoryIcon :category="catDef.name" :size="20" />
-                  <span>{{ categoryLabel(catDef.name) }}</span>
-                </Button>
-                <Button
-                  type="button"
-                  class="add-category-btn"
-                  :title="t('categories.newCategory')"
-                  @click="openCategoryManager(true)"
-                >
-                  <Plus :size="20" />
-                  <span>{{ t("categories.newCategory") }}</span>
-                </Button>
-              </div>
-            </fieldset>
-
-            <!-- Itemized Items Editor -->
-            <template v-if="mode !== 'quick'">
-              <ItemEditor
-                v-model:items="lines"
-                :products="store.products"
-                :expenses="store.expenses"
-                :exclude-expense-id="expense?.id"
-              />
-
-              <!-- Streamlined Receipt Discount Input -->
-              <div v-if="lines.length" class="discount-container">
-                <label class="discount-field">
-                  {{ t("expenses.discountFieldLabel") }}
-                  <InputText
-                    v-model="discount"
-                    inputmode="decimal"
-                    placeholder="0.00"
-                    fluid
-                  />
-                  <small class="muted">
-                    {{ t("expenses.discountHint") }}
-                  </small>
-                </label>
-              </div>
-            </template>
-
-            <!-- Quick Amount Input -->
-            <label v-if="!itemized && mode !== 'items'">
-              Total · {{ form.currency }}
-              <InputText
-                v-model="form.amount"
-                class="amount-input"
-                inputmode="decimal"
-                placeholder="0.00"
-                required
-                fluid
-              />
-            </label>
-
-            <!-- Itemized Total Breakdown -->
-            <div v-else-if="itemized" class="purchase-total-breakdown">
-              <div v-if="discountCents() > 0" class="subtotal-row">
-                <span>{{ t("expenses.itemsSubtotal") }}</span>
-                <span>{{ money(linesSubtotal, form.currency) }}</span>
-              </div>
-              <div v-if="discountCents() > 0" class="discount-row">
-                <span>{{ t("expenses.receiptDiscount") }}</span>
-                <span>-{{ money(discountCents(), form.currency) }}</span>
-              </div>
-              <div class="purchase-total">
-                <span>Total</span>
-                <strong>{{
-                  calculated === null
-                    ? "Check items"
-                    : money(calculated, form.currency)
-                }}</strong>
-              </div>
-            </div>
-
-            <!-- Receipt Review Section -->
-            <div v-if="receipt" class="receipt-review">
-              <p v-if="receiptNote" class="small">{{ receiptNote }}</p>
-              <p v-if="receipt.amount !== null">
-                {{ t("expenses.receiptTotal") }}
-                <strong>{{ money(receipt.amount, form.currency) }}</strong>
-              </p>
-              <p v-if="totalMismatch" class="error-note">
-                {{ t("expenses.itemsMismatch") }}
-              </p>
-              <p v-if="!receipt.date" class="small">
-                Date not detected — check the date above.
-              </p>
-              <label class="check">
-                <Checkbox v-model="reviewed" binary inputId="reviewed-check" />
-                <span>{{ t("expenses.checkItemsPrompt") }}</span>
-              </label>
-            </div>
-
-            <details>
-              <summary>{{ t("expenses.notes") }}</summary>
-              <Textarea
-                v-model="form.note"
-                maxlength="500"
-                rows="2"
-                :aria-label="t('expenses.notes')"
-                fluid
-              />
-            </details>
-
-            <p v-if="error" class="error-note" role="alert">{{ error }}</p>
-
-            <div class="mt-4">
-              <Button class="primary" fluid :disabled="busy" type="submit">
-                {{ busy ? t("common.saving") : t("common.save") }}
-              </Button>
-            </div>
-          </form>
-        </div>
-
-        <!-- RIGHT COLUMN: Receipt Photo & Transcript Stage (Desktop / Wide Screen) -->
-        <aside class="drawer-col-preview desktop-preview-pane">
-          <!-- When Receipt or Photo Exists -->
-          <div v-if="receipt || receiptImage" class="preview-stage-container">
-            <div class="preview-stage-header">
-              <div class="preview-stage-tabs">
-                <Button
-                  v-if="receiptImage"
-                  type="button"
-                  class="preview-tab-btn"
-                  :class="{ active: previewTab === 'image' }"
-                  @click="previewTab = 'image'"
-                >
-                  <ImageIcon :size="15" />
-                  <span>{{ t("expenses.photoTab") }}</span>
-                </Button>
-                <Button
-                  type="button"
-                  class="preview-tab-btn"
-                  :class="{ active: previewTab === 'transcript' }"
-                  @click="previewTab = 'transcript'"
-                >
-                  <FileText :size="15" />
-                  <span>{{ t("expenses.transcriptTab") }}</span>
-                </Button>
-              </div>
-
-              <div class="preview-stage-controls">
-                <Button
-                  v-if="previewTab === 'image'"
-                  type="button"
-                  class="control-pill"
-                  :title="
-                    isZoomed ? t('expenses.zoomOut') : t('expenses.zoomIn')
-                  "
-                  @click="isZoomed = !isZoomed"
-                >
-                  <component :is="isZoomed ? ZoomOut : ZoomIn" :size="14" />
-                  <span>{{
-                    isZoomed ? t("expenses.zoomOut") : t("expenses.zoomIn")
-                  }}</span>
-                </Button>
-                <Button
-                  v-if="previewTab === 'transcript'"
-                  type="button"
-                  class="control-pill"
-                  title="Copy transcript text to clipboard"
-                  @click="copyTranscript"
-                >
-                  <component :is="copySuccess ? Check : Copy" :size="14" />
-                  <span>{{
-                    copySuccess ? t("expenses.copied") : t("expenses.copy")
-                  }}</span>
-                </Button>
-              </div>
-            </div>
-
-            <!-- Photo Viewer -->
-            <div
-              v-if="previewTab === 'image' && receiptImage"
-              class="preview-image-scroll"
-              :class="{ 'is-zoomed': isZoomed }"
-              title="Click photo to zoom in or out"
-              @click="isZoomed = !isZoomed"
-            >
-              <img
-                :src="receiptImage"
-                alt="Scanned receipt photo preview"
-                :class="{ 'zoomed-img': isZoomed }"
-              />
-              <span class="preview-zoom-tip">
-                {{
-                  isZoomed
-                    ? t("expenses.clickZoomOut")
-                    : t("expenses.clickZoomIn")
-                }}
-              </span>
-            </div>
-
-            <!-- Transcript Viewer -->
-            <div
-              v-else-if="previewTab === 'transcript'"
-              class="preview-transcript-scroll"
-              title="Click to copy transcript"
-              @click="copyTranscript"
-            >
-              <pre>{{ receipt?.text || "No transcript available." }}</pre>
-            </div>
-          </div>
-
-          <!-- When in Receipt Scan Mode on Desktop -->
-          <div v-else-if="mode === 'receipt'" class="preview-reader-card">
-            <ReceiptReader @result="applyReceipt" />
-          </div>
-
-          <!-- Empty Preview Prompt on Desktop -->
-          <div v-else class="preview-placeholder-card">
-            <div class="placeholder-icon-wrap">
-              <ScanLine :size="38" />
-            </div>
-            <h3>{{ t("expenses.receiptStagePrompt") }}</h3>
-            <p>
-              {{ t("expenses.receiptStageDesc") }}
-            </p>
-            <Button
-              type="button"
-              class="secondary prompt-scan-btn"
-              @click="mode = 'receipt'"
-            >
-              <ScanLine :size="16" />
-              <span>{{ t("expenses.scanReceiptNow") }}</span>
-            </Button>
-          </div>
-        </aside>
-      </div>
-    </div>
-
-    <!-- Inline Category Manager Bottom Drawer -->
-    <div
-      v-if="showCategoryManager"
-      class="inline-modal-backdrop"
-      @click.self="showCategoryManager = false"
-    >
-      <div class="inline-modal">
-        <div class="drawer-handle-bar" aria-hidden="true">
-          <div class="drawer-handle" />
-        </div>
-        <div class="inline-modal-header">
-          <h3>{{ t("categories.title") }}</h3>
-          <Button
-            type="button"
-            aria-label="Close category manager"
-            @click="showCategoryManager = false"
-          >
-            <X />
-          </Button>
-        </div>
-        <CategoryManager
-          :start-in-create-mode="categoryCreateMode"
-          @close="showCategoryManager = false"
-          @created="onCategoryCreated"
-        />
-      </div>
-    </div>
-  </Drawer>
-</template>
-
-<style scoped>
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.drawer-handle-bar {
-  display: flex;
-  justify-content: center;
-  padding: 10px 0 4px;
-  cursor: grab;
-}
-
-.drawer-handle {
-  width: 44px;
-  height: 5px;
-  background: var(--border);
-  border-radius: 10px;
-}
-
-.drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 22px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.drawer-title-area {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.drawer-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.receipt-quick-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: var(--pill-bg);
-  border: var(--pill-border);
-  box-shadow: var(--pill-shadow);
-  border-radius: 20px;
-  color: var(--green);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.receipt-quick-pill.active {
-  background: var(--green);
-  color: var(--text-heading);
-  border-color: var(--green);
-}
-
-.close-btn {
-  width: 36px;
-  height: 36px;
-}
-
-.drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 18px 22px calc(24px + env(safe-area-inset-bottom));
-}
-
-/* Two-column layout */
-.drawer-layout-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.drawer-col-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.mobile-only-dock {
-  display: block;
-}
-
-.desktop-preview-pane {
-  display: none;
-}
-
-/* Mobile Quick Receipt Dock */
-.quick-receipt-dock {
-  background: var(--surface-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: all 0.2s ease;
-}
-
-.dock-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: var(--surface-card-hover);
-  border-bottom: 1px solid var(--border);
-}
-
-.dock-tabs {
-  display: flex;
-  gap: 6px;
-}
-
-.dock-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background: transparent;
-  color: var(--muted);
-}
-
-.dock-tab.selected {
-  background: var(--green);
-  color: var(--text-heading);
-}
-
-.dock-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.preview-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--pill-bg);
-  border: var(--pill-border);
-  color: inherit;
-  cursor: pointer;
-}
-
-.dock-toggle {
-  font-size: 12px;
-}
-
-.dock-view {
-  padding: 12px;
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-.dock-text-scroll {
-  cursor: copy;
-}
-
-.dock-text-scroll pre {
-  margin: 0;
-  font-family: monospace;
-  font-size: 11px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  color: inherit;
-}
-
-.dock-img-stage {
-  cursor: zoom-in;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-}
-
-.dock-img-stage.is-zoomed {
-  cursor: zoom-out;
-  overflow: auto;
-}
-
-.dock-img-stage img {
-  display: block;
-  max-width: 100%;
-  max-height: 200px;
-  margin: 0 auto;
-  border-radius: 8px;
-  object-fit: contain;
-  transition: transform 0.2s ease;
-}
-
-.dock-img-stage img.zoomed {
-  max-width: none;
-  max-height: none;
-  width: 220%;
-  cursor: zoom-out;
-}
-
-/* Account Selector */
-.account-selector-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 6px 0 10px;
-}
-
-.account-group-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: inherit;
-}
-
-.account-toggle-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.account-toggle-card {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  background: var(--surface-card);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: left;
-  font-weight: normal;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.account-select-wrap {
-  margin-bottom: 8px;
-}
-
-.category-select-wrapper {
-  margin-bottom: 12px;
-}
-
-.category-select-val,
-.category-select-opt,
-.account-select-val,
-.account-select-opt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.account-toggle-card:hover {
-  background: var(--surface-card-hover);
-  border-color: var(--accent);
-}
-
-.account-toggle-card.selected {
-  background: var(--success-bg);
-  border-color: var(--accent);
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-.account-toggle-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.account-toggle-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.account-toggle-info strong {
-  font-size: 13px;
-  color: inherit;
-}
-
-.account-toggle-info small {
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.account-badge-hint {
-  margin: 0;
-  font-size: 11px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--muted);
-  border-left: 3px solid var(--green);
-}
-
-.account-badge-hint.nz {
-  border-left-color: var(--warning-colour);
-}
-
-/* Categories & Custom Button */
-.category-picker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.new-cat-link {
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.add-category-btn {
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  padding: 9px 3px;
-  min-height: 70px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.add-category-btn:hover {
-  background: var(--pill-bg);
-  border-color: var(--accent);
-  color: inherit;
-}
-
-/* Discount Field & Total Breakdown */
-.discount-container {
-  margin: 8px 0;
-}
-
-.discount-field {
-  display: grid;
-  gap: 4px;
-}
-
-.discount-field small {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.purchase-total-breakdown {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.subtotal-row,
-.discount-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.discount-row {
-  color: var(--danger);
-  font-weight: 500;
-}
-
-/* Inline Bottom Drawer for Category Manager */
-.inline-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--surface-backdrop);
-  z-index: 1100;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.inline-modal {
-  background: var(--surface-drawer);
-  border: 1px solid var(--surface-drawer-border);
-  border-radius: 28px 28px 0 0;
-  padding: 8px 24px calc(24px + env(safe-area-inset-bottom));
-  width: 100vw;
-  max-width: 100vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--surface-drawer-shadow);
-  will-change: transform;
-  animation: slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.inline-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.inline-modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-}
-
-/* Desktop Dual-Column Layout (>= 900px) */
-@media (min-width: 900px) {
-  .drawer-body {
-    padding: 20px 32px calc(28px + env(safe-area-inset-bottom));
-  }
-
-  .drawer-layout-columns {
-    display: grid;
-    grid-template-columns: minmax(460px, 1.15fr) minmax(380px, 0.85fr);
-    gap: 32px;
-    align-items: start;
-  }
-
-  .mobile-only-dock {
-    display: none !important;
-  }
-
-  .mobile-receipt-reader {
-    display: none !important;
-  }
-
-  .desktop-preview-pane {
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 0;
-    max-height: calc(94dvh - 120px);
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: var(--glass-card-shadow);
-  }
-
-  .preview-stage-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 500px;
-  }
-
-  .preview-stage-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 14px;
-    background: var(--surface-card-hover);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .preview-stage-tabs {
-    display: flex;
-    gap: 8px;
-  }
-
-  .preview-tab-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    background: transparent;
-    color: var(--muted);
-    border: 0;
-    cursor: pointer;
-  }
-
-  .preview-tab-btn.active {
-    background: var(--green);
-    color: var(--text-heading);
-  }
-
-  .preview-stage-controls {
-    display: flex;
-    gap: 6px;
-  }
-
-  .control-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    background: var(--pill-bg);
-    border: var(--pill-border);
-    color: inherit;
-    cursor: pointer;
-  }
-
-  .control-pill:hover {
-    background: var(--surface);
-  }
-
-  .preview-image-scroll {
-    flex: 1;
-    overflow: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    cursor: zoom-in;
-    background: var(--surface-card);
-    min-height: 440px;
-  }
-
-  .preview-image-scroll.is-zoomed {
-    cursor: zoom-out;
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-
-  .preview-image-scroll img {
-    display: block;
-    max-width: 100%;
-    max-height: calc(94dvh - 220px);
-    object-fit: contain;
-    border-radius: 8px;
-    box-shadow: var(--glass-card-shadow);
-    transition: transform 0.2s ease;
-  }
-
-  .preview-image-scroll img.zoomed-img {
-    max-width: none;
-    max-height: none;
-    width: 220%;
-    cursor: zoom-out;
-  }
-
-  .preview-zoom-tip {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    background: var(--glass-backdrop);
-    color: var(--text-heading);
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 6px;
-    pointer-events: none;
-  }
-
-  .preview-transcript-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 18px;
-    background: var(--surface);
-    cursor: copy;
-  }
-
-  .preview-transcript-scroll pre {
-    margin: 0;
-    font-family: monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    color: inherit;
-  }
-
-  .preview-placeholder-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 48px 32px;
-    gap: 14px;
-    height: 100%;
-    min-height: 440px;
-  }
-
-  .placeholder-icon-wrap {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
-    background: var(--success-bg);
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .preview-placeholder-card h3 {
-    margin: 0;
-    font-size: 18px;
-    color: inherit;
-  }
-
-  .preview-placeholder-card p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--muted);
-    max-width: 300px;
-    line-height: 1.4;
-  }
-
-  .prompt-scan-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 6px;
-  }
-
-  .preview-reader-card {
-    padding: 20px;
-    height: 100%;
-    overflow-y: auto;
-  }
-}
-</style>

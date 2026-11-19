@@ -7,7 +7,13 @@
     "aiChat": "AI Chat",
     "products": "Products",
     "shops": "Shops",
-    "settings": "Data"
+    "settings": "Data",
+    "settingsGroup": "Settings",
+    "settingsAccounts": "Accounts & Salary",
+    "settingsCategories": "Categories",
+    "settingsFrequent": "Frequent Payments",
+    "settingsAi": "AI Settings",
+    "settingsData": "Data & Backup"
   },
   "common": {
     "addExpense": "Add expense",

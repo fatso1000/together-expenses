@@ -10,15 +10,22 @@
         <Button severity="secondary" @click="backup">
           {{ t("settings.exportBackup") }}
         </Button>
-        <label class="restore-input inline-flex items-center gap-2 cursor-pointer">
-          <span class="text-sm font-medium text-muted">{{ t("settings.restoreBackup") }}</span>
-          <input
-            type="file"
-            accept=".json,application/json"
-            class="text-xs"
-            @change="restore"
-          />
-        </label>
+        <Button
+          type="button"
+          severity="secondary"
+          variant="outlined"
+          @click="restoreInput?.click()"
+        >
+          {{ t("settings.restoreBackup") }}
+        </Button>
+        <input
+          ref="restoreInput"
+          type="file"
+          accept=".json,application/json"
+          class="sr-only"
+          :aria-label="t('settings.restoreBackup')"
+          @change="restore"
+        />
       </div>
       <p class="text-xs text-muted m-0">
         Restoring replaces the current database, including connected devices.
@@ -47,21 +54,25 @@
       </Button>
     </section>
 
-    <p v-if="error" class="error-note" role="alert">{{ error }}</p>
+    <Message v-if="error" severity="error" :closable="false">
+      {{ error }}
+    </Message>
   </div>
 </template>
 
 <script setup lang="ts">
 import DeviceSync from "@/components/data/DeviceSync.vue";
-import { shallowRef } from "vue";
+import { shallowRef, useTemplateRef } from "vue";
 import { useExpenses, friendlyError } from "@/stores/expenses";
 import { downloadFile, today } from "@/lib/finance";
 import { parseBackup } from "@/lib/storage";
 import { t } from "@/lib/i18n";
 import Button from "primevue/button";
+import Message from "primevue/message";
 
 const store = useExpenses();
 const error = shallowRef("");
+const restoreInput = useTemplateRef<HTMLInputElement>("restoreInput");
 
 function backup() {
   downloadFile(

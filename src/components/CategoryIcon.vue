@@ -1,3 +1,13 @@
+<template>
+  <span
+    class="category-icon"
+    :data-category="category"
+    :style="iconStyle"
+  >
+    <component :is="resolvedIcon" :size="size" aria-hidden="true" />
+  </span>
+</template>
+
 <script setup lang="ts">
 import { computed } from "vue";
 import {
@@ -84,7 +94,6 @@ const iconMap: Record<string, any> = {
   Smartphone,
   Shirt,
   Package,
-  // Standard category name aliases
   Groceries: ShoppingBasket,
   Petrol: Fuel,
   Shopping: ShoppingBag,
@@ -127,13 +136,3 @@ const iconStyle = computed(() => {
   return undefined;
 });
 </script>
-
-<template>
-  <span
-    class="category-icon"
-    :data-category="category"
-    :style="iconStyle"
-  >
-    <component :is="resolvedIcon" :size="size" aria-hidden="true" />
-  </span>
-</template>

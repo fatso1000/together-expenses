@@ -9,7 +9,7 @@ import {
   formatKnowledgeForPrompt,
 } from "../src/lib/spending-knowledge.ts";
 
-test("isSpendingRelatedQuery accepts financial and purchase queries", () => {
+test("isSpendingRelatedQuery accepts financial, purchase, and account management queries", () => {
   const allowedQueries = [
     "should I remove milk?",
     "what can I cut from my shopping cart?",
@@ -17,6 +17,11 @@ test("isSpendingRelatedQuery accepts financial and purchase queries", () => {
     "is my grocery spending too high?",
     "audit my recurring subscriptions",
     "can I afford eating out tonight?",
+    "what can I improve?",
+    "how should I manage my accounts?",
+    "how can I improve my savings and balances?",
+    "what can I improve in my financial health?",
+    "how is my cashflow runway?",
   ];
 
   for (const q of allowedQueries) {
@@ -142,4 +147,35 @@ test("buildCompactFinancialSummary formats figures under budget", () => {
   assert.ok(prompt.includes("Pacing: spent $150/$300 NZD"));
   assert.ok(prompt.includes("daily allowance $37.5"));
   assert.ok(prompt.includes("Organic Whole Milk 2L (3x bought, avg $5.20"));
+});
+
+test("buildCompactFinancialSummary formats rich account management and cashflow data", () => {
+  const summary = buildCompactFinancialSummary({
+    weekTotalCents: 20000,
+    weeklyLimitCents: 40000,
+    daysRemaining: 3,
+    monthTotalCents: 80000,
+    salaryWeeklyCents: 150000,
+    frequentWeeklyCommitmentCents: 30000,
+    topCategories: [
+      { category: "Rent", amountCents: 35000 },
+      { category: "Groceries", amountCents: 15000 },
+    ],
+    globalCapitalCents: 1000000,
+    nzSavingsCents: 450000,
+    globalInitialCents: 1200000,
+    nzInitialCents: 400000,
+    globalSpentCents: 200000,
+    nzSpentCents: 50000,
+  });
+
+  assert.equal(summary.accounts.globalCapitalNZD, 10000);
+  assert.equal(summary.accounts.nzSavingsNZD, 4500);
+  assert.equal(summary.accounts.totalCapitalNZD, 14500);
+  assert.equal(summary.accounts.netWeeklyCashflowNZD, 1000); // 1500 - 200 - 300
+
+  const prompt = formatKnowledgeForPrompt(summary, []);
+  assert.ok(prompt.includes("[ACCOUNT_MANAGEMENT]"));
+  assert.ok(prompt.includes("Total Capital: $14500 NZD"));
+  assert.ok(prompt.includes("Net weekly cashflow: +$1000 NZD"));
 });

@@ -1,3 +1,159 @@
+<template>
+  <div class="mb-4">
+    <Button
+      type="button"
+      severity="secondary"
+      class="inline-flex items-center gap-2"
+      @click="bulk = true"
+    >
+      <ClipboardList :size="18" />
+      <span>{{ t("expenses.addSeveral") }}</span>
+    </Button>
+  </div>
+  <BulkEntry v-if="bulk" @close="bulk = false" />
+
+  <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-4">
+    <!-- Period Selector Switch -->
+    <div
+      class="flex gap-1 p-1 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)]"
+      aria-label="Filter spending period"
+    >
+      <Button
+        type="button"
+        size="small"
+        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        :severity="period === 'week' ? 'primary' : 'secondary'"
+        :variant="period === 'week' ? undefined : 'text'"
+        @click="period = 'week'"
+      >
+        <Calendar :size="15" />
+        <span>{{ t("expenses.thisWeek") }}</span>
+      </Button>
+      <Button
+        type="button"
+        size="small"
+        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        :severity="period === 'month' ? 'primary' : 'secondary'"
+        :variant="period === 'month' ? undefined : 'text'"
+        @click="period = 'month'"
+      >
+        <span>{{ t("expenses.thisMonth") }}</span>
+      </Button>
+      <Button
+        type="button"
+        size="small"
+        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        :severity="period === 'all' ? 'primary' : 'secondary'"
+        :variant="period === 'all' ? undefined : 'text'"
+        @click="period = 'all'"
+      >
+        <span>{{ t("expenses.allExpenses") }}</span>
+      </Button>
+    </div>
+
+    <!-- Active Period Information Banner -->
+    <div
+      v-if="period === 'week'"
+      class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--success-bg)] border border-[var(--success-border)] text-xs text-text"
+    >
+      <span>
+        <strong>{{ t("expenses.thisWeek") }}:</strong> {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRange }})
+      </span>
+      <span class="font-bold">
+        {{ filtered.length }} {{ t("nav.expenses").toLowerCase() }} · {{ store.displayMoney(total(filtered)) }}
+      </span>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-wrap items-center gap-2.5">
+      <IconField class="w-full sm:w-auto sm:flex-[2] min-w-[200px]">
+        <InputIcon>
+          <Search :size="16" />
+        </InputIcon>
+        <InputText
+          v-model="search"
+          type="search"
+          :placeholder="t('expenses.searchPlaceholder')"
+          :aria-label="t('common.search')"
+          fluid
+        />
+      </IconField>
+
+      <div class="flex-1 min-w-[140px]">
+        <Select
+          v-model="category"
+          :options="categoryOptions"
+          optionLabel="label"
+          optionValue="value"
+          :aria-label="t('expenses.category')"
+          fluid
+        />
+      </div>
+
+      <div class="flex-1 min-w-[140px]">
+        <Select
+          v-model="account"
+          :options="accountOptions"
+          optionLabel="label"
+          optionValue="value"
+          aria-label="Filter by account"
+          fluid
+        />
+      </div>
+
+      <div class="flex-1 min-w-[150px]">
+        <Select
+          v-model="sortBy"
+          :options="sortOptions"
+          optionLabel="label"
+          optionValue="value"
+          :aria-label="t('expenses.sortBy')"
+          fluid
+        >
+          <template #value="slotProps">
+            <div class="flex items-center gap-1.5">
+              <ArrowUpDown :size="14" class="text-muted shrink-0" />
+              <span class="truncate">{{ sortOptions.find((o) => o.value === slotProps.value)?.label }}</span>
+            </div>
+          </template>
+        </Select>
+      </div>
+
+      <Button
+        type="button"
+        severity="secondary"
+        variant="outlined"
+        class="inline-flex items-center gap-1.5"
+        @click="exportCsv"
+      >
+        <Download :size="16" />
+        <span>{{ t("expenses.export") }}</span>
+      </Button>
+
+      <Button
+        v-if="hasActiveFilters"
+        type="button"
+        variant="text"
+        severity="secondary"
+        size="small"
+        class="inline-flex items-center gap-1.5"
+        @click="resetFilters"
+      >
+        <RotateCcw :size="14" />
+        <span>{{ t("expenses.resetFilters") }}</span>
+      </Button>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="flex items-center justify-between text-sm pt-2 pb-3 border-b border-[var(--border)] text-muted">
+      <span>{{ filtered.length }} {{ t("nav.expenses").toLowerCase() }}</span>
+      <strong class="text-text">{{ store.displayMoney(total(filtered)) }}</strong>
+    </div>
+
+    <ExpenseList :expenses="filtered" />
+  </section>
+</template>
+
 <script setup lang="ts">
 import { shallowRef, computed } from "vue";
 import {
@@ -8,6 +164,11 @@ import {
   ArrowUpDown,
   RotateCcw,
 } from "lucide-vue-next";
+import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
+import Select from "primevue/select";
 import BulkEntry from "@/components/BulkEntry.vue";
 import ExpenseList from "@/components/ExpenseList.vue";
 import { useExpenses } from "@/stores/expenses";
@@ -24,7 +185,24 @@ const sortBy = shallowRef<"date-desc" | "date-asc" | "amount-desc" | "amount-asc
   "date-desc",
 );
 
-// Determine base pool of expenses based on period
+const categoryOptions = computed(() => [
+  { value: "", label: t("expenses.allCategories") },
+  ...store.allCategories.map((item) => ({ value: item, label: item })),
+]);
+
+const accountOptions = computed(() => [
+  { value: "" as const, label: t("expenses.allAccounts") },
+  { value: "global" as const, label: "💳 Global Account" },
+  { value: "nz" as const, label: "🏦 NZ Account (Savings)" },
+]);
+
+const sortOptions = computed(() => [
+  { value: "date-desc" as const, label: t("expenses.sortNewest") },
+  { value: "date-asc" as const, label: t("expenses.sortOldest") },
+  { value: "amount-desc" as const, label: t("expenses.sortHighest") },
+  { value: "amount-asc" as const, label: t("expenses.sortLowest") },
+]);
+
 const periodExpenses = computed(() => {
   if (period.value === "week") {
     return store.weekExpenses;
@@ -56,7 +234,6 @@ const filtered = computed(() => {
     return searchable.includes(query);
   });
 
-  // Apply sorting
   return [...result].sort((a, b) => {
     if (sortBy.value === "date-asc") {
       return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
@@ -67,7 +244,6 @@ const filtered = computed(() => {
     if (sortBy.value === "amount-asc") {
       return a.amount - b.amount;
     }
-    // Default: date-desc
     return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
   });
 });
@@ -104,246 +280,3 @@ function exportCsv() {
   );
 }
 </script>
-
-<template>
-  <button class="secondary bulk-button" @click="bulk = true">
-    <ClipboardList :size="18" />{{ t('expenses.addSeveral') }}
-  </button>
-  <BulkEntry v-if="bulk" @close="bulk = false" />
-
-  <section class="panel expenses-panel">
-    <!-- Period Selector Switch -->
-    <div class="period-segmented" aria-label="Filter spending period">
-      <button
-        type="button"
-        :class="{ selected: period === 'week' }"
-        @click="period = 'week'"
-      >
-        <Calendar :size="15" />{{ t('expenses.thisWeek') }}
-      </button>
-      <button
-        type="button"
-        :class="{ selected: period === 'month' }"
-        @click="period = 'month'"
-      >
-        {{ t('expenses.thisMonth') }}
-      </button>
-      <button
-        type="button"
-        :class="{ selected: period === 'all' }"
-        @click="period = 'all'"
-      >
-        {{ t('expenses.allExpenses') }}
-      </button>
-    </div>
-
-    <!-- Active Period Information Banner -->
-    <div v-if="period === 'week'" class="week-banner">
-      <span>
-        <strong>{{ t('expenses.thisWeek') }}:</strong> {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRange }})
-      </span>
-      <span class="week-banner-metric">
-        {{ filtered.length }} {{ t('nav.expenses').toLowerCase() }} · {{ store.displayMoney(total(filtered)) }}
-      </span>
-    </div>
-
-    <!-- Filter Bar -->
-    <div class="filter-bar enhanced-filter-bar">
-      <label class="search-input">
-        <Search :size="18" />
-        <span class="sr-only">{{ t('common.search') }}</span>
-        <input
-          v-model="search"
-          type="search"
-          :placeholder="t('expenses.searchPlaceholder')"
-        />
-      </label>
-
-      <label class="category-select-label">
-        <span class="sr-only">{{ t('expenses.category') }}</span>
-        <select v-model="category">
-          <option value="">{{ t('expenses.allCategories') }}</option>
-          <option
-            v-for="item in store.allCategories"
-            :key="item"
-            :value="item"
-          >
-            {{ item }}
-          </option>
-        </select>
-      </label>
-
-      <!-- Account Filter -->
-      <label class="account-select-label">
-        <span class="sr-only">{{ t('expenses.allAccounts') }}</span>
-        <select v-model="account" aria-label="Filter by account">
-          <option value="">{{ t('expenses.allAccounts') }}</option>
-          <option value="global">💳 Global Account</option>
-          <option value="nz">🏦 NZ Account (Savings)</option>
-        </select>
-      </label>
-
-      <label class="sort-select-label">
-        <span class="sr-only">{{ t('expenses.sortBy') }}</span>
-        <div class="select-with-icon">
-          <ArrowUpDown :size="16" class="select-icon" />
-          <select v-model="sortBy" :aria-label="t('expenses.sortBy')">
-            <option value="date-desc">{{ t('expenses.sortNewest') }}</option>
-            <option value="date-asc">{{ t('expenses.sortOldest') }}</option>
-            <option value="amount-desc">{{ t('expenses.sortHighest') }}</option>
-            <option value="amount-asc">{{ t('expenses.sortLowest') }}</option>
-          </select>
-        </div>
-      </label>
-
-      <button class="secondary export-btn" @click="exportCsv">
-        <Download :size="16" />{{ t('expenses.export') }}
-      </button>
-
-      <button
-        v-if="hasActiveFilters"
-        type="button"
-        class="text-button reset-btn"
-        @click="resetFilters"
-      >
-        <RotateCcw :size="14" />{{ t('expenses.resetFilters') }}
-      </button>
-    </div>
-
-    <!-- Summary Bar -->
-    <div class="list-summary">
-      <span>{{ filtered.length }} {{ t('nav.expenses').toLowerCase() }}</span>
-      <strong>{{ store.displayMoney(total(filtered)) }}</strong>
-    </div>
-
-    <ExpenseList :expenses="filtered" />
-  </section>
-</template>
-
-<style scoped>
-.expenses-panel {
-  display: grid;
-  gap: 16px;
-}
-
-.period-segmented {
-  display: flex;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
-  gap: 4px;
-}
-
-.period-segmented button {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 600;
-  background: transparent;
-  color: var(--muted);
-  transition: all 0.15s ease;
-}
-
-.period-segmented button.selected {
-  background: var(--surface, rgba(16, 28, 24, 0.72));
-  color: var(--accent);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.week-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
-  background: rgba(42, 194, 148, 0.12);
-  border: 1px solid rgba(42, 194, 148, 0.25);
-  border-radius: 12px;
-  font-size: 13px;
-  color: #e2ede8;
-}
-
-.week-banner-metric {
-  font-weight: 700;
-}
-
-.enhanced-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-
-.enhanced-filter-bar .search-input {
-  flex: 2;
-  min-width: 200px;
-}
-
-.category-select-label,
-.account-select-label,
-.sort-select-label {
-  flex: 1;
-  min-width: 140px;
-}
-
-.select-with-icon {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.select-icon {
-  position: absolute;
-  left: 10px;
-  pointer-events: none;
-  color: #6a7c74;
-}
-
-.select-with-icon select {
-  padding-left: 32px;
-}
-
-.export-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.reset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: #60756d;
-}
-
-@media (max-width: 480px) {
-  .period-segmented button {
-    font-size: 11.5px;
-    padding: 6px 8px;
-    gap: 4px;
-  }
-  .enhanced-filter-bar .search-input {
-    flex-basis: 100%;
-    min-width: 100%;
-  }
-  .category-select-label,
-  .account-select-label {
-    flex: 1 1 calc(50% - 6px);
-    min-width: 0;
-  }
-  .sort-select-label {
-    flex: 1 1 100%;
-  }
-  .export-btn {
-    flex: 1;
-  }
-}
-</style>

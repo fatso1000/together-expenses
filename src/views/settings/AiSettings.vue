@@ -14,18 +14,20 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("ollama.endpoint") }}</span>
-          <input
+          <InputText
             v-model="ollamaHost"
             placeholder="http://localhost:11434"
             required
+            fluid
           />
         </label>
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ t("ollama.model") }}</span>
-          <input
+          <InputText
             v-model="ollamaModel"
             placeholder="gemma4:e4b"
             required
+            fluid
           />
         </label>
       </div>
@@ -110,6 +112,7 @@ import {
 } from "@/lib/ollama";
 import { t } from "@/lib/i18n";
 import Button from "primevue/button";
+import InputText from "primevue/inputtext";
 
 const store = useExpenses();
 const ollamaHost = shallowRef(getOllamaHost());

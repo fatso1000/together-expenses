@@ -16,6 +16,37 @@ export function today(): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * Parses a YYYY-MM-DD string into a local Date at midnight, or null if invalid/empty.
+ */
+export function parseIsoDate(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  const parts = value.split("-").map(Number);
+  if (
+    parts.length < 3 ||
+    Number.isNaN(parts[0]) ||
+    Number.isNaN(parts[1]) ||
+    Number.isNaN(parts[2])
+  ) {
+    return null;
+  }
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Formats a Date into a YYYY-MM-DD string, or "" when null/invalid.
+ */
+export function formatIsoDate(value: Date | null | undefined): string {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    return "";
+  }
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function parseMoney(value: string): number {
   const normalized = value.trim();
   if (!/^\d{1,7}(\.\d{1,2})?$/.test(normalized))

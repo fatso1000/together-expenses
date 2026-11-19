@@ -27,6 +27,12 @@ export interface CompactFinancialSummary {
   accounts: {
     globalCapitalNZD: number;
     nzSavingsNZD: number;
+    totalCapitalNZD: number;
+    globalInitialNZD?: number;
+    nzInitialNZD?: number;
+    globalSpentNZD?: number;
+    nzSpentNZD?: number;
+    netWeeklyCashflowNZD: number;
   };
 }
 
@@ -42,7 +48,7 @@ const REJECT_PATTERNS: RegExp[] = [
 ];
 
 const FINANCIAL_KEYWORDS: RegExp[] = [
-  /\b(?:spend|spending|spent|expense|expenses|cost|costs|budget|budgets|money|saving|savings|save|cut|shopping|cart|buy|bought|purchase|purchases|price|prices|cheap|cheaper|expensive|afford|bill|bills|subscription|subscriptions|salary|income|earn|earning|milk|groceries|petrol|fuel|coffee|food|rent|debt|cash|dollar|nzd|usd|account)\b/i,
+  /\b(?:spend|spending|spent|expense|expenses|cost|costs|budget|budgets|money|saving|savings|save|cut|shopping|cart|buy|bought|purchase|purchases|price|prices|cheap|cheaper|expensive|afford|bill|bills|subscription|subscriptions|salary|income|earn|earning|milk|groceries|petrol|fuel|coffee|food|rent|debt|cash|dollar|nzd|usd|account|accounts|balance|balances|manage|management|managing|improve|improvement|improvements|optimize|optimization|optimise|optimisation|health|wealth|capital|fund|funds|buffer|runway|emergency|transfer|allocation|cashflow|net worth|worth|finance|financial|finances)\b/i,
 ];
 
 export function isSpendingRelatedQuery(rawQuery: string): ScopeCheckResult {
@@ -171,7 +177,7 @@ export function findRelevantPurchases(
   return matching.length > 0 ? matching.slice(0, limit) : index.slice(0, limit);
 }
 
-export function buildCompactFinancialSummary(params: {
+export interface BuildFinancialSummaryParams {
   weekTotalCents: number;
   weeklyLimitCents: number;
   daysRemaining: number;
@@ -181,7 +187,15 @@ export function buildCompactFinancialSummary(params: {
   topCategories: Array<{ category: string; amountCents: number }>;
   globalCapitalCents: number;
   nzSavingsCents: number;
-}): CompactFinancialSummary {
+  globalInitialCents?: number;
+  nzInitialCents?: number;
+  globalSpentCents?: number;
+  nzSpentCents?: number;
+}
+
+export function buildCompactFinancialSummary(
+  params: BuildFinancialSummaryParams,
+): CompactFinancialSummary {
   const safeDays = Math.max(1, Math.min(7, params.daysRemaining));
   const remainingAllowanceCents = Math.max(0, params.weeklyLimitCents - params.weekTotalCents);
   const dailyAllowanceNZD =
@@ -195,6 +209,11 @@ export function buildCompactFinancialSummary(params: {
       pacingStatus = "near_limit";
     }
   }
+
+  const totalCapitalNZD = Math.round((params.globalCapitalCents + params.nzSavingsCents) / 100);
+  const netWeeklyCashflowCents =
+    params.salaryWeeklyCents - params.weekTotalCents - params.frequentWeeklyCommitmentCents;
+  const netWeeklyCashflowNZD = Math.round(netWeeklyCashflowCents / 100);
 
   return {
     currency: "NZD",
@@ -213,6 +232,24 @@ export function buildCompactFinancialSummary(params: {
     accounts: {
       globalCapitalNZD: Math.round(params.globalCapitalCents / 100),
       nzSavingsNZD: Math.round(params.nzSavingsCents / 100),
+      totalCapitalNZD,
+      globalInitialNZD:
+        params.globalInitialCents !== undefined
+          ? Math.round(params.globalInitialCents / 100)
+          : undefined,
+      nzInitialNZD:
+        params.nzInitialCents !== undefined
+          ? Math.round(params.nzInitialCents / 100)
+          : undefined,
+      globalSpentNZD:
+        params.globalSpentCents !== undefined
+          ? Math.round(params.globalSpentCents / 100)
+          : undefined,
+      nzSpentNZD:
+        params.nzSpentCents !== undefined
+          ? Math.round(params.nzSpentCents / 100)
+          : undefined,
+      netWeeklyCashflowNZD,
     },
   };
 }
@@ -235,11 +272,24 @@ export function formatKnowledgeForPrompt(
     .map((c) => `${c.category}: $${c.amountNZD}`)
     .join(", ");
 
+  const netCashflowSign =
+    summary.accounts.netWeeklyCashflowNZD >= 0
+      ? `+$${summary.accounts.netWeeklyCashflowNZD}`
+      : `-$${Math.abs(summary.accounts.netWeeklyCashflowNZD)}`;
+
+  const drawdownDetails =
+    summary.accounts.globalSpentNZD !== undefined || summary.accounts.nzSpentNZD !== undefined
+      ? ` | Spend: Global $${summary.accounts.globalSpentNZD ?? 0} NZD, NZ $${summary.accounts.nzSpentNZD ?? 0} NZD`
+      : "";
+
   return `[FINANCIAL_CONTEXT]
 Pacing: spent $${summary.weekTotalNZD}/$${summary.weeklyLimitNZD} NZD (${summary.daysRemainingInWeek} days left, daily allowance $${summary.dailyAllowanceNZD}, status: ${summary.pacingStatus})
 Month: $${summary.monthTotalNZD} NZD | Income avg: $${summary.salaryWeeklyNZD}/wk | Fixed commitments: $${summary.activeRecurringWeeklyCommitmentNZD}/wk
 Capital: Global $${summary.accounts.globalCapitalNZD} NZD | Local Savings $${summary.accounts.nzSavingsNZD} NZD
 Top Categories: ${categories || "None"}
+[ACCOUNT_MANAGEMENT]
+Total Capital: $${summary.accounts.totalCapitalNZD} NZD (Global Capital: $${summary.accounts.globalCapitalNZD} NZD, Local NZ Savings: $${summary.accounts.nzSavingsNZD} NZD)
+Net weekly cashflow: ${netCashflowSign} NZD (Income $${summary.salaryWeeklyNZD} - Week Spent $${summary.weekTotalNZD} - Fixed Commitments $${summary.activeRecurringWeeklyCommitmentNZD})${drawdownDetails}
 [RELEVANT_PURCHASES]
 ${purchasesLines || "No regular purchase items logged yet."}`;
 }

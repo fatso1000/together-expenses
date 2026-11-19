@@ -7,7 +7,13 @@
     "aiChat": "Chat IA",
     "products": "Productos",
     "shops": "Comercios",
-    "settings": "Datos"
+    "settings": "Datos",
+    "settingsGroup": "Configuración",
+    "settingsAccounts": "Cuentas y Sueldo",
+    "settingsCategories": "Categorías",
+    "settingsFrequent": "Pagos Frecuentes",
+    "settingsAi": "Ajustes de IA",
+    "settingsData": "Datos y Copias"
   },
   "common": {
     "addExpense": "Cargar gasto",

@@ -9,10 +9,26 @@ import AiChat from "@/views/AiChat.vue";
 import Products from "@/views/Products.vue";
 import Shops from "@/views/Shops.vue";
 import Settings from "@/views/Settings.vue";
+import AccountsSettings from "@/views/settings/AccountsSettings.vue";
+import CategoriesSettings from "@/views/settings/CategoriesSettings.vue";
+import FrequentPaymentsSettings from "@/views/settings/FrequentPaymentsSettings.vue";
+import AiSettings from "@/views/settings/AiSettings.vue";
+import DataSettings from "@/views/settings/DataSettings.vue";
 import { i18nPlugin } from "@/lib/i18n";
 import "@/styles.css";
 import PrimeVue from "primevue/config";
+import { definePreset } from "@primeuix/themes";
 import Aura from "@primeuix/themes/aura";
+import { DrawerPreset } from "@/theme";
+
+const ExpensesTheme = definePreset(Aura, {
+  ...DrawerPreset,
+  semantic: {
+    typography: {
+      fontFamily: "'Meiryo UI', Meiryo, sans-serif",
+    },
+  },
+});
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -53,7 +69,32 @@ export const router = createRouter({
     {
       path: "/settings",
       component: Settings,
-      meta: { titleKey: "nav.settings", title: "Data" },
+      meta: { titleKey: "settings.title", title: "Settings" },
+    },
+    {
+      path: "/settings/accounts",
+      component: AccountsSettings,
+      meta: { titleKey: "nav.settingsAccounts", title: "Accounts & Salary" },
+    },
+    {
+      path: "/settings/categories",
+      component: CategoriesSettings,
+      meta: { titleKey: "nav.settingsCategories", title: "Categories" },
+    },
+    {
+      path: "/settings/frequent",
+      component: FrequentPaymentsSettings,
+      meta: { titleKey: "nav.settingsFrequent", title: "Frequent Payments" },
+    },
+    {
+      path: "/settings/ai",
+      component: AiSettings,
+      meta: { titleKey: "nav.settingsAi", title: "AI Settings" },
+    },
+    {
+      path: "/settings/data",
+      component: DataSettings,
+      meta: { titleKey: "nav.settingsData", title: "Data & Backup" },
     },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
@@ -72,10 +113,10 @@ router.afterEach((to) => {
   }
 });
 const app = createApp(App);
-console.log(import.meta.env.VITE_PRIMEVUE_LICENSE);
+
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: ExpensesTheme,
     options: {
       darkModeSelector: ".p-dark",
     },

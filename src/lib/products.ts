@@ -67,8 +67,17 @@ export function suggestProducts(products: Product[], title: string): Product[] {
     .slice(0, 3)
     .map((row) => row.product);
 }
+export function normalizeUnit(value: unknown): Unit {
+  if (typeof value !== "string") return "each";
+  const normalized = value.trim().toLowerCase();
+  const match = units.find((unit) => unit.value.toLowerCase() === normalized);
+  return match?.value ?? "each";
+}
+
 export function normalizedPrice(item: PurchaseItem) {
-  const unit = units.find((unit) => unit.value === (item.unit ?? "each"))!;
+  // Persisted items are validated, but AI/OCR suggestions can arrive with an
+  // unknown measure. Fall back to "each" so a suggestion cannot crash rendering.
+  const unit = units.find((unit) => unit.value === normalizeUnit(item.unit))!;
   const size = item.size ?? 1;
   const quantity = item.quantity * size * unit.factor;
   const labels: Record<string, string> = {

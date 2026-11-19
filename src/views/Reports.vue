@@ -1,22 +1,287 @@
+<template>
+  <div class="grid gap-5">
+    <section
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm flex flex-wrap items-center gap-4"
+      aria-label="Report timeframe controls"
+    >
+      <div
+        class="flex flex-wrap sm:flex-nowrap gap-1 p-1 rounded-xl bg-[var(--input-bg)] border border-[var(--border)] w-full sm:w-auto overflow-x-auto"
+        aria-label="Report period"
+      >
+        <Button
+          v-for="period in ['week', 'month', 'year', 'all', 'custom'] as const"
+          :key="period"
+          type="button"
+          size="small"
+          class="flex-1 sm:flex-none whitespace-nowrap"
+          :severity="mode === period ? 'primary' : 'secondary'"
+          :variant="mode === period ? undefined : 'text'"
+          @click="mode = period"
+        >
+          {{ t(`reports.periods.${period}`) }}
+        </Button>
+      </div>
+
+      <!-- Week Selector Note -->
+      <div
+        v-if="mode === 'week'"
+        class="flex flex-wrap items-center gap-3 px-3 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border)]"
+      >
+        <div class="inline-flex items-center gap-2 text-xs font-medium text-muted">
+          <Calendar :size="15" />
+          <label for="report-week-date">{{ t("reports.weekContaining") }}</label>
+          <DatePicker
+            v-model="selectedWeekDate"
+            inputId="report-week-date"
+            dateFormat="yy-mm-dd"
+            showIcon
+            iconDisplay="input"
+          />
+        </div>
+        <span class="text-xs text-muted">
+          {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRangeLong }})
+        </span>
+      </div>
+
+      <div v-if="mode === 'custom'" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full sm:w-auto">
+        <div class="flex flex-col gap-1 text-xs font-medium text-muted">
+          <label for="report-from-date">{{ t("reports.from") }}</label>
+          <DatePicker
+            v-model="selectedFromDate"
+            inputId="report-from-date"
+            dateFormat="yy-mm-dd"
+            showIcon
+            iconDisplay="input"
+          />
+        </div>
+        <div class="flex flex-col gap-1 text-xs font-medium text-muted">
+          <label for="report-to-date">{{ t("reports.to") }}</label>
+          <DatePicker
+            v-model="selectedToDate"
+            inputId="report-to-date"
+            dateFormat="yy-mm-dd"
+            :minDate="selectedFromDate ?? undefined"
+            showIcon
+            iconDisplay="input"
+          />
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        severity="secondary"
+        variant="outlined"
+        class="inline-flex items-center gap-1.5 ml-auto"
+        @click="exportCsv"
+      >
+        <Download :size="16" />
+        <span>{{ t("reports.exportReport") }}</span>
+      </Button>
+    </section>
+
+    <!-- Initial Global Money Baseline Analysis Hub -->
+    <section
+      v-if="initialGlobalNZD > 0"
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-4"
+    >
+      <div class="flex items-center gap-2.5">
+        <Wallet :size="20" class="text-accent shrink-0" />
+        <div>
+          <h2 class="text-lg font-bold text-text m-0">{{ t("reports.initialCapitalHub") }}</h2>
+          <p class="text-xs text-muted m-0">
+            {{ t("reports.startingMoney", { amount: store.displayMoney(initialGlobalNZD) }) }}
+            <template v-if="initialGlobalUSD">
+              (${{ (initialGlobalUSD / 100).toFixed(2) }} USD)
+            </template>
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Period Spend vs Initial Capital -->
+        <article
+          class="p-4 rounded-xl border grid gap-2"
+          :class="
+            periodBaselineComparison.isOverInitial
+              ? 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-colour)]'
+              : 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success-colour)]'
+          "
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-medium">{{ t("reports.selectedVsInitial") }}</span>
+            <Tag
+              :value="t('reports.percentOfStarting', { percent: Math.round(periodBaselineComparison.spentPercent) })"
+              :severity="periodBaselineComparison.isOverInitial ? 'danger' : 'success'"
+            />
+          </div>
+          <div class="grid gap-1">
+            <strong class="text-xl font-extrabold tabular-nums">
+              {{ t("reports.spent", { amount: store.displayMoney(sum) }) }}
+            </strong>
+            <p class="text-xs m-0">
+              <template v-if="!periodBaselineComparison.isOverInitial">
+                {{ t("reports.spentLessThanStarting", { remaining: store.displayMoney(periodBaselineComparison.remaining) }) }}
+              </template>
+              <template v-else>
+                {{ t("reports.exceededStarting", { difference: store.displayMoney(periodBaselineComparison.difference) }) }}
+              </template>
+            </p>
+          </div>
+        </article>
+
+        <!-- All-Time Spend vs Initial Capital -->
+        <article
+          class="p-4 rounded-xl border grid gap-2"
+          :class="
+            allTimeBaselineComparison.isOverInitial
+              ? 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-colour)]'
+              : 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success-colour)]'
+          "
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-medium">{{ t("reports.allTimeVsInitial") }}</span>
+            <Tag
+              :value="`${Math.round(allTimeBaselineComparison.spentPercent)}% all-time`"
+              :severity="allTimeBaselineComparison.isOverInitial ? 'danger' : 'success'"
+            />
+          </div>
+          <div class="grid gap-1">
+            <strong class="text-xl font-extrabold tabular-nums">
+              {{ t("reports.spent", { amount: store.displayMoney(store.allTimeTotal) }) }}
+            </strong>
+            <p class="text-xs m-0">
+              <template v-if="!allTimeBaselineComparison.isOverInitial">
+                {{ t("reports.preservedCapital", { amount: store.displayMoney(allTimeBaselineComparison.remaining) }) }}
+              </template>
+              <template v-else>
+                {{ t("reports.capitalDepleted", { amount: store.displayMoney(allTimeBaselineComparison.difference) }) }}
+              </template>
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Executive Summary Stats -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <Card>
+        <template #subtitle>{{ t("reports.totalSpent") }}</template>
+        <template #content>
+          <div class="grid gap-1">
+            <strong class="text-2xl font-bold font-heading tabular-nums">
+              {{ store.displayMoney(sum) }}
+            </strong>
+            <small class="text-xs text-muted">{{ rows.length }} {{ t("reports.transactions") }}</small>
+          </div>
+        </template>
+      </Card>
+      <Card>
+        <template #subtitle>{{ t("reports.averageTransaction") }}</template>
+        <template #content>
+          <div class="grid gap-1">
+            <strong class="text-2xl font-bold font-heading tabular-nums">
+              {{ store.displayMoney(average) }}
+            </strong>
+            <small class="text-xs text-muted">{{ t("reports.summaryMetrics") }}</small>
+          </div>
+        </template>
+      </Card>
+      <Card>
+        <template #subtitle>{{ t("reports.largestTransaction") }}</template>
+        <template #content>
+          <div class="grid gap-1">
+            <strong class="text-2xl font-bold font-heading tabular-nums">
+              {{ store.displayMoney(largest?.amount ?? 0) }}
+            </strong>
+            <small class="text-xs text-muted">
+              {{ largest ? `${largest.merchant} (${store.displayMoney(largest.amount)})` : "-" }}
+            </small>
+          </div>
+        </template>
+      </Card>
+    </div>
+
+    <!-- Chart 1: Spending Trajectory & Cumulative Line -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-4">
+      <div class="flex items-center gap-2.5">
+        <LineChart :size="18" class="text-accent shrink-0" />
+        <div>
+          <h2 class="text-base font-bold text-text m-0">{{ t("reports.spendTrajectoryTitle") }}</h2>
+          <p class="text-xs text-muted m-0">{{ t("reports.spendTrajectoryDesc") }}</p>
+        </div>
+      </div>
+      <SpendTrajectoryChart :expenses="rows" />
+    </section>
+
+    <!-- Chart 2: Interactive Donut Category Breakdown -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-4">
+      <div class="flex items-center gap-2.5">
+        <PieChart :size="18" class="text-accent shrink-0" />
+        <div>
+          <h2 class="text-base font-bold text-text m-0">{{ t("reports.categoryBreakdownTitle") }}</h2>
+          <p class="text-xs text-muted m-0">{{ t("reports.categoryBreakdownDesc") }}</p>
+        </div>
+      </div>
+      <CategoryDonutChart :expenses="rows" :currency="store.currency" />
+    </section>
+
+    <!-- Chart 3: Structured Budget Variance Analysis -->
+    <section
+      v-if="store.categoryLimits.length"
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-4"
+    >
+      <div class="flex items-center gap-2.5">
+        <Layers :size="18" class="text-accent shrink-0" />
+        <div>
+          <h2 class="text-base font-bold text-text m-0">{{ t("reports.budgetVarianceTitle") }}</h2>
+          <p class="text-xs text-muted m-0">{{ t("reports.budgetVarianceDesc") }}</p>
+        </div>
+      </div>
+      <BudgetVarianceChart
+        :expenses="rows"
+        :multiplier="budgetMultiplier"
+        :period-title="mode"
+      />
+    </section>
+
+    <!-- Chart 4: Dual Account Cashflow & Net Position -->
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-4">
+      <div class="flex items-center gap-2.5">
+        <ArrowRightLeft :size="18" class="text-accent shrink-0" />
+        <div>
+          <h2 class="text-base font-bold text-text m-0">{{ t("reports.cashflowTitle") }}</h2>
+          <p class="text-xs text-muted m-0">{{ t("reports.cashflowDesc") }}</p>
+        </div>
+      </div>
+      <AccountCashflowChart :expenses="rows" />
+    </section>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { computed, shallowRef } from "vue";
 import {
   Download,
   Calendar,
-  Target,
   Wallet,
-  PiggyBank,
-  TrendingDown,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle2,
   PieChart,
   LineChart,
   Layers,
   ArrowRightLeft,
 } from "lucide-vue-next";
+import Button from "primevue/button";
+import Card from "primevue/card";
+import DatePicker from "primevue/datepicker";
+import Tag from "primevue/tag";
 import { useExpenses } from "@/stores/expenses";
-import { total, money, csv, downloadFile, compareSpendWithInitial, getWeekDays } from "@/lib/finance";
+import {
+  total,
+  csv,
+  downloadFile,
+  compareSpendWithInitial,
+  parseIsoDate,
+  formatIsoDate,
+} from "@/lib/finance";
 import { t } from "@/lib/i18n";
 import CategoryDonutChart from "@/components/reports/CategoryDonutChart.vue";
 import SpendTrajectoryChart from "@/components/reports/SpendTrajectoryChart.vue";
@@ -27,6 +292,42 @@ const store = useExpenses();
 const mode = shallowRef<"week" | "month" | "year" | "all" | "custom">("month");
 const from = shallowRef(`${store.month}-01`);
 const to = shallowRef(new Date().toLocaleDateString("en-CA"));
+
+const selectedWeekDate = computed<Date | null>({
+  get() {
+    return parseIsoDate(store.weekDate);
+  },
+  set(val: Date | null) {
+    const formatted = formatIsoDate(val);
+    if (formatted) {
+      store.weekDate = formatted;
+    }
+  },
+});
+
+const selectedFromDate = computed<Date | null>({
+  get() {
+    return parseIsoDate(from.value);
+  },
+  set(val: Date | null) {
+    const formatted = formatIsoDate(val);
+    if (formatted) {
+      from.value = formatted;
+    }
+  },
+});
+
+const selectedToDate = computed<Date | null>({
+  get() {
+    return parseIsoDate(to.value);
+  },
+  set(val: Date | null) {
+    const formatted = formatIsoDate(val);
+    if (formatted) {
+      to.value = formatted;
+    }
+  },
+});
 
 const rows = computed(() =>
   store.currencyExpenses.filter((item) => {
@@ -54,7 +355,6 @@ const largest = computed(
   () => [...rows.value].sort((a, b) => b.amount - a.amount)[0],
 );
 
-// Initial Global Baseline comparison for this specific period
 const initialGlobalNZD = computed(() => store.initialGlobalNZD);
 const initialGlobalUSD = computed(() => store.initialGlobalUSD);
 
@@ -66,49 +366,9 @@ const allTimeBaselineComparison = computed(() =>
   compareSpendWithInitial(store.allTimeTotal, initialGlobalNZD.value),
 );
 
-// Daily spending for the current 7-day salary week
-const weekDays = computed(() => {
-  const days = getWeekDays(store.weekStart);
-
-  return days.map((d) => {
-    const amount = total(rows.value.filter((item) => item.date === d.date));
-    return {
-      label: t(`daysShort.${d.dayIndex}`),
-      date: d.date,
-      amount,
-    };
-  });
-});
-
-const maxWeekDay = computed(() =>
-  Math.max(1, ...weekDays.value.map((d) => d.amount)),
-);
-
-const limitProgress = computed(() =>
-  store.weeklyLimit ? Math.round((sum.value / store.weeklyLimit) * 100) : 0,
-);
-
-// Monthly spending for the year
-const monthly = computed(() =>
-  Array.from({ length: 12 }, (_, index) => {
-    const month = `${store.month.slice(0, 4)}-${String(index + 1).padStart(2, "0")}`;
-    return {
-      label: new Date(`${month}-01T12:00:00`).toLocaleDateString("en", {
-        month: "short",
-      }),
-      amount: total(rows.value.filter((item) => item.date.startsWith(month))),
-    };
-  }),
-);
-
-const max = computed(() =>
-  Math.max(1, ...monthly.value.map((item) => item.amount)),
-);
-
-// Multiplier for category budgets in this view
 const budgetMultiplier = computed(() => {
   if (mode.value === "week") return 1;
-  if (mode.value === "month") return 4.33; // 52 / 12
+  if (mode.value === "month") return 4.33;
   if (mode.value === "year") return 52;
   return 1;
 });
@@ -128,321 +388,3 @@ function exportCsv() {
   downloadFile(filename, csv(rows.value), "text/csv;charset=utf-8");
 }
 </script>
-
-<template>
-  <section class="panel report-filters" aria-label="Report timeframe controls">
-    <div class="segmented" aria-label="Report period">
-      <button
-        v-for="period in ['week', 'month', 'year', 'all', 'custom'] as const"
-        :key="period"
-        :class="{ selected: mode === period }"
-        @click="mode = period"
-      >
-        {{ t(`reports.periods.${period}`) }}
-      </button>
-    </div>
-
-    <!-- Week Selector Note -->
-    <div v-if="mode === 'week'" class="week-filter-details">
-      <label class="week-input-label">
-        <Calendar :size="15" />
-        <span>{{ t('reports.weekContaining') }}</span>
-        <input v-model="store.weekDate" type="date" required />
-      </label>
-      <span class="small muted">
-        {{ store.weekStart }} to {{ store.weekEnd }} ({{ store.weekWeekdayRangeLong }})
-      </span>
-    </div>
-
-    <div v-if="mode === 'custom'" class="form-pair">
-      <label>{{ t('reports.from') }}<input v-model="from" type="date" /></label>
-      <label>{{ t('reports.to') }}<input v-model="to" type="date" :min="from" /></label>
-    </div>
-
-    <button class="secondary export-btn" @click="exportCsv">
-      <Download :size="16" />{{ t('reports.exportReport') }}
-    </button>
-  </section>
-
-  <!-- Initial Global Money Baseline Analysis Hub -->
-  <section v-if="initialGlobalNZD > 0" class="panel baseline-hub-panel">
-    <div class="section-heading">
-      <div class="heading-with-icon">
-        <Wallet :size="20" class="hub-icon" />
-        <div>
-          <h2>{{ t('reports.initialCapitalHub') }}</h2>
-          <p class="small muted">
-            {{ t('reports.startingMoney', { amount: store.displayMoney(initialGlobalNZD) }) }}
-            <template v-if="initialGlobalUSD">
-              (${{ (initialGlobalUSD / 100).toFixed(2) }} USD)
-            </template>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="baseline-comparison-grid">
-      <!-- Period Spend vs Initial Capital -->
-      <article
-        class="comparison-card"
-        :class="{ 'card-over': periodBaselineComparison.isOverInitial, 'card-under': !periodBaselineComparison.isOverInitial }"
-      >
-        <div class="comp-header">
-          <span class="small font-medium">{{ t('reports.selectedVsInitial') }}</span>
-          <span class="comp-badge">
-            {{ t('reports.percentOfStarting', { percent: Math.round(periodBaselineComparison.spentPercent) }) }}
-          </span>
-        </div>
-        <div class="comp-body">
-          <strong class="comp-number">{{ t('reports.spent', { amount: store.displayMoney(sum) }) }}</strong>
-          <p class="small">
-            <template v-if="!periodBaselineComparison.isOverInitial">
-              {{ t('reports.spentLessThanStarting', { remaining: store.displayMoney(periodBaselineComparison.remaining) }) }}
-            </template>
-            <template v-else>
-              {{ t('reports.exceededStarting', { difference: store.displayMoney(periodBaselineComparison.difference) }) }}
-            </template>
-          </p>
-        </div>
-      </article>
-
-      <!-- All-Time Spend vs Initial Capital -->
-      <article
-        class="comparison-card"
-        :class="{ 'card-over': allTimeBaselineComparison.isOverInitial, 'card-under': !allTimeBaselineComparison.isOverInitial }"
-      >
-        <div class="comp-header">
-          <span class="small font-medium">{{ t('reports.allTimeVsInitial') }}</span>
-          <span class="comp-badge">
-            {{ Math.round(allTimeBaselineComparison.spentPercent) }}% all-time
-          </span>
-        </div>
-        <div class="comp-body">
-          <strong class="comp-number">{{ t('reports.spent', { amount: store.displayMoney(store.allTimeTotal) }) }}</strong>
-          <p class="small">
-            <template v-if="!allTimeBaselineComparison.isOverInitial">
-              {{ t('reports.preservedCapital', { amount: store.displayMoney(allTimeBaselineComparison.remaining) }) }}
-            </template>
-            <template v-else>
-              {{ t('reports.capitalDepleted', { amount: store.displayMoney(allTimeBaselineComparison.difference) }) }}
-            </template>
-          </p>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- Executive Summary Stats -->
-  <div class="report-stats">
-    <article class="panel">
-      <span class="muted">{{ t('reports.totalSpent') }}</span>
-      <strong>{{ store.displayMoney(sum) }}</strong>
-      <small>{{ rows.length }} {{ t('reports.transactions') }}</small>
-    </article>
-    <article class="panel">
-      <span class="muted">{{ t('reports.averageTransaction') }}</span>
-      <strong>{{ store.displayMoney(average) }}</strong>
-      <small>{{ t('reports.summaryMetrics') }}</small>
-    </article>
-    <article class="panel">
-      <span class="muted">{{ t('reports.largestTransaction') }}</span>
-      <strong>{{ store.displayMoney(largest?.amount ?? 0) }}</strong>
-      <small>{{ largest ? `${largest.merchant} (${store.displayMoney(largest.amount)})` : '-' }}</small>
-    </article>
-  </div>
-
-  <!-- Chart 1: Spending Trajectory & Cumulative Line -->
-  <section class="panel">
-    <div class="section-heading">
-      <div class="heading-with-icon">
-        <LineChart :size="18" />
-        <div>
-          <h2>{{ t('reports.spendTrajectoryTitle') }}</h2>
-          <p class="small muted">{{ t('reports.spendTrajectoryDesc') }}</p>
-        </div>
-      </div>
-    </div>
-    <SpendTrajectoryChart :expenses="rows" />
-  </section>
-
-  <!-- Chart 2: Interactive Donut Category Breakdown -->
-  <section class="panel">
-    <div class="section-heading">
-      <div class="heading-with-icon">
-        <PieChart :size="18" />
-        <div>
-          <h2>{{ t('reports.categoryBreakdownTitle') }}</h2>
-          <p class="small muted">{{ t('reports.categoryBreakdownDesc') }}</p>
-        </div>
-      </div>
-    </div>
-    <CategoryDonutChart :expenses="rows" :currency="store.currency" />
-  </section>
-
-  <!-- Chart 3: Structured Budget Variance Analysis -->
-  <section v-if="store.categoryLimits.length" class="panel">
-    <div class="section-heading">
-      <div class="heading-with-icon">
-        <Layers :size="18" />
-        <div>
-          <h2>{{ t('reports.budgetVarianceTitle') }}</h2>
-          <p class="small muted">{{ t('reports.budgetVarianceDesc') }}</p>
-        </div>
-      </div>
-    </div>
-    <BudgetVarianceChart
-      :expenses="rows"
-      :multiplier="budgetMultiplier"
-      :period-title="mode"
-    />
-  </section>
-
-  <!-- Chart 4: Dual Account Cashflow & Net Position -->
-  <section class="panel">
-    <div class="section-heading">
-      <div class="heading-with-icon">
-        <ArrowRightLeft :size="18" />
-        <div>
-          <h2>{{ t('reports.cashflowTitle') }}</h2>
-          <p class="small muted">{{ t('reports.cashflowDesc') }}</p>
-        </div>
-      </div>
-    </div>
-    <AccountCashflowChart :expenses="rows" />
-  </section>
-</template>
-
-<style scoped>
-.week-filter-details {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 8px 12px;
-  background: #f0f5f2;
-  border-radius: 10px;
-}
-
-.week-input-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  margin: 0;
-}
-
-.week-input-label input {
-  width: auto;
-  min-height: 36px;
-  padding: 4px 8px;
-}
-
-.limit-status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: #edf5ee;
-  border: 1px solid #b7ccbf;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #21533b;
-}
-
-.export-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.heading-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hub-icon {
-  color: #153d35;
-}
-
-.baseline-hub-panel {
-  display: grid;
-  gap: 14px;
-  background: #f5f9f7;
-  border: 1px solid #d2e4db;
-}
-
-.baseline-comparison-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-}
-
-.comparison-card {
-  padding: 14px 16px;
-  border-radius: 14px;
-  display: grid;
-  gap: 8px;
-}
-
-.comparison-card.card-under {
-  background: #edf7f0;
-  border: 1px solid #bce1ca;
-  color: #174d31;
-}
-
-.comparison-card.card-over {
-  background: #fdf3f1;
-  border: 1px solid #f6c8c1;
-  color: #8c2a1c;
-}
-
-.comp-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.comp-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.comp-number {
-  font-size: 20px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  display: block;
-}
-
-.comp-body p {
-  margin: 2px 0 0;
-}
-
-@media (max-width: 480px) {
-  .report-filters .segmented {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap;
-    scrollbar-width: none;
-  }
-  .report-filters .segmented::-webkit-scrollbar {
-    display: none;
-  }
-  .report-filters .segmented button {
-    font-size: 11.5px;
-    padding: 6px 10px;
-    white-space: nowrap;
-    flex: 0 0 auto;
-  }
-  .baseline-comparison-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-}
-</style>
