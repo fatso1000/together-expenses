@@ -202,138 +202,138 @@
           </Button>
         </div>
       </div>
-    </template>
 
-    <!-- Add/Edit Drawer -->
-    <Drawer
-      v-model:visible="drawerVisible"
-      position="bottom"
-      class="w-full! max-w-full!"
-      style="height: auto; max-height: 92dvh"
-      :dismissable="!formBusy"
-      :closeOnEscape="!formBusy"
-    >
-      <template #header>
-        <h3 class="text-lg font-bold m-0">
-          {{ editingPayment === "new" ? t("frequent.addPayment") : t("frequent.editPayment") }}
-        </h3>
-      </template>
+      <!-- Add/Edit Drawer -->
+      <Drawer
+        v-model:visible="drawerVisible"
+        position="bottom"
+        class="w-full! max-w-full!"
+        style="height: auto; max-height: 92dvh"
+        :dismissable="!formBusy"
+        :closeOnEscape="!formBusy"
+      >
+        <template #header>
+          <h3 class="text-lg font-bold m-0">
+            {{ editingPayment === "new" ? t("frequent.addPayment") : t("frequent.editPayment") }}
+          </h3>
+        </template>
 
-      <template #closebutton="{ closeCallback }">
-        <Button
-          type="button"
-          variant="text"
-          severity="secondary"
-          rounded
-          aria-label="Close"
-          :disabled="formBusy"
-          @click="closeCallback"
-        >
-          <X :size="18" />
-        </Button>
-      </template>
+        <template #closebutton="{ closeCallback }">
+          <Button
+            type="button"
+            variant="text"
+            severity="secondary"
+            rounded
+            aria-label="Close"
+            :disabled="formBusy"
+            @click="closeCallback"
+          >
+            <X :size="18" />
+          </Button>
+        </template>
 
-      <form class="grid gap-4 pb-2" @submit.prevent="saveForm">
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("frequent.nameLabel") }}</span>
-          <InputText
-            v-model="form.name"
-            required
-            placeholder="e.g. Electricity, Health Insurance, Mobile Plan"
-            autofocus
-            fluid
-          />
-        </label>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form class="grid gap-4 pb-2" @submit.prevent="saveForm">
           <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-            <span>{{ t("expenses.amount") }} · NZD</span>
+            <span>{{ t("frequent.nameLabel") }}</span>
             <InputText
-              v-model="form.amount"
-              inputmode="decimal"
+              v-model="form.name"
               required
-              placeholder="e.g. 135.00"
+              placeholder="e.g. Electricity, Health Insurance, Mobile Plan"
+              autofocus
               fluid
             />
           </label>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <span>{{ t("expenses.amount") }} · NZD</span>
+              <InputText
+                v-model="form.amount"
+                inputmode="decimal"
+                required
+                placeholder="e.g. 135.00"
+                fluid
+              />
+            </label>
+            <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <label for="frequent-frequency">{{ t("frequent.frequencyLabel") }}</label>
+              <Select
+                v-model="form.frequency"
+                inputId="frequent-frequency"
+                :options="frequencyOptions"
+                optionLabel="label"
+                optionValue="value"
+                fluid
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <label for="frequent-category">{{ t("frequent.categoryLabel") }}</label>
+              <Select
+                v-model="form.category"
+                inputId="frequent-category"
+                :options="categoryOptions"
+                optionLabel="label"
+                optionValue="value"
+                fluid
+              />
+            </div>
+            <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <label for="frequent-account">{{ t("frequent.accountLabel") }}</label>
+              <Select
+                v-model="form.accountId"
+                inputId="frequent-account"
+                :options="accountOptions"
+                optionLabel="label"
+                optionValue="value"
+                fluid
+              />
+            </div>
+          </div>
+
           <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-            <label for="frequent-frequency">{{ t("frequent.frequencyLabel") }}</label>
-            <Select
-              v-model="form.frequency"
-              inputId="frequent-frequency"
-              :options="frequencyOptions"
-              optionLabel="label"
-              optionValue="value"
+            <label for="frequent-due-date">{{ t("frequent.nextDueLabel") }}</label>
+            <DatePicker
+              v-model="selectedDueDate"
+              inputId="frequent-due-date"
+              dateFormat="yy-mm-dd"
+              showIcon
+              iconDisplay="input"
               fluid
             />
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-            <label for="frequent-category">{{ t("frequent.categoryLabel") }}</label>
-            <Select
-              v-model="form.category"
-              inputId="frequent-category"
-              :options="categoryOptions"
-              optionLabel="label"
-              optionValue="value"
+          <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+            <span>{{ t("frequent.noteLabel") }}</span>
+            <InputText
+              v-model="form.note"
+              placeholder="e.g. Direct debit on 1st of month"
               fluid
             />
+          </label>
+
+          <Message v-if="formError" severity="error" :closable="false">
+            {{ formError }}
+          </Message>
+
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" severity="primary" :disabled="formBusy">
+              {{ t("frequent.savePayment") }}
+            </Button>
+            <Button
+              type="button"
+              severity="secondary"
+              variant="outlined"
+              @click="editingPayment = null"
+            >
+              {{ t("common.cancel") }}
+            </Button>
           </div>
-          <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-            <label for="frequent-account">{{ t("frequent.accountLabel") }}</label>
-            <Select
-              v-model="form.accountId"
-              inputId="frequent-account"
-              :options="accountOptions"
-              optionLabel="label"
-              optionValue="value"
-              fluid
-            />
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <label for="frequent-due-date">{{ t("frequent.nextDueLabel") }}</label>
-          <DatePicker
-            v-model="selectedDueDate"
-            inputId="frequent-due-date"
-            dateFormat="yy-mm-dd"
-            showIcon
-            iconDisplay="input"
-            fluid
-          />
-        </div>
-
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("frequent.noteLabel") }}</span>
-          <InputText
-            v-model="form.note"
-            placeholder="e.g. Direct debit on 1st of month"
-            fluid
-          />
-        </label>
-
-        <Message v-if="formError" severity="error" :closable="false">
-          {{ formError }}
-        </Message>
-
-        <div class="flex flex-wrap items-center gap-3 pt-1">
-          <Button type="submit" severity="primary" :disabled="formBusy">
-            {{ t("frequent.savePayment") }}
-          </Button>
-          <Button
-            type="button"
-            severity="secondary"
-            variant="outlined"
-            @click="editingPayment = null"
-          >
-            {{ t("common.cancel") }}
-          </Button>
-        </div>
-      </form>
-    </Drawer>
+        </form>
+      </Drawer>
+    </template>
   </Card>
 </template>
 
@@ -491,6 +491,8 @@ async function saveForm() {
       category: form.category,
       accountId: form.accountId,
       nextDueDate: form.nextDueDate || undefined,
+      lastLoggedDate: existing?.lastLoggedDate,
+      lastSkippedDate: existing?.lastSkippedDate,
       note: form.note.trim() || undefined,
       active: form.active,
       createdAt: existing?.createdAt ?? Date.now(),

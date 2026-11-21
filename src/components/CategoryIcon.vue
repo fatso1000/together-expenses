@@ -1,6 +1,6 @@
 <template>
   <span
-    class="category-icon"
+    :class="bare ? 'inline-flex items-center justify-center shrink-0' : 'category-icon'"
     :data-category="category"
     :style="iconStyle"
   >
@@ -47,15 +47,20 @@ import {
   Package,
 } from "lucide-vue-next";
 import type { Category } from "@/lib/types";
+import { withHexAlpha } from "@/lib/category-style";
 import { useExpenses } from "@/stores/expenses";
 
 const props = withDefaults(
   defineProps<{
     category: Category;
     size?: number;
+    bare?: boolean;
+    icon?: string;
+    color?: string;
   }>(),
   {
     size: 19,
+    bare: false,
   },
 );
 
@@ -119,6 +124,9 @@ const definition = computed(() => {
 });
 
 const resolvedIcon = computed(() => {
+  if (props.icon && iconMap[props.icon]) {
+    return iconMap[props.icon];
+  }
   if (definition.value?.icon && iconMap[definition.value.icon]) {
     return iconMap[definition.value.icon];
   }
@@ -126,10 +134,13 @@ const resolvedIcon = computed(() => {
 });
 
 const iconStyle = computed(() => {
-  if (definition.value?.color) {
-    const hex = definition.value.color;
+  const hex = props.color || definition.value?.color;
+  if (props.bare) {
+    return hex ? { color: hex } : undefined;
+  }
+  if (hex) {
     return {
-      backgroundColor: hex.startsWith("#") ? `${hex}20` : hex,
+      backgroundColor: withHexAlpha(hex, "20"),
       color: hex,
     };
   }

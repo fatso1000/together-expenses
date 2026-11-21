@@ -1,8 +1,12 @@
 <template>
-  <SidebarLayout class="max-h-svh relative!" :style="appBackgroundStyle">
+  <OnboardingFlow
+    v-if="store.showOnboarding"
+    :background-style="appBackgroundStyle"
+  />
+  <SidebarLayout v-else class="max-h-svh relative!" :style="appBackgroundStyle">
     <Sidebar
       id="menu-demo"
-      variant="inset"
+      :variant="isMobile ? 'sidebar' : 'inset'"
       :collapsible="isMobile ? 'offcanvas' : 'icon'"
       :overlay="isMobile"
       v-model:open="open"
@@ -239,7 +243,7 @@
 
 <script setup lang="ts">
 import { watch, computed, ref, onMounted, onBeforeUnmount } from "vue";
-import { useRoute, RouterLink } from "vue-router";
+import { useRoute, useRouter, RouterLink } from "vue-router";
 import { useRegisterSW } from "virtual:pwa-register/vue";
 import {
   LayoutDashboard,
@@ -259,6 +263,7 @@ import {
   PanelLeftOpen,
 } from "lucide-vue-next";
 import ExpenseForm from "@/components/ExpenseForm.vue";
+import OnboardingFlow from "@/components/onboarding/OnboardingFlow.vue";
 import { useExpenses } from "@/stores/expenses";
 import { useI18n } from "@/lib/i18n";
 import DatePicker from "primevue/datepicker";
@@ -284,6 +289,7 @@ import SidebarTrigger from "primevue/sidebartrigger";
 
 const store = useExpenses();
 const route = useRoute();
+const router = useRouter();
 const { t } = useI18n();
 
 const isMobile = ref(false);
@@ -315,6 +321,13 @@ let mql: MediaQueryList | null = null;
 let onMqlChange: ((event: MediaQueryListEvent) => void) | null = null;
 
 onMounted(() => {
+  if (
+    store.pendingConnection &&
+    !store.showOnboarding &&
+    route.path !== "/settings/data"
+  ) {
+    void router.replace("/settings/data");
+  }
   if (typeof window === "undefined" || !window.matchMedia) return;
   mql = window.matchMedia("(max-width: 1023px)");
   isMobile.value = mql.matches;

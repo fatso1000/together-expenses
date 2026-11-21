@@ -8,12 +8,17 @@
         :class="
           row.isOver
             ? 'bg-[var(--danger-bg)] border-[var(--danger-border)]'
-            : 'bg-[var(--surface-card)] border-[var(--border)]'
+            : ''
+        "
+        :style="
+          row.isOver
+            ? undefined
+            : categorySurfaceStyle(resolveCategoryColor(row.category, store.categoryDefinitions))
         "
       >
         <div class="flex items-center justify-between gap-2.5">
           <div class="flex items-center gap-2 text-sm text-text">
-            <CategoryIcon :category="row.category" />
+            <CategoryIcon :category="row.category" :size="18" bare />
             <strong>{{ categoryLabel(row.category) }}</strong>
           </div>
           <Tag
@@ -59,6 +64,10 @@ import Tag from "primevue/tag";
 import { useExpenses } from "@/stores/expenses";
 import { total } from "@/lib/finance";
 import type { Expense } from "@/lib/types";
+import {
+  categorySurfaceStyle,
+  resolveCategoryColor,
+} from "@/lib/category-style";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import { useI18n } from "@/lib/i18n";
 

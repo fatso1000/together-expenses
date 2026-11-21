@@ -46,6 +46,17 @@ import { t } from "@/lib/i18n";
 import { findProduct, productId } from "@/lib/products";
 import { itemsTotal } from "@/lib/purchases";
 import { rememberPurchase } from "@/lib/purchases";
+import {
+  hasAppData,
+  onboardingCompletedKey,
+  shouldShowInitialOnboarding,
+  type OnboardingSetupPayload,
+} from "@/lib/onboarding";
+import {
+  isLocalDesktopApp,
+  setOllamaHost,
+  setOllamaModel,
+} from "@/lib/ollama";
 
 export const defaultCategoryDefinitions: CategoryDefinition[] = [
   { id: "groceries", name: "Groceries", icon: "ShoppingBasket", color: "#75974e", isDefault: true },
@@ -74,12 +85,6 @@ export const useExpenses = defineStore("expenses", () => {
   const pendingConnection = shallowRef(
     new URLSearchParams(location.hash.split("?")[1] ?? "").get("connect") ?? "",
   );
-  if (pendingConnection.value)
-    history.replaceState(
-      null,
-      "",
-      location.pathname + location.search + "#/settings",
-    );
   let cloud: CloudDatabase | null = null;
   const products = computed(() => data.value.products);
   const expenses = computed(() => data.value.expenses);
@@ -310,13 +315,36 @@ export const useExpenses = defineStore("expenses", () => {
     }
   }
   load();
+  const hasLocalData = computed(() => hasAppData(data.value));
+  const showOnboarding = shallowRef<boolean>(
+    shouldShowInitialOnboarding({
+      data: data.value,
+      syncKey: syncKey.value,
+      syncConnected: syncConnected.value,
+      completedFlag: localStorage.getItem(onboardingCompletedKey) === "true",
+    }),
+  );
+  if (pendingConnection.value) {
+    const targetHash = showOnboarding.value ? "#/" : "#/settings/data";
+    history.replaceState(
+      null,
+      "",
+      location.pathname + location.search + targetHash,
+    );
+  }
   window.addEventListener("storage", (event) => {
     if (event.key === "expenses-sync-key" && event.newValue !== syncKey.value) {
       cloud?.close();
       cloud = null;
       syncConnected.value = false;
       syncKey.value = event.newValue ?? "";
-      if (syncKey.value) void connectDatabase(syncKey.value).catch(() => {});
+      if (syncKey.value) {
+        showOnboarding.value = false;
+        void connectDatabase(syncKey.value).catch(() => {});
+      }
+    }
+    if (event.key === onboardingCompletedKey && event.newValue === "true") {
+      showOnboarding.value = false;
     }
     if (event.key === storageKey || event.key === null) load();
   });
@@ -353,6 +381,7 @@ export const useExpenses = defineStore("expenses", () => {
       cloud = candidate;
       syncKey.value = secret;
       localStorage.setItem("expenses-sync-key", secret);
+      localStorage.setItem(onboardingCompletedKey, "true");
       pendingConnection.value = "";
       syncConnected.value = true;
       await migrateUSD();
@@ -474,10 +503,115 @@ export const useExpenses = defineStore("expenses", () => {
     removedExpenses.value = removed;
     message.value = "Deleted · Undo in Data";
   }
+  function disconnectDatabase() {
+    cloud?.close();
+    cloud = null;
+    localStorage.removeItem("expenses-sync-key");
+    syncKey.value = "";
+    syncConnected.value = false;
+    pendingConnection.value = "";
+    syncStatus.value = "This device only";
+    error.value = "";
+    message.value = t("sync.disconnectedToast");
+  }
+  function markOnboardingCompleted() {
+    localStorage.setItem(onboardingCompletedKey, "true");
+  }
+  function closeOnboarding() {
+    markOnboardingCompleted();
+    showOnboarding.value = false;
+  }
+  function skipOnboarding() {
+    closeOnboarding();
+  }
+  async function completeOnboardingSetup(
+    payload: OnboardingSetupPayload,
+  ): Promise<{ syncEnabled: boolean; syncKey: string }> {
+    const now = Date.now();
+    await change((current) => {
+      current.accounts = {
+        globalInitialNZD: payload.accounts.globalInitialNZD,
+        nzInitialNZD: payload.accounts.nzInitialNZD,
+        ...(payload.accounts.globalInitialUSD !== undefined
+          ? { globalInitialUSD: payload.accounts.globalInitialUSD }
+          : {}),
+        ...(payload.accounts.globalManualNZD !== undefined
+          ? { globalManualNZD: payload.accounts.globalManualNZD }
+          : {}),
+        updatedAt: now,
+      };
+      current.salary = {
+        weeklyAverageNZD: payload.weeklySalaryNZD,
+        payDayOfWeek: payload.payDayOfWeek,
+        ...(payload.payDate ? { payDate: payload.payDate } : {}),
+        updatedAt: now,
+      };
+      current.weeklyLimit = payload.weeklyLimit;
+      current.categoryLimits = payload.categoryLimits.map((limit) => ({
+        category: limit.category.trim(),
+        amount: limit.amount,
+      }));
+
+      if (payload.customCategories.length > 0) {
+        const existingCustom = current.customCategories ?? [];
+        const seenNames = new Set(
+          existingCustom.map((cat) => cat.name.toLowerCase()),
+        );
+        const mergedCustom = [...existingCustom];
+        for (const cat of payload.customCategories) {
+          const trimmedName = cat.name.trim();
+          if (!trimmedName || seenNames.has(trimmedName.toLowerCase())) continue;
+          seenNames.add(trimmedName.toLowerCase());
+          mergedCustom.push({
+            id: cat.id || crypto.randomUUID(),
+            name: trimmedName,
+            icon: cat.icon,
+            color: cat.color,
+          });
+        }
+        current.customCategories = mergedCustom;
+      }
+
+      if (payload.frequentPayments.length > 0) {
+        const existingPayments = current.frequentPayments ?? [];
+        const newPayments = payload.frequentPayments.map((payment) => ({
+          ...payment,
+          id: payment.id || crypto.randomUUID(),
+          name: payment.name.trim(),
+          createdAt: payment.createdAt || now,
+          updatedAt: now,
+        }));
+        current.frequentPayments = [...existingPayments, ...newPayments];
+      }
+    });
+
+    if (payload.ollama && isLocalDesktopApp()) {
+      setOllamaHost(payload.ollama.host);
+      setOllamaModel(payload.ollama.model);
+    }
+
+    markOnboardingCompleted();
+
+    if (payload.enableCloudSync) {
+      await connectDatabase();
+      return {
+        syncEnabled: true,
+        syncKey: syncKey.value,
+      };
+    }
+
+    showOnboarding.value = false;
+    message.value = t("onboarding.setupCompleteToast");
+    return {
+      syncEnabled: false,
+      syncKey: "",
+    };
+  }
   async function restore(source: string) {
     const backup = parseBackup(source);
     await change((current) => Object.assign(current, backup));
     removedExpenses.value = [];
+    closeOnboarding();
     message.value = "Backup restored";
   }
   async function clearAll() {
@@ -488,6 +622,7 @@ export const useExpenses = defineStore("expenses", () => {
     });
     removedExpenses.value = removed;
     editor.value = null;
+    markOnboardingCompleted();
     message.value = "All expenses cleared";
   }
   async function undoDelete() {
@@ -925,6 +1060,12 @@ export const useExpenses = defineStore("expenses", () => {
     syncKey,
     pendingConnection,
     connectDatabase,
+    disconnectDatabase,
+    hasLocalData,
+    showOnboarding,
+    closeOnboarding,
+    skipOnboarding,
+    completeOnboardingSetup,
     month,
     currency,
     editor,

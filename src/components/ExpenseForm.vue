@@ -333,13 +333,15 @@
                   v-for="catDef in store.categoryDefinitions"
                   :key="catDef.id"
                   type="button"
-                  :severity="form.category === catDef.name ? 'primary' : 'secondary'"
-                  :variant="form.category === catDef.name ? undefined : 'outlined'"
+                  severity="secondary"
+                  variant="outlined"
                   :aria-pressed="form.category === catDef.name"
-                  class="flex-col! gap-1! py-2! px-1! min-h-[70px]! text-[11px]!"
+                  :style="categorySurfaceStyle(catDef.color, { selected: form.category === catDef.name })"
+                  class="flex-col! gap-1.5! py-2! px-1! min-h-[70px]! text-[11px]! text-text! transition-all!"
+                  :class="form.category === catDef.name ? 'font-semibold!' : 'font-medium!'"
                   @click="form.category = catDef.name"
                 >
-                  <CategoryIcon :category="catDef.name" :size="20" />
+                  <CategoryIcon :category="catDef.name" :size="20" bare />
                   <span class="truncate max-w-full">{{ categoryLabel(catDef.name) }}</span>
                 </Button>
                 <Button
@@ -671,6 +673,7 @@ import { itemsTotal, validQuantity } from "@/lib/purchases";
 import { findProduct, normalizeUnit } from "@/lib/products";
 import { type ReceiptSuggestion } from "@/lib/receipt";
 import { t, categoryLabel } from "@/lib/i18n";
+import { categorySurfaceStyle } from "@/lib/category-style";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import ItemEditor from "@/components/ItemEditor.vue";
 import ReceiptReader from "@/components/ReceiptReader.vue";

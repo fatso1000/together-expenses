@@ -46,10 +46,16 @@
         <div class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]">
           <span class="text-xs text-muted font-medium">{{ t("categories.previewLabel") }}</span>
           <div
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold"
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold text-text"
             :style="previewStyle"
           >
-            <CategoryIcon :category="name || 'Category'" :size="18" />
+            <CategoryIcon
+              :category="name || 'Category'"
+              :icon="selectedIcon"
+              :color="selectedColor"
+              :size="18"
+              bare
+            />
             <span>{{ name || "Category name" }}</span>
           </div>
         </div>
@@ -117,10 +123,11 @@
       <div
         v-for="cat in store.categoryDefinitions"
         :key="cat.id"
-        class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+        class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl border"
+        :style="categorySurfaceStyle(cat.color)"
       >
         <div class="flex items-center gap-3">
-          <CategoryIcon :category="cat.name" :size="20" />
+          <CategoryIcon :category="cat.name" :size="20" bare />
           <div class="flex items-center gap-2">
             <strong class="text-sm font-semibold text-text">
               {{ cat.isDefault ? categoryLabel(cat.name) : cat.name }}
@@ -192,53 +199,19 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Check,
-  Tag as TagIcon,
-  ShoppingBasket,
-  Fuel,
-  ShoppingBag,
-  House,
-  Zap,
-  Landmark,
-  Utensils,
-  HeartPulse,
-  Plane,
-  Film,
-  BookOpen,
-  Tv,
-  Sparkles,
-  Coffee,
-  Baby,
-  PawPrint,
-  Dumbbell,
-  Music,
-  CreditCard,
-  GraduationCap,
-  Wrench,
-  Smile,
-  Gift,
-  Car,
-  Bus,
-  Briefcase,
-  Shield,
-  Coins,
-  Scissors,
-  Smartphone,
-  Shirt,
-  Package,
-  Ellipsis,
-} from "lucide-vue-next";
+import { Plus, Pencil, Trash2, Check } from "lucide-vue-next";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import ColorPicker from "primevue/colorpicker";
 import Tag from "primevue/tag";
 import Message from "primevue/message";
 import { useExpenses, friendlyError } from "@/stores/expenses";
+import {
+  categoryIconOptions as availableIcons,
+  curatedCategoryColors as curatedColors,
+} from "@/lib/category-presets";
 import type { CategoryDefinition } from "@/lib/types";
+import { categorySurfaceStyle } from "@/lib/category-style";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 import { t, categoryLabel } from "@/lib/i18n";
 
@@ -248,60 +221,6 @@ const emit = defineEmits<{
 }>();
 
 const store = useExpenses();
-
-const availableIcons = [
-  { name: "ShoppingBasket", label: "Basket", component: ShoppingBasket },
-  { name: "Fuel", label: "Fuel", component: Fuel },
-  { name: "ShoppingBag", label: "Shopping", component: ShoppingBag },
-  { name: "House", label: "Home", component: House },
-  { name: "Zap", label: "Utilities", component: Zap },
-  { name: "Landmark", label: "Bank/Tax", component: Landmark },
-  { name: "Utensils", label: "Dining", component: Utensils },
-  { name: "Coffee", label: "Cafe", component: Coffee },
-  { name: "HeartPulse", label: "Health", component: HeartPulse },
-  { name: "Plane", label: "Travel", component: Plane },
-  { name: "Car", label: "Transport", component: Car },
-  { name: "Bus", label: "Transit", component: Bus },
-  { name: "Film", label: "Cinema", component: Film },
-  { name: "Tv", label: "Media", component: Tv },
-  { name: "Music", label: "Music", component: Music },
-  { name: "BookOpen", label: "Books", component: BookOpen },
-  { name: "GraduationCap", label: "Education", component: GraduationCap },
-  { name: "Sparkles", label: "Personal Care", component: Sparkles },
-  { name: "Baby", label: "Kids", component: Baby },
-  { name: "PawPrint", label: "Pets", component: PawPrint },
-  { name: "Dumbbell", label: "Fitness", component: Dumbbell },
-  { name: "Scissors", label: "Salon", component: Scissors },
-  { name: "Gift", label: "Gifts", component: Gift },
-  { name: "Briefcase", label: "Work", component: Briefcase },
-  { name: "CreditCard", label: "Finance", component: CreditCard },
-  { name: "Coins", label: "Savings", component: Coins },
-  { name: "Wrench", label: "Repairs", component: Wrench },
-  { name: "Shield", label: "Insurance", component: Shield },
-  { name: "Smartphone", label: "Mobile", component: Smartphone },
-  { name: "Shirt", label: "Apparel", component: Shirt },
-  { name: "Package", label: "Delivery", component: Package },
-  { name: "Tag", label: "General", component: TagIcon },
-  { name: "Smile", label: "Fun", component: Smile },
-  { name: "Ellipsis", label: "Other", component: Ellipsis },
-];
-
-const curatedColors = [
-  "#3b7a57",
-  "#75974e",
-  "#2b72a8",
-  "#4a90e2",
-  "#5c52a8",
-  "#8b7ba9",
-  "#b8436b",
-  "#c0392b",
-  "#b6816b",
-  "#b18b60",
-  "#b49c4c",
-  "#298d85",
-  "#2c3e50",
-  "#718469",
-];
 
 const props = defineProps<{
   startInCreateMode?: boolean;
@@ -352,10 +271,7 @@ function cancelEdit() {
   error.value = "";
 }
 
-const previewStyle = computed(() => ({
-  backgroundColor: `${selectedColor.value}20`,
-  color: selectedColor.value,
-}));
+const previewStyle = computed(() => categorySurfaceStyle(selectedColor.value));
 
 async function save() {
   const trimmed = name.value.trim();

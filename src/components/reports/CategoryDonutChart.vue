@@ -50,19 +50,12 @@
         <div
           v-for="row in rows"
           :key="row.category"
-          class="flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-colors"
-          :class="
-            hoveredCategory === row.category
-              ? 'bg-[var(--surface-card-hover)] border-accent'
-              : 'bg-[var(--surface-card)] border-[var(--border)]'
-          "
+          class="flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-all"
+          :style="categorySurfaceStyle(categoryColor(row.category), { selected: hoveredCategory === row.category })"
           @mouseenter="hoveredCategory = row.category"
           @mouseleave="hoveredCategory = null"
         >
-          <div
-            class="w-3 h-3 rounded-full shrink-0"
-            :style="{ background: categoryColor(row.category) }"
-          />
+          <CategoryIcon :category="row.category" :size="18" bare />
           <div class="flex-1 min-w-0 grid gap-0.5">
             <div class="flex items-baseline justify-between gap-1.5">
               <span class="text-xs font-semibold text-text truncate">{{ row.category }}</span>
@@ -84,6 +77,11 @@
 import { computed, shallowRef } from "vue";
 import { useExpenses } from "@/stores/expenses";
 import { categoryTotals } from "@/lib/finance";
+import {
+  categorySurfaceStyle,
+  resolveCategoryColor,
+} from "@/lib/category-style";
+import CategoryIcon from "@/components/CategoryIcon.vue";
 import type { Expense } from "@/lib/types";
 
 const props = defineProps<{
@@ -98,10 +96,7 @@ const rows = computed(() => categoryTotals(props.expenses));
 const sum = computed(() => rows.value.reduce((acc, r) => acc + r.amount, 0));
 
 function categoryColor(catName: string): string {
-  const def = store.categoryDefinitions.find(
-    (c) => c.name.toLowerCase() === catName.toLowerCase(),
-  );
-  return def?.color ?? "var(--muted-colour)";
+  return resolveCategoryColor(catName, store.categoryDefinitions);
 }
 
 const radius = 70;

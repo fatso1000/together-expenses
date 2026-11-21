@@ -1,16 +1,24 @@
 <template>
-  <div class="grid gap-4">
-    <div v-for="row in rows" :key="row.category" class="flex items-center gap-3">
-      <CategoryIcon :category="row.category" />
+  <div class="grid gap-2.5">
+    <div
+      v-for="row in rows"
+      :key="row.category"
+      class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border"
+      :style="categorySurfaceStyle(resolveCategoryColor(row.category, store.categoryDefinitions))"
+    >
+      <CategoryIcon :category="row.category" :size="19" bare />
       <div class="flex-1 min-w-0">
         <div class="flex justify-between gap-2 text-xs sm:text-sm mb-1.5">
           <strong class="font-medium text-text">{{ categoryLabel(row.category) }}</strong>
           <span class="text-text tabular-nums">{{ store.displayMoney(row.amount) }}</span>
         </div>
-        <div class="w-full h-1 rounded bg-[var(--surface-card)] overflow-hidden">
+        <div class="w-full h-1 rounded bg-[var(--border)] overflow-hidden">
           <span
-            class="block h-full rounded bg-[var(--success-colour)]"
-            :style="{ width: `${row.percent}%` }"
+            class="block h-full rounded"
+            :style="{
+              width: `${row.percent}%`,
+              backgroundColor: resolveCategoryColor(row.category, store.categoryDefinitions),
+            }"
           />
         </div>
       </div>
@@ -28,6 +36,10 @@
 import { useExpenses } from "@/stores/expenses";
 import { computed } from "vue";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import {
+  categorySurfaceStyle,
+  resolveCategoryColor,
+} from "@/lib/category-style";
 import { categoryTotals } from "@/lib/finance";
 import { useI18n } from "@/lib/i18n";
 import type { Expense } from "@/lib/types";

@@ -211,12 +211,17 @@
                 :class="
                   cat.status === 'over'
                     ? 'bg-[var(--danger-bg)] border-[var(--danger-border)]'
-                    : 'bg-[var(--surface-card)] border-[var(--border)]'
+                    : ''
+                "
+                :style="
+                  cat.status === 'over'
+                    ? undefined
+                    : categorySurfaceStyle(resolveCategoryColor(cat.category, store.categoryDefinitions))
                 "
               >
                 <div class="flex items-center justify-between gap-2 text-xs">
                   <div class="flex items-center gap-1.5 font-semibold text-text min-w-0">
-                    <CategoryIcon :category="cat.category" />
+                    <CategoryIcon :category="cat.category" :size="18" bare />
                     <span class="truncate">{{ categoryLabel(cat.category) }}</span>
                   </div>
                   <span class="text-[11px] text-muted tabular-nums shrink-0">
@@ -540,6 +545,10 @@ import { useExpenses, friendlyError } from "@/stores/expenses";
 import { parseMoney, parseOptionalMoney, today, parseIsoDate, formatIsoDate } from "@/lib/finance";
 import { t, categoryLabel } from "@/lib/i18n";
 import type { CategoryLimit, DayOfWeek } from "@/lib/types";
+import {
+  categorySurfaceStyle,
+  resolveCategoryColor,
+} from "@/lib/category-style";
 import CategoryIcon from "@/components/CategoryIcon.vue";
 
 const store = useExpenses();
