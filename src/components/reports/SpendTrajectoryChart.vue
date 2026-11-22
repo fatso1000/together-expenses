@@ -25,11 +25,11 @@
         </div>
       </div>
 
-      <div class="w-full h-48">
+      <div class="w-full">
         <svg
           :viewBox="`0 0 ${svgWidth} ${svgHeight}`"
-          class="w-full h-full"
-          preserveAspectRatio="none"
+          class="w-full h-auto max-h-56"
+          preserveAspectRatio="xMidYMid meet"
         >
           <defs>
             <linearGradient id="cumAreaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -72,11 +72,12 @@
             :width="Math.min(20, Math.max(6, chartW / (dataPoints.length * 1.5)))"
             :height="paddingY + chartH - getYBar(point.amount)"
             rx="3"
-            :fill="hoveredIndex === idx ? 'var(--accent)' : 'var(--muted-colour)'"
-            :opacity="hoveredIndex === idx ? 1 : 0.65"
+            :fill="(selectedIndex ?? hoveredIndex) === idx ? 'var(--accent)' : 'var(--muted-colour)'"
+            :opacity="(selectedIndex ?? hoveredIndex) === idx ? 1 : 0.65"
             class="cursor-pointer transition-colors duration-200"
             @mouseenter="hoveredIndex = idx"
             @mouseleave="hoveredIndex = null"
+            @click="togglePoint(idx)"
           />
 
           <!-- Cumulative Area & Line -->
@@ -96,13 +97,14 @@
             :key="'pt-' + point.date"
             :cx="getX(idx, dataPoints.length)"
             :cy="getYLine(point.cumulative)"
-            :r="hoveredIndex === idx ? 6 : 4"
-            :fill="hoveredIndex === idx ? 'var(--accent)' : 'var(--bg)'"
-            :stroke="hoveredIndex === idx ? 'var(--bg)' : 'var(--accent)'"
-            :stroke-width="hoveredIndex === idx ? 3 : 2"
+            :r="(selectedIndex ?? hoveredIndex) === idx ? 6 : 4"
+            :fill="(selectedIndex ?? hoveredIndex) === idx ? 'var(--accent)' : 'var(--bg)'"
+            :stroke="(selectedIndex ?? hoveredIndex) === idx ? 'var(--bg)' : 'var(--accent)'"
+            :stroke-width="(selectedIndex ?? hoveredIndex) === idx ? 3 : 2"
             class="cursor-pointer transition-all duration-200"
             @mouseenter="hoveredIndex = idx"
             @mouseleave="hoveredIndex = null"
+            @click="togglePoint(idx)"
           />
         </svg>
       </div>
@@ -135,6 +137,11 @@ const props = defineProps<{
 
 const store = useExpenses();
 const hoveredIndex = shallowRef<number | null>(null);
+const selectedIndex = shallowRef<number | null>(null);
+
+function togglePoint(idx: number) {
+  selectedIndex.value = selectedIndex.value === idx ? null : idx;
+}
 
 const dataPoints = computed(() => {
   if (!props.expenses.length) return [];
@@ -217,8 +224,9 @@ const areaPath = computed(() => {
 });
 
 const activePoint = computed(() => {
-  if (hoveredIndex.value !== null && dataPoints.value[hoveredIndex.value]) {
-    return dataPoints.value[hoveredIndex.value];
+  const idx = hoveredIndex.value ?? selectedIndex.value;
+  if (idx !== null && dataPoints.value[idx]) {
+    return dataPoints.value[idx];
   }
   return dataPoints.value[dataPoints.value.length - 1] ?? null;
 });

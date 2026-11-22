@@ -15,7 +15,8 @@
     "settingsAi": "AI Settings",
     "settingsData": "Data & Backup",
     "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar"
+    "collapseSidebar": "Collapse sidebar",
+    "mobileDockLabel": "Quick tools navigation"
   },
   "common": {
     "addExpense": "Add expense",
@@ -118,7 +119,12 @@
     "singleTab": "Single Overall Limit",
     "structuredHint": "Separate your week limit between rent, food, bills, expenses, and discretionary spending.",
     "totalWeeklyLimit": "Total Weekly Limit:",
-    "saveBudget": "Save Budget"
+    "saveBudget": "Save Budget",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "currentWeek": "Current week",
+    "showAllCategories": "Show all ({count})",
+    "showFewerCategories": "Show less"
   },
   "frequent": {
     "title": "Frequent Payments & Bills",
@@ -167,6 +173,7 @@
     "dueOnDate": "Due {date}",
     "emptyPrompt": "No frequent payments added yet.",
     "emptyHint": "Add electricity, insurance, phone, or rent to monitor weekly budget impacts and log expenses in one click.",
+    "confirmDelete": "Remove \"{name}\"?",
     "nameLabel": "Payment Name",
     "frequencyLabel": "Frequency",
     "categoryLabel": "Category",
@@ -216,7 +223,10 @@
     "depositsCount": "{count} deposits recorded",
     "newDeposit": "New deposit",
     "recordFirstDeposit": "Record first deposit",
-    "noDeposits": "No savings deposits recorded yet."
+    "noDeposits": "No savings deposits recorded yet.",
+    "confirmDeleteDeposit": "Remove deposit of {amount} ({date})?",
+    "globalShort": "Global",
+    "nzShort": "NZ Account"
   },
   "expenses": {
     "title": "Expenses",
@@ -227,6 +237,7 @@
     "category": "Category",
     "date": "Date",
     "notes": "Notes",
+    "confirmDelete": "Delete “{merchant}” ({amount})?",
     "items": "Purchased items",
     "addItem": "Add item",
     "itemTitle": "Product description",
@@ -273,7 +284,8 @@
     "globalHint": "Deducted from everyday Global Capital baseline.",
     "nzHint": "Deducted from NZ salary savings. Does not count against Global Capital baseline.",
     "receiptStagePrompt": "Receipt & Transcript Preview",
-    "receiptStageDesc": "Scan or upload a paper receipt to compare line items side-by-side with your form inputs."
+    "receiptStageDesc": "Scan or upload a paper receipt to compare line items side-by-side with your form inputs.",
+    "filtersToggle": "Filters"
   },
   "reports": {
     "title": "Reports",
@@ -315,7 +327,10 @@
     "categoryBreakdownDesc": "Proportionate breakdown across expense buckets",
     "budgetVarianceDesc": "Comparing allocated category limits against actual spend",
     "cashflowDesc": "Global Account everyday outflows vs NZ Account salary savings",
-    "configureLimitsPrompt": "Configure category limits in the"
+    "configureLimitsPrompt": "Configure category limits in the",
+    "donutTotal": "Total",
+    "donutOfTotal": "{percent}% of total",
+    "noExpensesPeriod": "No expenses recorded for this period."
   },
   "products": {
     "title": "Products",
@@ -359,7 +374,9 @@
     "saveName": "Save name",
     "placeholder": "e.g. New World",
     "confirmDeleteShop": "Delete shop \"{name}\"?",
-    "startPurchase": "Log purchase here"
+    "startPurchase": "Log purchase here",
+    "noMatches": "No shops match \"{query}\".",
+    "emptyHint": "Add the shops you buy from to log purchases and compare prices faster."
   },
   "bulk": {
     "title": "Add several expenses",
@@ -465,7 +482,7 @@
     "readArea": "Read selected area"
   },
   "settings": {
-    "title": "Data & Accounts Settings",
+    "title": "Settings",
     "accountsSetup": "Accounts & Salary Setup",
     "accountsDescription": "Set your starting money in USD or NZD to monitor all-time capital preservation and savings.",
     "globalUsd": "Global Starting Money · USD",

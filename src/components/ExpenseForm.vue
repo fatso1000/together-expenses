@@ -46,8 +46,8 @@
       </Button>
     </template>
 
-    <!-- Scrollable Drawer Content -->
-    <div class="p-4 sm:px-8 sm:py-5">
+    <!-- Scrollable Drawer Content (Drawer content has no top padding by default) -->
+    <div class="pt-4">
       <div class="flex flex-col lg:grid lg:grid-cols-[minmax(460px,1.15fr)_minmax(380px,0.85fr)] gap-6 lg:gap-8 items-start">
         <!-- LEFT COLUMN: Form controls -->
         <div class="flex flex-col gap-4 min-w-0 w-full">
@@ -203,7 +203,23 @@
           </div>
 
           <!-- Form Inputs -->
-          <form class="grid gap-4" @submit.prevent="submit">
+          <form id="expense-form" class="grid gap-4" @submit.prevent="submit">
+            <!-- Quick Amount right at top in quick mode so Merchant + Total are immediately reachable -->
+            <label
+              v-if="!itemized && mode !== 'items'"
+              class="flex flex-col gap-1.5 text-xs font-medium text-muted"
+            >
+              <span>Total · {{ form.currency }}</span>
+              <InputText
+                v-model="form.amount"
+                class="text-3xl! font-bold! h-16! font-heading!"
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+                fluid
+              />
+            </label>
+
             <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
               <span>{{ t("expenses.merchant") }}</span>
               <InputText
@@ -223,65 +239,65 @@
               />
             </datalist>
 
-            <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-              <label for="expense-date">{{ t("expenses.date") }}</label>
-              <DatePicker
-                id="expense-date"
-                inputId="expense-date"
-                v-model="selectedDate"
-                dateFormat="yy-mm-dd"
-                :maxDate="maxDate"
-                :minDate="minDate"
-                showIcon
-                iconDisplay="input"
-                fluid
-                required
-              />
-            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+                <label for="expense-date">{{ t("expenses.date") }}</label>
+                <DatePicker
+                  id="expense-date"
+                  inputId="expense-date"
+                  v-model="selectedDate"
+                  dateFormat="yy-mm-dd"
+                  :maxDate="maxDate"
+                  :minDate="minDate"
+                  showIcon
+                  iconDisplay="input"
+                  fluid
+                  required
+                />
+              </div>
 
-            <!-- Account Selector (Global vs NZ Savings) -->
-            <div class="flex flex-col gap-2">
-              <label for="account-select" class="text-xs font-semibold text-text">
-                {{ t("bulk.paidFrom") }}
-              </label>
-              <Select
-                id="account-select"
-                inputId="account-select"
-                v-model="form.accountId"
-                :options="accountOptions"
-                optionLabel="label"
-                optionValue="value"
-                :placeholder="t('bulk.paidFrom')"
-                fluid
-              >
-                <template #value="slotProps">
-                  <div v-if="slotProps.value" class="flex items-center gap-2">
-                    <component
-                      :is="slotProps.value === 'global' ? Wallet : PiggyBank"
-                      :size="16"
-                      class="text-accent"
-                    />
-                    <span>{{
-                      slotProps.value === "global"
-                        ? t("accounts.globalEveryday")
-                        : t("accounts.nzSavings")
-                    }}</span>
-                  </div>
-                </template>
-                <template #option="slotProps">
-                  <div class="flex items-center gap-2.5">
-                    <component
-                      :is="slotProps.option.value === 'global' ? Wallet : PiggyBank"
-                      :size="16"
-                      class="text-accent"
-                    />
-                    <div class="flex flex-col">
-                      <span class="font-medium">{{ slotProps.option.label }}</span>
-                      <small class="text-[11px] text-muted">{{ slotProps.option.hint }}</small>
+              <!-- Account Selector (Global vs NZ Savings) -->
+              <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+                <label for="account-select">{{ t("bulk.paidFrom") }}</label>
+                <Select
+                  id="account-select"
+                  inputId="account-select"
+                  v-model="form.accountId"
+                  :options="accountOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="t('bulk.paidFrom')"
+                  fluid
+                >
+                  <template #value="slotProps">
+                    <div v-if="slotProps.value" class="flex items-center gap-2">
+                      <component
+                        :is="slotProps.value === 'global' ? Wallet : PiggyBank"
+                        :size="16"
+                        class="text-accent"
+                      />
+                      <span class="truncate">{{
+                        slotProps.value === "global"
+                          ? t("accounts.globalEveryday")
+                          : t("accounts.nzSavings")
+                      }}</span>
                     </div>
-                  </div>
-                </template>
-              </Select>
+                  </template>
+                  <template #option="slotProps">
+                    <div class="flex items-center gap-2.5">
+                      <component
+                        :is="slotProps.option.value === 'global' ? Wallet : PiggyBank"
+                        :size="16"
+                        class="text-accent"
+                      />
+                      <div class="flex flex-col">
+                        <span class="font-medium">{{ slotProps.option.label }}</span>
+                        <small class="text-[11px] text-muted">{{ slotProps.option.hint }}</small>
+                      </div>
+                    </div>
+                  </template>
+                </Select>
+              </div>
             </div>
 
             <!-- Category Picker with Custom Categories -->
@@ -328,7 +344,8 @@
                 </template>
               </Select>
 
-              <div class="grid grid-cols-5 gap-1.5">
+              <!-- Horizontal scroll strip on mobile so category tiles don't push items/save offscreen -->
+              <div class="category-options flex flex-nowrap overflow-x-auto pb-1.5 gap-2 sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
                 <Button
                   v-for="catDef in store.categoryDefinitions"
                   :key="catDef.id"
@@ -337,7 +354,7 @@
                   variant="outlined"
                   :aria-pressed="form.category === catDef.name"
                   :style="categorySurfaceStyle(catDef.color, { selected: form.category === catDef.name })"
-                  class="flex-col! gap-1.5! py-2! px-1! min-h-[70px]! text-[11px]! text-text! transition-all!"
+                  class="shrink-0! w-[78px]! sm:w-auto! flex-col! gap-1.5! py-2! px-1! min-h-[68px]! text-[11px]! text-text! transition-all!"
                   :class="form.category === catDef.name ? 'font-semibold!' : 'font-medium!'"
                   @click="form.category = catDef.name"
                 >
@@ -348,7 +365,7 @@
                   type="button"
                   severity="secondary"
                   variant="outlined"
-                  class="flex-col! gap-1! py-2! px-1! min-h-[70px]! text-[11px]! border-dashed!"
+                  class="shrink-0! w-[78px]! sm:w-auto! flex-col! gap-1! py-2! px-1! min-h-[68px]! text-[11px]! border-dashed!"
                   :title="t('categories.newCategory')"
                   @click="openCategoryManager(true)"
                 >
@@ -384,25 +401,9 @@
               </div>
             </template>
 
-            <!-- Quick Amount Input -->
-            <label
-              v-if="!itemized && mode !== 'items'"
-              class="flex flex-col gap-1.5 text-xs font-medium text-muted"
-            >
-              <span>Total · {{ form.currency }}</span>
-              <InputText
-                v-model="form.amount"
-                class="text-3xl! font-bold! h-16! font-heading!"
-                inputmode="decimal"
-                placeholder="0.00"
-                required
-                fluid
-              />
-            </label>
-
             <!-- Itemized Total Breakdown -->
             <div
-              v-else-if="itemized"
+              v-if="itemized"
               class="grid gap-1.5 p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
             >
               <div v-if="discountCents() > 0" class="flex justify-between text-xs text-muted">
@@ -465,12 +466,6 @@
             <Message v-if="error" severity="error" :closable="false">
               {{ error }}
             </Message>
-
-            <div class="mt-2">
-              <Button class="primary" fluid :disabled="busy" type="submit">
-                {{ busy ? t("common.saving") : t("common.save") }}
-              </Button>
-            </div>
           </form>
         </div>
 
@@ -603,6 +598,19 @@
         </aside>
       </div>
     </div>
+
+    <!-- Sticky Save Footer so submit is always thumb-accessible -->
+    <template #footer>
+      <Button
+        class="primary"
+        form="expense-form"
+        fluid
+        :disabled="busy"
+        type="submit"
+      >
+        {{ busy ? t("common.saving") : t("common.save") }}
+      </Button>
+    </template>
 
     <!-- Inline Category Manager Bottom Drawer -->
     <Drawer

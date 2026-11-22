@@ -1,15 +1,15 @@
 <template>
-  <Card class="mb-6" aria-label="Frequent payments and recurring bills">
+  <Card class="mb-4 sm:mb-5" aria-label="Frequent payments and recurring bills">
     <template #content>
-      <div class="grid gap-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5">
+      <div class="grid gap-3.5 sm:gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-9 h-9 rounded-xl bg-[var(--warning-bg)] text-[var(--warning-colour)] flex items-center justify-center shrink-0">
-              <CalendarClock :size="20" />
+              <CalendarClock :size="19" />
             </div>
-            <div>
-              <h2 class="text-lg font-bold text-text m-0">{{ t("frequent.title") }}</h2>
-              <p class="text-xs text-muted m-0">
+            <div class="min-w-0 flex-1">
+              <h2 class="text-base sm:text-lg font-bold text-text m-0 truncate">{{ t("frequent.title") }}</h2>
+              <p class="text-[11px] sm:text-xs text-muted m-0 leading-snug">
                 {{ t("frequent.subtitle") }}
               </p>
             </div>
@@ -19,98 +19,84 @@
             type="button"
             severity="primary"
             size="small"
-            class="inline-flex items-center gap-1.5"
+            rounded
+            class="inline-flex items-center gap-1 text-xs! self-start sm:self-auto shrink-0"
             @click="openForm()"
           >
-            <Plus :size="16" />
+            <Plus :size="15" />
             <span>{{ t("frequent.addPayment") }}</span>
           </Button>
         </div>
 
-        <!-- Summary Commitment Metrics -->
+        <!-- Summary Commitment Metrics (2-up + span on mobile so amounts never clip) -->
         <div
           v-if="store.frequentPayments.length"
-          class="grid grid-cols-1 sm:grid-cols-3 gap-2.5"
+          class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5"
         >
-          <article class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-0.5">
-            <span class="text-xs text-muted">{{ t("frequent.weeklyCommitment") }}</span>
-            <strong class="text-lg font-bold tabular-nums text-text">
+          <article class="p-2.5 sm:p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-0.5 min-w-0">
+            <span class="text-[10px] sm:text-xs text-muted leading-tight">{{ t("frequent.weeklyCommitment") }}</span>
+            <strong class="text-sm sm:text-lg font-bold tabular-nums text-text">
               {{ store.displayMoney(store.frequentWeeklyCommitment) }}
             </strong>
-            <span class="text-xs font-mono text-muted">{{ t("frequent.avgPerWeek") }}</span>
+            <span class="text-[10px] sm:text-xs font-mono text-muted truncate">{{ t("frequent.avgPerWeek") }}</span>
           </article>
-          <article class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-0.5">
-            <span class="text-xs text-muted">{{ t("frequent.monthlyCommitment") }}</span>
-            <strong class="text-lg font-bold tabular-nums text-text">
+          <article class="p-2.5 sm:p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-0.5 min-w-0">
+            <span class="text-[10px] sm:text-xs text-muted leading-tight">{{ t("frequent.monthlyCommitment") }}</span>
+            <strong class="text-sm sm:text-lg font-bold tabular-nums text-text">
               {{ store.displayMoney(store.frequentMonthlyCommitment) }}
             </strong>
-            <span class="text-xs font-mono text-muted">{{ t("frequent.avgPerMonth") }}</span>
+            <span class="text-[10px] sm:text-xs font-mono text-muted truncate">{{ t("frequent.avgPerMonth") }}</span>
           </article>
-          <article class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-0.5">
-            <span class="text-xs text-muted">{{ t("frequent.activePayments") }}</span>
-            <strong class="text-lg font-bold tabular-nums text-text">
-              {{ store.frequentPayments.filter((p) => p.active).length }}
-            </strong>
-            <span class="text-xs font-mono text-muted">
-              {{ store.frequentPayments.length }} {{ t("frequent.total") }}
-            </span>
+          <article class="col-span-2 sm:col-span-1 p-2.5 sm:p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] flex sm:grid items-baseline justify-between gap-0.5 min-w-0">
+            <span class="text-[10px] sm:text-xs text-muted leading-tight">{{ t("frequent.activePayments") }}</span>
+            <div class="flex sm:grid items-baseline gap-1.5 sm:gap-0.5">
+              <strong class="text-sm sm:text-lg font-bold tabular-nums text-text">
+                {{ store.frequentPayments.filter((p) => p.active).length }}
+              </strong>
+              <span class="text-[10px] sm:text-xs font-mono text-muted">
+                {{ store.frequentPayments.length }} {{ t("frequent.total") }}
+              </span>
+            </div>
           </article>
         </div>
 
         <!-- Payments List -->
-        <div v-if="store.frequentPayments.length" class="grid gap-2">
+        <div v-if="store.frequentPayments.length" class="grid gap-2.5">
           <article
             v-for="payment in store.frequentPayments"
             :key="payment.id"
-            class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 py-3 rounded-xl border border-[var(--border)] transition-opacity"
+            class="grid gap-2.5 p-3 sm:p-3.5 rounded-2xl border border-[var(--border)] transition-opacity min-w-0"
             :class="payment.active ? 'bg-[var(--surface-card)]' : 'bg-[var(--surface)] opacity-55'"
           >
-            <div class="flex items-center gap-3 min-w-0">
-              <CategoryIcon :category="payment.category" />
-              <div class="grid gap-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <strong class="text-sm font-bold text-text">{{ payment.name }}</strong>
-                  <Tag :value="frequencyText(payment.frequency)" severity="secondary" />
-                  <Tag
-                    :value="payment.accountId === 'nz' ? 'NZ Account' : 'Global'"
-                    :severity="payment.accountId === 'nz' ? 'success' : 'secondary'"
-                  />
-                  <Tag
-                    v-if="store.isPaymentLoggedForWeek(payment)"
-                    :value="t('frequent.loggedThisWeek')"
-                    severity="success"
-                    title="Expense logged for this week"
-                  />
-                  <Tag
-                    v-else-if="store.isPaymentSkippedForWeek(payment)"
-                    :value="t('frequent.skippedThisCycle')"
-                    severity="secondary"
-                    title="Payment skipped for this cycle"
-                  />
-                </div>
-
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-bold tabular-nums text-text">
-                    {{ store.displayMoney(payment.amount) }}
-                  </span>
-                  <span class="text-xs text-muted">
-                    (~{{ store.displayMoney(frequencyToWeekly(payment.amount, payment.frequency)) }}/wk)
-                  </span>
-                  <Tag
-                    v-if="payment.nextDueDate && dueStatus(payment.nextDueDate).type !== 'none'"
-                    :value="dueStatus(payment.nextDueDate).label"
-                    :severity="dueSeverity(dueStatus(payment.nextDueDate).type)"
-                  />
+            <!-- Top Row: Identity + Primary Thumb-Accessible Log Action -->
+            <div class="flex items-start justify-between gap-2.5 min-w-0">
+              <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                <CategoryIcon :category="payment.category" />
+                <div class="grid gap-1 min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <strong class="text-sm font-bold text-text break-words leading-snug">{{ payment.name }}</strong>
+                    <Tag
+                      v-if="payment.nextDueDate && dueStatus(payment.nextDueDate).type !== 'none'"
+                      :value="dueStatus(payment.nextDueDate).label"
+                      :severity="dueSeverity(dueStatus(payment.nextDueDate).type)"
+                      class="text-[10px]!"
+                    />
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-wrap text-xs text-muted">
+                    <span class="text-sm font-bold tabular-nums text-text">
+                      {{ store.displayMoney(payment.amount) }}
+                    </span>
+                    <span>(~{{ store.displayMoney(frequencyToWeekly(payment.amount, payment.frequency)) }}/wk)</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="flex items-center justify-end gap-2 shrink-0 flex-wrap border-t sm:border-t-0 border-dashed border-[var(--border)] pt-2 sm:pt-0">
               <Button
                 type="button"
                 :severity="store.isPaymentLoggedForWeek(payment) ? 'success' : 'primary'"
                 size="small"
-                class="inline-flex items-center gap-1.5"
+                rounded
+                class="inline-flex items-center gap-1 shrink-0 text-xs!"
                 :title="
                   store.isPaymentLoggedForWeek(payment)
                     ? 'Already logged this week - click to log another expense'
@@ -118,66 +104,117 @@
                 "
                 @click="logExpense(payment)"
               >
-                <Receipt :size="15" />
+                <Receipt :size="14" />
                 <span>{{
                   store.isPaymentLoggedForWeek(payment)
                     ? t("frequent.logAgain")
                     : t("frequent.logPayment")
                 }}</span>
               </Button>
+            </div>
 
-              <Button
-                type="button"
-                severity="secondary"
-                variant="outlined"
-                size="small"
-                class="inline-flex items-center gap-1"
-                title="Skip this payment cycle without creating an expense"
-                @click="skipPayment(payment)"
-              >
-                <SkipForward :size="14" />
-                <span>{{ t("frequent.skipPayment") }}</span>
-              </Button>
+            <!-- Bottom Row: Status Tags + Secondary Controls -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/8">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <Tag :value="frequencyText(payment.frequency)" severity="secondary" class="text-[10px]!" />
+                <Tag
+                  :value="payment.accountId === 'nz' ? t('accounts.nzShort') : t('accounts.globalShort')"
+                  :severity="payment.accountId === 'nz' ? 'success' : 'secondary'"
+                  class="text-[10px]!"
+                />
+                <Tag
+                  v-if="store.isPaymentLoggedForWeek(payment)"
+                  :value="t('frequent.loggedThisWeek')"
+                  severity="success"
+                  class="text-[10px]!"
+                  title="Expense logged for this week"
+                />
+                <Tag
+                  v-else-if="store.isPaymentSkippedForWeek(payment)"
+                  :value="t('frequent.skippedThisCycle')"
+                  severity="secondary"
+                  class="text-[10px]!"
+                  title="Payment skipped for this cycle"
+                />
+              </div>
 
-              <Button
-                type="button"
-                variant="text"
-                severity="secondary"
-                rounded
-                size="small"
-                :title="payment.active ? 'Pause payment' : 'Activate payment'"
-                :aria-label="payment.active ? 'Pause payment' : 'Activate payment'"
-                @click="store.toggleFrequentPayment(payment.id)"
-              >
-                <Pause v-if="payment.active" :size="16" />
-                <Play v-else :size="16" />
-              </Button>
+              <div class="flex items-center gap-1 ml-auto">
+                <Button
+                  type="button"
+                  severity="secondary"
+                  variant="outlined"
+                  size="small"
+                  rounded
+                  class="inline-flex items-center gap-1 text-xs! py-1! px-2.5!"
+                  title="Skip this payment cycle without creating an expense"
+                  @click="skipPayment(payment)"
+                >
+                  <SkipForward :size="13" />
+                  <span>{{ t("frequent.skipPayment") }}</span>
+                </Button>
 
-              <Button
-                type="button"
-                variant="text"
-                severity="secondary"
-                rounded
-                size="small"
-                title="Edit payment"
-                aria-label="Edit payment"
-                @click="openForm(payment)"
-              >
-                <Pencil :size="16" />
-              </Button>
+                <Button
+                  type="button"
+                  variant="text"
+                  severity="secondary"
+                  rounded
+                  size="small"
+                  :title="payment.active ? 'Pause payment' : 'Activate payment'"
+                  :aria-label="payment.active ? 'Pause payment' : 'Activate payment'"
+                  @click="store.toggleFrequentPayment(payment.id)"
+                >
+                  <Pause v-if="payment.active" :size="15" />
+                  <Play v-else :size="15" />
+                </Button>
 
-              <Button
-                type="button"
-                variant="text"
-                severity="danger"
-                rounded
-                size="small"
-                title="Delete payment"
-                aria-label="Delete payment"
-                @click="remove(payment.id)"
-              >
-                <Trash2 :size="16" />
-              </Button>
+                <Button
+                  type="button"
+                  variant="text"
+                  severity="secondary"
+                  rounded
+                  size="small"
+                  title="Edit payment"
+                  aria-label="Edit payment"
+                  @click="openForm(payment)"
+                >
+                  <Pencil :size="15" />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="text"
+                  severity="danger"
+                  rounded
+                  size="small"
+                  title="Delete payment"
+                  aria-label="Delete payment"
+                  @click="removingId = payment.id"
+                >
+                  <Trash2 :size="15" />
+                </Button>
+              </div>
+            </div>
+
+            <!-- Inline Delete Confirmation -->
+            <div
+              v-if="removingId === payment.id"
+              class="p-3 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-2"
+            >
+              <span class="text-xs text-text">{{ t("frequent.confirmDelete", { name: payment.name }) }}</span>
+              <div class="flex items-center gap-2 ml-auto">
+                <Button type="button" severity="secondary" size="small" @click="removingId = ''">
+                  {{ t("common.cancel") }}
+                </Button>
+                <Button
+                  type="button"
+                  severity="danger"
+                  size="small"
+                  :disabled="deletingId === payment.id"
+                  @click="confirmRemove(payment.id)"
+                >
+                  {{ t("common.delete") }}
+                </Button>
+              </div>
             </div>
           </article>
         </div>
@@ -374,6 +411,8 @@ const store = useExpenses();
 const editingPayment = shallowRef<FrequentPayment | "new" | null>(null);
 const formError = shallowRef("");
 const formBusy = shallowRef(false);
+const removingId = shallowRef("");
+const deletingId = shallowRef("");
 
 const drawerVisible = computed<boolean>({
   get() {
@@ -506,12 +545,15 @@ async function saveForm() {
   }
 }
 
-async function remove(id: string) {
-  if (!confirm("Remove this frequent payment?")) return;
+async function confirmRemove(id: string) {
+  deletingId.value = id;
   try {
     await store.removeFrequentPayment(id);
+    removingId.value = "";
   } catch (reason) {
     store.error = friendlyError(reason);
+  } finally {
+    deletingId.value = "";
   }
 }
 

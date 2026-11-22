@@ -60,10 +60,10 @@
   <AiMoneyAdvisor v-if="isLocalDesktopApp()" />
 
   <section
-    class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6"
+    class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4 mb-5"
     :aria-label="t('dashboard.monthlySummary')"
   >
-    <Card class="highlighted">
+    <Card class="highlighted col-span-2 sm:col-span-1">
       <template #subtitle>
         {{ t("dashboard.thisMonthSimple") }} · {{ store.currency }}
       </template>
@@ -78,7 +78,7 @@
         {{ t("dashboard.expensesCount") }}
       </template>
       <template #content>
-        <span class="text-2xl font-bold font-heading">
+        <span class="text-xl sm:text-2xl font-bold font-heading">
           {{ store.monthExpenses.length }}
         </span>
       </template>
@@ -88,29 +88,56 @@
         {{ t("dashboard.previousMonth") }}
       </template>
       <template #content>
-        <span class="text-2xl font-bold font-heading">
+        <span class="text-xl sm:text-2xl font-bold font-heading">
           {{ store.displayMoney(lastTotal) }}
         </span>
       </template>
     </Card>
   </section>
 
-  <div class="space-y-4">
-    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-3">
-      <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.recentExpenses") }}</h2>
+  <div class="space-y-3.5 sm:space-y-4">
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-5 md:p-6 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.recentExpenses") }}</h2>
+        <RouterLink
+          to="/expenses"
+          class="inline-flex items-center gap-0.5 text-xs font-semibold text-accent no-underline hover:underline"
+        >
+          <span>{{ t("dashboard.viewAllExpenses") }}</span>
+          <ChevronRight :size="14" />
+        </RouterLink>
+      </div>
       <ExpenseList :expenses="store.monthExpenses.slice(0, 5)" compact />
     </section>
 
-    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-3">
-      <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.byCategory") }}</h2>
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-5 md:p-6 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.byCategory") }}</h2>
+        <RouterLink
+          to="/reports"
+          class="inline-flex items-center gap-0.5 text-xs font-semibold text-accent no-underline hover:underline"
+        >
+          <span>{{ t("nav.reports") }}</span>
+          <ChevronRight :size="14" />
+        </RouterLink>
+      </div>
       <CategoryBreakdown
         :expenses="store.monthExpenses"
         :currency="store.currency"
       />
     </section>
 
-    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm space-y-3">
-      <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.weeklySpending") }}</h2>
+    <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-5 md:p-6 shadow-sm space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-base font-bold text-text m-0">{{ t("dashboard.weeklySpending") }}</h2>
+        <RouterLink
+          to="/reports"
+          class="inline-flex items-center gap-0.5 text-xs font-semibold text-accent no-underline hover:underline"
+        >
+          <span>{{ t("nav.reports") }}</span>
+          <ChevronRight :size="14" />
+        </RouterLink>
+      </div>
       <TrendChart
         :expenses="store.monthExpenses"
         :month="store.month"
@@ -122,6 +149,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 import { useExpenses } from "@/stores/expenses";
 import { total, previousMonth } from "@/lib/finance";
 import { isLocalDesktopApp } from "@/lib/ollama";
@@ -132,7 +160,7 @@ import WeeklyLimit from "@/components/WeeklyLimit.vue";
 import AccountsOverview from "@/components/AccountsOverview.vue";
 import FrequentPayments from "@/components/FrequentPayments.vue";
 import AiMoneyAdvisor from "@/components/AiMoneyAdvisor.vue";
-import { AlertCircle } from "lucide-vue-next";
+import { AlertCircle, ChevronRight } from "lucide-vue-next";
 import TrendChart from "@/components/TrendChart.vue";
 import Plus from "@primeicons/vue/plus";
 import Receipt from "@primeicons/vue/receipt";

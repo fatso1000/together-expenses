@@ -1,37 +1,82 @@
 <template>
-  <Card class="mb-6" :data-status="store.weeklyLimit ? status : 'none'">
+  <Card class="mb-4 sm:mb-5" :data-status="store.weeklyLimit ? status : 'none'">
     <template #header>
-      <div class="flex flex-wrap items-start justify-between gap-3 p-5 pb-0">
-        <div class="flex items-center gap-3 min-w-0">
-          <div
-            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0"
-            :class="
-              status === 'over'
-                ? 'bg-[var(--danger-bg)] text-[var(--danger-colour)]'
-                : status === 'near'
-                  ? 'bg-[var(--warning-bg)] text-[var(--warning-colour)]'
-                  : 'bg-[var(--surface)] text-text'
-            "
-          >
-            <AlertCircle v-if="status === 'over'" :size="22" />
-            <AlertTriangle v-else-if="status === 'near'" :size="22" />
-            <Target v-else :size="22" />
-          </div>
-          <div>
-            <h2 class="text-lg sm:text-xl font-bold m-0 text-text">
-              Weekly Spending Limit
+      <div class="grid gap-2.5 px-4 pt-4 sm:px-5 sm:pt-5 pb-0">
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div
+              class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0"
+              :class="
+                status === 'over'
+                  ? 'bg-[var(--danger-bg)] text-[var(--danger-colour)]'
+                  : status === 'near'
+                    ? 'bg-[var(--warning-bg)] text-[var(--warning-colour)]'
+                    : 'bg-[var(--surface)] text-text'
+              "
+            >
+              <AlertCircle v-if="status === 'over'" :size="20" />
+              <AlertTriangle v-else-if="status === 'near'" :size="20" />
+              <Target v-else :size="20" />
+            </div>
+            <h2 class="text-base sm:text-xl font-bold m-0 text-text truncate">
+              {{ t("weeklyLimit.title") }}
             </h2>
           </div>
-        </div>
 
-        <div class="flex items-center gap-2">
           <Button
             :aria-label="t('weeklyLimit.configureBudget')"
             type="button"
             size="small"
+            rounded
+            class="text-xs! px-3! py-1.5! shrink-0"
             @click="openEdit"
           >
             {{ t("weeklyLimit.configureBudget") }}
+          </Button>
+        </div>
+
+        <!-- Week Stepper Pill Bar -->
+        <div class="flex items-center justify-between gap-1.5 px-1.5 py-1 rounded-xl bg-black/25 border border-[var(--border)]">
+          <Button
+            type="button"
+            variant="text"
+            severity="secondary"
+            size="small"
+            rounded
+            class="w-8! h-8! p-0! shrink-0"
+            :aria-label="t('weeklyLimit.prevWeek')"
+            @click="store.previousWeek()"
+          >
+            <ChevronLeft :size="16" />
+          </Button>
+          <div class="flex items-center justify-center gap-2 min-w-0">
+            <span class="text-[11px] sm:text-xs font-semibold text-muted tabular-nums truncate">
+              {{ store.weekStart }} – {{ store.weekEnd }} ({{ store.weekWeekdayRange }})
+            </span>
+            <Button
+              v-if="!isCurrentWeek"
+              type="button"
+              variant="outlined"
+              severity="secondary"
+              size="small"
+              rounded
+              class="text-[10px]! py-0.5! px-2! min-h-6! shrink-0"
+              @click="store.resetToCurrentWeek()"
+            >
+              {{ t("weeklyLimit.today") }}
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="text"
+            severity="secondary"
+            size="small"
+            rounded
+            class="w-8! h-8! p-0! shrink-0"
+            :aria-label="t('weeklyLimit.nextWeek')"
+            @click="store.nextWeek()"
+          >
+            <ChevronRight :size="16" />
           </Button>
         </div>
       </div>
@@ -54,7 +99,11 @@
             role="status"
           >
             <AlertCircle v-if="status === 'over'" :size="18" class="shrink-0" />
-            <AlertTriangle v-else-if="status === 'near'" :size="18" class="shrink-0" />
+            <AlertTriangle
+              v-else-if="status === 'near'"
+              :size="18"
+              class="shrink-0"
+            />
             <CheckCircle2 v-else :size="18" class="shrink-0" />
 
             <div class="flex flex-col gap-0.5">
@@ -94,7 +143,9 @@
               <template v-else>
                 <strong class="text-sm font-bold">
                   {{
-                    t("weeklyLimit.onTrack", { amount: store.displayMoney(diff) })
+                    t("weeklyLimit.onTrack", {
+                      amount: store.displayMoney(diff),
+                    })
                   }}
                 </strong>
                 <span>
@@ -112,49 +163,79 @@
           <!-- Weekly Salary vs Budget vs Spend Stats -->
           <div
             v-if="weeklySalary > 0"
-            class="flex flex-wrap items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+            class="grid grid-cols-3 gap-2 px-3 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
           >
-            <div class="grid gap-0.5">
-              <span class="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            <!-- Labels wrap (rather than truncate) and drop uppercase tracking on phones,
+                 where three columns only get ~100px each -->
+            <div class="grid gap-0.5 min-w-0 content-start">
+              <span
+                class="text-[10px] font-semibold leading-tight text-muted sm:uppercase sm:tracking-wider"
+              >
                 {{ t("weeklyLimit.salaryLabel") }}
               </span>
-              <strong class="text-sm font-bold text-text">
+              <strong
+                class="text-xs sm:text-sm font-bold text-text tabular-nums truncate"
+              >
                 {{ store.displayMoney(weeklySalary) }}
               </strong>
             </div>
-            <div class="grid gap-0.5">
-              <span class="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            <div class="grid gap-0.5 min-w-0 content-start">
+              <span
+                class="text-[10px] font-semibold leading-tight text-muted sm:uppercase sm:tracking-wider"
+              >
                 {{ t("weeklyLimit.limit") }}
               </span>
-              <strong class="text-sm font-bold text-muted">
+              <strong
+                class="text-xs sm:text-sm font-bold text-muted tabular-nums truncate"
+              >
                 {{ store.displayMoney(store.weeklyLimit) }}
               </strong>
             </div>
-            <div class="grid gap-0.5">
-              <span class="text-[10px] font-semibold uppercase tracking-wider text-muted">
+            <div class="grid gap-0.5 min-w-0 content-start text-right">
+              <span
+                class="text-[10px] font-semibold leading-tight text-muted sm:uppercase sm:tracking-wider"
+              >
                 {{ t("weeklyLimit.targetSavings") }}
               </span>
-              <strong class="text-sm font-bold text-accent inline-flex items-center gap-1.5">
-                <span>{{ store.displayMoney(targetSavings) }}</span>
-                <Tag :value="`${savingsRate}%`" severity="success" />
+              <strong
+                class="text-xs sm:text-sm font-bold text-accent flex flex-wrap items-center justify-end gap-1 tabular-nums min-w-0"
+              >
+                <span class="truncate">{{
+                  store.displayMoney(targetSavings)
+                }}</span>
+                <Tag
+                  :value="`${savingsRate}%`"
+                  severity="success"
+                  class="text-[10px]!"
+                />
               </strong>
             </div>
           </div>
 
           <div class="flex flex-col gap-1.5">
             <!-- Hero Spending Numbers -->
-            <div class="flex flex-wrap items-baseline justify-between gap-3 py-1">
+            <div
+              class="flex flex-wrap items-baseline justify-between gap-3 py-1"
+            >
               <div class="flex flex-col">
-                <span class="text-xs font-medium text-muted">{{ t("weeklyLimit.spent") }}</span>
+                <span class="text-xs font-medium text-muted">{{
+                  t("weeklyLimit.spent")
+                }}</span>
                 <strong
                   class="text-3xl font-extrabold tracking-tight tabular-nums"
-                  :class="status === 'over' ? 'text-[var(--danger-colour)]' : 'text-text'"
+                  :class="
+                    status === 'over'
+                      ? 'text-[var(--danger-colour)]'
+                      : 'text-text'
+                  "
                 >
                   {{ store.displayMoney(store.weekTotal) }}
                 </strong>
               </div>
               <div class="flex flex-col text-right">
-                <span class="text-xs font-medium text-muted">{{ t("weeklyLimit.limit") }}</span>
+                <span class="text-xs font-medium text-muted">{{
+                  t("weeklyLimit.limit")
+                }}</span>
                 <strong class="text-xl font-bold tabular-nums text-muted">
                   {{ store.displayMoney(store.weeklyLimit) }}
                 </strong>
@@ -162,7 +243,9 @@
             </div>
 
             <!-- Gauge Progress Bar -->
-            <div class="relative w-full h-3.5 rounded-lg bg-[var(--border)] overflow-hidden">
+            <div
+              class="relative w-full h-3.5 rounded-lg bg-[var(--border)] overflow-hidden"
+            >
               <div
                 class="h-full rounded-lg transition-[width] duration-300 ease-out"
                 :class="
@@ -182,9 +265,14 @@
           </div>
 
           <!-- Structured Category Budgets Breakdown -->
-          <div v-if="store.categoryBudgetProgress.length" class="grid gap-2.5 pt-1">
+          <div
+            v-if="store.categoryBudgetProgress.length"
+            class="grid gap-2.5 pt-1"
+          >
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="inline-flex items-center gap-1.5 text-xs font-bold text-text">
+              <span
+                class="inline-flex items-center gap-1.5 text-xs font-bold text-text"
+              >
                 <Layers :size="15" />
                 <span>{{ t("weeklyLimit.structuredTitle") }}</span>
               </span>
@@ -196,18 +284,20 @@
                 <span>
                   {{
                     t("weeklyLimit.frequentBillsCommitment", {
-                      amount: store.displayMoney(store.frequentWeeklyCommitment),
+                      amount: store.displayMoney(
+                        store.frequentWeeklyCommitment,
+                      ),
                     })
                   }}
                 </span>
               </span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
               <div
-                v-for="cat in store.categoryBudgetProgress"
+                v-for="cat in visibleCategoryBudgets"
                 :key="cat.category"
-                class="p-3 rounded-xl border grid gap-1.5"
+                class="p-2.5 sm:p-3 rounded-xl border grid gap-1.5 min-w-0"
                 :class="
                   cat.status === 'over'
                     ? 'bg-[var(--danger-bg)] border-[var(--danger-border)]'
@@ -216,20 +306,35 @@
                 :style="
                   cat.status === 'over'
                     ? undefined
-                    : categorySurfaceStyle(resolveCategoryColor(cat.category, store.categoryDefinitions))
+                    : categorySurfaceStyle(
+                        resolveCategoryColor(
+                          cat.category,
+                          store.categoryDefinitions,
+                        ),
+                      )
                 "
               >
-                <div class="flex items-center justify-between gap-2 text-xs">
-                  <div class="flex items-center gap-1.5 font-semibold text-text min-w-0">
-                    <CategoryIcon :category="cat.category" :size="18" bare />
-                    <span class="truncate">{{ categoryLabel(cat.category) }}</span>
+                <div
+                  class="flex items-center justify-between gap-1.5 text-xs min-w-0"
+                >
+                  <div
+                    class="flex items-center gap-1.5 font-semibold text-text min-w-0"
+                  >
+                    <CategoryIcon :category="cat.category" :size="16" bare />
+                    <span class="truncate">{{
+                      categoryLabel(cat.category)
+                    }}</span>
                   </div>
-                  <span class="text-[11px] text-muted tabular-nums shrink-0">
-                    {{ store.displayMoney(cat.spent) }} / {{ store.displayMoney(cat.limit) }}
+                  <span
+                    class="text-[10px] sm:text-[11px] text-muted tabular-nums shrink-0"
+                  >
+                    {{ Math.round(cat.percent) }}%
                   </span>
                 </div>
 
-                <div class="w-full h-1.5 rounded bg-[var(--border)] overflow-hidden">
+                <div
+                  class="w-full h-1.5 rounded bg-[var(--border)] overflow-hidden"
+                >
                   <div
                     class="h-full rounded transition-[width] duration-300"
                     :class="
@@ -243,8 +348,14 @@
                   />
                 </div>
 
-                <div class="flex items-center justify-between text-[11px]">
-                  <span class="text-muted">{{ Math.round(cat.percent) }}%</span>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 text-[10px] sm:text-[11px] min-w-0"
+                >
+                  <span class="text-muted tabular-nums">
+                    {{ store.displayMoney(cat.spent) }} / {{
+                      store.displayMoney(cat.limit)
+                    }}
+                  </span>
                   <span
                     class="font-semibold"
                     :class="
@@ -266,10 +377,35 @@
                 </div>
               </div>
             </div>
+
+            <div
+              v-if="store.categoryBudgetProgress.length > 4"
+              class="flex justify-center pt-0.5"
+            >
+              <Button
+                type="button"
+                variant="text"
+                severity="secondary"
+                size="small"
+                rounded
+                class="text-xs!"
+                @click="showAllCategories = !showAllCategories"
+              >
+                {{
+                  showAllCategories
+                    ? t("weeklyLimit.showFewerCategories")
+                    : t("weeklyLimit.showAllCategories", {
+                        count: store.categoryBudgetProgress.length,
+                      })
+                }}
+              </Button>
+            </div>
           </div>
 
           <!-- Daily Pacing Advice -->
-          <div class="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-muted">
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-muted"
+          >
             <div class="flex items-center gap-1.5">
               <Tag
                 v-if="status === 'over'"
@@ -318,7 +454,9 @@
           :closeOnEscape="!busy"
         >
           <template #header>
-            <h3 class="text-lg font-bold m-0">{{ t("weeklyLimit.configureTitle") }}</h3>
+            <h3 class="text-lg font-bold m-0">
+              {{ t("weeklyLimit.configureTitle") }}
+            </h3>
           </template>
 
           <template #closebutton="{ closeCallback }">
@@ -351,7 +489,9 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-                <label for="limit-pay-day">{{ t("weeklyLimit.salaryPaymentDay") }}</label>
+                <label for="limit-pay-day">{{
+                  t("weeklyLimit.salaryPaymentDay")
+                }}</label>
                 <Select
                   v-model="payDayOfWeek"
                   inputId="limit-pay-day"
@@ -362,7 +502,9 @@
                 />
               </div>
               <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-                <label for="limit-pay-date">{{ t("weeklyLimit.pickFromDate") }}</label>
+                <label for="limit-pay-date">{{
+                  t("weeklyLimit.pickFromDate")
+                }}</label>
                 <DatePicker
                   v-model="selectedPayDate"
                   inputId="limit-pay-date"
@@ -462,8 +604,12 @@
                 </Button>
               </div>
 
-              <div class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm">
-                <span class="text-text">{{ t("weeklyLimit.totalWeeklyLimit") }}</span>
+              <div
+                class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-sm"
+              >
+                <span class="text-text">{{
+                  t("weeklyLimit.totalWeeklyLimit")
+                }}</span>
                 <strong class="text-base font-bold text-text">
                   {{ store.displayMoney(structuredTotal) }}
                 </strong>
@@ -472,7 +618,9 @@
 
             <!-- Quick Single Limit Mode -->
             <div v-else class="grid gap-2">
-              <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+              <label
+                class="flex flex-col gap-1.5 text-xs font-medium text-muted"
+              >
                 <span>{{ t("weeklyLimit.limit") }} · NZD</span>
                 <InputText
                   v-model="amount"
@@ -489,7 +637,12 @@
             </Message>
 
             <div class="flex flex-wrap items-center gap-3 pt-1">
-              <Button type="button" severity="primary" :disabled="busy" @click="saveBudget">
+              <Button
+                type="button"
+                severity="primary"
+                :disabled="busy"
+                @click="saveBudget"
+              >
                 {{ t("weeklyLimit.saveBudget") }}
               </Button>
               <Button
@@ -532,6 +685,8 @@ import {
   Plus,
   Receipt,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-vue-next";
 import Card from "primevue/card";
 import Button from "primevue/button";
@@ -542,7 +697,13 @@ import DatePicker from "primevue/datepicker";
 import Tag from "primevue/tag";
 import Message from "primevue/message";
 import { useExpenses, friendlyError } from "@/stores/expenses";
-import { parseMoney, parseOptionalMoney, today, parseIsoDate, formatIsoDate } from "@/lib/finance";
+import {
+  parseMoney,
+  parseOptionalMoney,
+  today,
+  parseIsoDate,
+  formatIsoDate,
+} from "@/lib/finance";
 import { t, categoryLabel } from "@/lib/i18n";
 import type { CategoryLimit, DayOfWeek } from "@/lib/types";
 import {
@@ -560,6 +721,19 @@ const payDayOfWeek = ref<DayOfWeek>(1);
 const payDate = ref<string>("");
 const error = shallowRef("");
 const busy = shallowRef(false);
+const showAllCategories = shallowRef(false);
+
+const isCurrentWeek = computed(() => {
+  const nowStr = today();
+  return nowStr >= store.weekStart && nowStr <= store.weekEnd;
+});
+
+const visibleCategoryBudgets = computed(() => {
+  if (showAllCategories.value || store.categoryBudgetProgress.length <= 4) {
+    return store.categoryBudgetProgress;
+  }
+  return store.categoryBudgetProgress.slice(0, 4);
+});
 
 const localCategoryLimits = ref<CategoryLimit[]>([]);
 

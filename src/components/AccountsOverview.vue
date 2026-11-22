@@ -1,29 +1,30 @@
 <template>
-  <Card class="mb-6" aria-label="Financial accounts and net worth">
+  <Card class="mb-4 sm:mb-5" aria-label="Financial accounts and net worth">
     <template #content>
-      <div class="grid gap-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5">
+      <div class="grid gap-3.5 sm:gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-9 h-9 rounded-xl bg-[var(--success-bg)] text-accent flex items-center justify-center shrink-0">
-              <ArrowRightLeft :size="20" />
+              <ArrowRightLeft :size="19" />
             </div>
-            <div>
-              <h2 class="text-lg font-bold text-text m-0">{{ t("accounts.title") }}</h2>
-              <p class="text-xs text-muted m-0">
+            <div class="min-w-0 flex-1">
+              <h2 class="text-base sm:text-lg font-bold text-text m-0 truncate">{{ t("accounts.title") }}</h2>
+              <p class="text-[11px] sm:text-xs text-muted m-0 leading-snug">
                 {{ t("accounts.subtitle") }}
               </p>
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 ml-auto sm:ml-0">
+          <div class="flex flex-wrap items-center gap-1.5 sm:shrink-0">
             <Button
               type="button"
               severity="secondary"
               size="small"
-              class="inline-flex items-center gap-1.5"
+              rounded
+              class="inline-flex items-center gap-1 text-xs!"
               @click="openAddDeposit"
             >
-              <Plus :size="15" />
+              <Plus :size="14" />
               <span>{{ t("accounts.addSavings") }}</span>
             </Button>
             <Button
@@ -31,16 +32,17 @@
               type="button"
               severity="secondary"
               size="small"
+              rounded
               :title="t('accounts.manageDeposits')"
-              class="inline-flex items-center gap-1.5"
+              class="inline-flex items-center gap-1 text-xs!"
               @click="showManageDepositsModal = true"
             >
-              <History :size="15" />
+              <History :size="14" />
               <span>{{ t("accounts.manageDeposits") }}</span>
             </Button>
             <RouterLink
               to="/settings/accounts"
-              class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-muted hover:bg-[var(--surface-card-hover)] hover:text-accent transition-colors"
+              class="inline-flex items-center justify-center w-9 h-9 rounded-full text-muted hover:bg-[var(--surface-card-hover)] hover:text-accent transition-colors"
               aria-label="Configure accounts"
             >
               <Settings :size="17" />
@@ -49,9 +51,9 @@
         </div>
 
         <!-- Hero Combined Total Money Card -->
-        <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[var(--surface-card)] to-[var(--surface-card-hover)] border border-[var(--border)] shadow-sm">
+        <div class="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-br from-[var(--surface-card)] to-[var(--surface-card-hover)] border border-white/10 shadow-sm">
           <div class="grid gap-1">
-            <span class="text-xs uppercase tracking-wider text-accent font-semibold">
+            <span class="text-[11px] uppercase tracking-wider text-accent font-semibold">
               {{ t("accounts.heroLabel") }}
             </span>
             <strong class="text-3xl sm:text-4xl font-extrabold tracking-tight tabular-nums text-text font-heading">
@@ -72,7 +74,7 @@
         <!-- Initial Global Baseline Status Callout -->
         <div
           v-if="spendComparison.hasBaseline"
-          class="flex items-start gap-3 px-4 py-3 rounded-xl border text-xs"
+          class="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl border text-xs"
           :class="
             spendComparison.isOver
               ? 'bg-[var(--danger-bg)] border-[var(--danger-border)] text-[var(--danger-colour)]'
@@ -80,57 +82,57 @@
           "
         >
           <div class="shrink-0 mt-0.5">
-            <AlertCircle v-if="spendComparison.isOver" :size="18" />
-            <CheckCircle2 v-else :size="18" />
+            <AlertCircle v-if="spendComparison.isOver" :size="17" />
+            <CheckCircle2 v-else :size="17" />
           </div>
           <div class="grid gap-0.5">
-            <strong class="text-sm font-bold">
+            <strong class="text-xs sm:text-sm font-bold">
               {{
                 spendComparison.isOver
                   ? t("accounts.baselineOver")
                   : t("accounts.baselineUnder")
               }}
             </strong>
-            <p class="text-xs m-0 opacity-90">{{ spendComparison.label }}</p>
+            <p class="text-[11px] sm:text-xs m-0 opacity-90">{{ spendComparison.label }}</p>
           </div>
         </div>
         <div
           v-else
-          class="flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] text-xs text-muted"
+          class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] text-xs text-muted"
         >
           <Sparkles :size="14" class="shrink-0 text-accent" />
           <span>{{ t("accounts.baselineEmpty") }}</span>
         </div>
 
         <!-- Dual Accounts Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           <!-- Global Spending Account -->
-          <article class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-3">
+          <article class="p-3.5 sm:p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-2.5">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 text-sm font-semibold text-text">
-                <Wallet :size="16" />
+                <Wallet :size="16" class="text-muted" />
                 <strong>Global Account</strong>
               </div>
-              <Tag :value="t('accounts.everydayPurchases')" severity="secondary" />
+              <Tag :value="t('accounts.everydayPurchases')" severity="secondary" class="text-[10px]!" />
             </div>
 
             <div class="grid gap-1.5">
               <div class="grid">
                 <span class="text-[11px] text-muted">{{ t("accounts.currentBalance") }}</span>
-                <strong class="text-2xl font-bold tabular-nums text-text">
+                <strong class="text-xl sm:text-2xl font-bold tabular-nums text-text">
                   {{ store.displayMoney(store.globalBalance) }}
                 </strong>
               </div>
-              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-white/8 text-xs">
                 <span class="text-muted">{{ t("accounts.everydaySpent") }}</span>
                 <span class="font-mono text-text">{{ store.displayMoney(store.balances.globalSpent) }}</span>
               </div>
               <div
                 v-if="store.initialGlobalNZD"
-                class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs"
+                class="flex flex-wrap justify-between items-baseline gap-x-3 gap-y-0.5 pt-1.5 border-t border-white/8 text-xs"
               >
-                <span class="text-muted">{{ t("accounts.initialBaseline") }}</span>
-                <span class="font-mono text-text">
+                <span class="text-muted shrink-0">{{ t("accounts.initialBaseline") }}</span>
+                <span class="font-mono text-text text-right">
                   {{ store.displayMoney(store.initialGlobalNZD) }}
                   <template v-if="store.initialGlobalUSD">
                     (${{ (store.initialGlobalUSD / 100).toFixed(2) }} USD)
@@ -141,27 +143,27 @@
           </article>
 
           <!-- NZ Savings Account -->
-          <article class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-3">
+          <article class="p-3.5 sm:p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--border)] grid gap-2.5">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 text-sm font-semibold text-text">
-                <PiggyBank :size="16" />
+                <PiggyBank :size="16" class="text-accent" />
                 <strong>NZ Account</strong>
               </div>
-              <Tag :value="t('accounts.salarySavings')" severity="success" />
+              <Tag :value="t('accounts.salarySavings')" severity="success" class="text-[10px]!" />
             </div>
 
             <div class="grid gap-1.5">
               <div class="grid">
                 <span class="text-[11px] text-muted">{{ t("accounts.currentSavings") }}</span>
-                <strong class="text-2xl font-bold tabular-nums text-accent">
+                <strong class="text-xl sm:text-2xl font-bold tabular-nums text-accent">
                   {{ store.displayMoney(store.nzBalance) }}
                 </strong>
               </div>
-              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-white/8 text-xs">
                 <span class="text-muted">{{ t("accounts.spentFromSavings") }}</span>
                 <span class="font-mono text-text">{{ store.displayMoney(store.balances.nzSpent) }}</span>
               </div>
-              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-dashed border-[var(--border)] text-xs">
+              <div class="flex justify-between items-baseline gap-2 pt-1.5 border-t border-white/8 text-xs">
                 <span class="text-muted">{{ t("accounts.savingsDeposits") }}</span>
                 <Button
                   type="button"
@@ -327,45 +329,74 @@
           </Button>
         </div>
 
+        <Message v-if="manageDepositsError" severity="error" :closable="false" class="mb-3">
+          {{ manageDepositsError }}
+        </Message>
+
         <ul v-else class="list-none m-0 p-0 grid gap-2">
           <li
             v-for="deposit in sortedSavingsRecords"
             :key="deposit.id"
-            class="flex items-center justify-between px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+            class="grid gap-2 px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
           >
-            <div class="grid gap-0.5">
-              <strong class="text-base tabular-nums text-accent">
-                {{ store.displayMoney(deposit.amount) }}
-              </strong>
-              <span class="text-xs text-muted">
-                {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
-              </span>
+            <div class="flex items-center justify-between gap-2">
+              <div class="grid gap-0.5 min-w-0">
+                <strong class="text-base tabular-nums text-accent">
+                  {{ store.displayMoney(deposit.amount) }}
+                </strong>
+                <span class="text-xs text-muted break-words">
+                  {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <Button
+                  type="button"
+                  variant="text"
+                  severity="secondary"
+                  rounded
+                  size="small"
+                  title="Edit deposit"
+                  aria-label="Edit deposit"
+                  @click="openEditDeposit(deposit)"
+                >
+                  <Pencil :size="15" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="text"
+                  severity="danger"
+                  rounded
+                  size="small"
+                  title="Delete deposit"
+                  aria-label="Delete deposit"
+                  @click="removingDepositId = deposit.id"
+                >
+                  <Trash2 :size="15" />
+                </Button>
+              </div>
             </div>
-            <div class="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="text"
-                severity="secondary"
-                rounded
-                size="small"
-                title="Edit deposit"
-                aria-label="Edit deposit"
-                @click="openEditDeposit(deposit)"
-              >
-                <Pencil :size="15" />
-              </Button>
-              <Button
-                type="button"
-                variant="text"
-                severity="danger"
-                rounded
-                size="small"
-                title="Delete deposit"
-                aria-label="Delete deposit"
-                @click="deleteDeposit(deposit)"
-              >
-                <Trash2 :size="15" />
-              </Button>
+
+            <div
+              v-if="removingDepositId === deposit.id"
+              class="p-2.5 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-2"
+            >
+              <span class="text-xs text-text">
+                {{ t("accounts.confirmDeleteDeposit", { amount: store.displayMoney(deposit.amount), date: deposit.date }) }}
+              </span>
+              <div class="flex items-center gap-2 ml-auto">
+                <Button type="button" severity="secondary" size="small" @click="removingDepositId = ''">
+                  {{ t("common.cancel") }}
+                </Button>
+                <Button
+                  type="button"
+                  severity="danger"
+                  size="small"
+                  :disabled="depositBusy"
+                  @click="confirmDeleteDeposit(deposit)"
+                >
+                  {{ t("common.delete") }}
+                </Button>
+              </div>
             </div>
           </li>
         </ul>
@@ -416,6 +447,8 @@ const depositDate = shallowRef(today());
 const depositNote = shallowRef("");
 const depositBusy = shallowRef(false);
 const depositError = shallowRef("");
+const removingDepositId = shallowRef("");
+const manageDepositsError = shallowRef("");
 
 const selectedDepositDate = computed<Date | null>({
   get() {
@@ -491,18 +524,14 @@ function openEditDeposit(record: SavingsRecord) {
   showDepositModal.value = true;
 }
 
-async function deleteDeposit(record: SavingsRecord) {
-  if (
-    !confirm(
-      `Remove savings deposit of ${store.displayMoney(record.amount)} from ${record.date}?`,
-    )
-  )
-    return;
+async function confirmDeleteDeposit(record: SavingsRecord) {
   depositBusy.value = true;
+  manageDepositsError.value = "";
   try {
     await store.removeSavingsRecord(record.id);
+    removingDepositId.value = "";
   } catch (reason) {
-    alert(friendlyError(reason));
+    manageDepositsError.value = friendlyError(reason);
   } finally {
     depositBusy.value = false;
   }

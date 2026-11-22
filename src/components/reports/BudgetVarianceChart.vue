@@ -24,8 +24,8 @@
           <Tag
             :value="
               row.isOver
-                ? `+${store.displayMoney(row.diff)} ${t('weeklyLimit.overBudget', { amount: '' }).trim()}`
-                : `${store.displayMoney(row.diff)} ${t('weeklyLimit.leftBudget', { amount: '' }).trim()}`
+                ? t('weeklyLimit.overBudget', { amount: store.displayMoney(row.diff) })
+                : t('weeklyLimit.leftBudget', { amount: store.displayMoney(row.diff) })
             "
             :severity="row.isOver ? 'danger' : 'success'"
           />

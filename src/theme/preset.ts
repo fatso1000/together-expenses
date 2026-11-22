@@ -26,6 +26,24 @@ export const DrawerPreset = definePreset(Aura, {
           border-radius: 24px 24px 0 0;
         }
 
+        .p-drawer-bottom .p-drawer-header {
+          position: relative;
+          padding-top: 1.35rem;
+        }
+
+        .p-drawer-bottom .p-drawer-header::before {
+          content: "";
+          position: absolute;
+          top: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 36px;
+          height: 4px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.24);
+          pointer-events: none;
+        }
+
         .p-drawer-header {
           border-bottom: 1px solid ${dt("drawer.border.color")};
         }

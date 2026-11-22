@@ -16,24 +16,21 @@
     </div>
 
     <template v-else>
-      <!-- Top Ollama & Model Status Bar -->
+      <!-- Compact Ollama & Model Status Strip -->
       <section
-        class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-5 py-4 shadow-sm flex flex-wrap items-center justify-between gap-4"
+        class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-2.5"
         aria-label="AI Service Status"
       >
-        <div class="flex items-center gap-3.5">
-          <div class="w-10 h-10 rounded-xl bg-[var(--success-bg)] text-accent flex items-center justify-center shrink-0">
-            <Sparkles :size="20" />
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-[var(--success-bg)] text-accent flex items-center justify-center shrink-0">
+            <Sparkles :size="17" />
           </div>
-          <div>
-            <h2 class="text-lg font-bold text-text m-0">{{ t("chat.title") }}</h2>
-            <p class="text-xs text-muted m-0">
-              Private, on-device intelligence powered by local Gemma ({{ getOllamaModel() }})
-            </p>
-          </div>
+          <p class="text-xs text-muted m-0 truncate">
+            Local Gemma · <strong class="text-text font-semibold">{{ getOllamaModel() }}</strong>
+          </p>
         </div>
 
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-1.5 ml-auto">
           <Button
             type="button"
             size="small"
@@ -41,7 +38,7 @@
             :severity="status?.ok ? 'success' : 'danger'"
             variant="outlined"
             :title="status?.ok ? 'Connected to local Ollama daemon' : 'Click to see Ollama setup guide'"
-            class="inline-flex items-center gap-1.5 text-xs"
+            class="inline-flex items-center gap-1.5 text-xs!"
             @click="showSetupGuide = !showSetupGuide"
           >
             <span
@@ -98,8 +95,8 @@
         </p>
       </div>
 
-      <!-- Main Chat Component -->
-      <AiSpendingChat class="h-[calc(100vh-200px)]! min-h-[480px]! max-h-none! mt-0!" />
+      <!-- Main Chat Component (fits above mobile dock so input stays visible) -->
+      <AiSpendingChat class="h-[calc(100dvh-315px)]! min-h-[320px]! sm:h-[calc(100dvh-200px)]! sm:min-h-[480px]! max-h-none! mt-0!" />
     </template>
   </div>
 </template>

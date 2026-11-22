@@ -1,11 +1,12 @@
 <template>
-  <div class="grid gap-5">
+  <div class="grid gap-4 sm:gap-5 min-w-0">
     <section
-      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm flex flex-wrap items-center gap-4"
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-5 md:p-6 shadow-sm flex flex-wrap items-center gap-3 sm:gap-4 min-w-0"
       aria-label="Report timeframe controls"
     >
       <div
-        class="flex flex-wrap sm:flex-nowrap gap-1 p-1 rounded-xl bg-[var(--input-bg)] border border-[var(--border)] w-full sm:w-auto overflow-x-auto"
+        class="flex flex-nowrap sm:flex-wrap gap-1 p-1 rounded-xl bg-[var(--input-bg)] border border-[var(--border)] w-full sm:w-auto overflow-x-auto"
+        role="group"
         aria-label="Report period"
       >
         <Button
@@ -13,7 +14,8 @@
           :key="period"
           type="button"
           size="small"
-          class="flex-1 sm:flex-none whitespace-nowrap"
+          class="shrink-0 whitespace-nowrap"
+          :aria-pressed="mode === period"
           :severity="mode === period ? 'primary' : 'secondary'"
           :variant="mode === period ? undefined : 'text'"
           @click="mode = period"
@@ -82,12 +84,12 @@
     <!-- Initial Global Money Baseline Analysis Hub -->
     <section
       v-if="initialGlobalNZD > 0"
-      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-4"
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-4 min-w-0"
     >
-      <div class="flex items-center gap-2.5">
-        <Wallet :size="20" class="text-accent shrink-0" />
-        <div>
-          <h2 class="text-lg font-bold text-text m-0">{{ t("reports.initialCapitalHub") }}</h2>
+      <div class="flex items-start gap-2.5 min-w-0">
+        <Wallet :size="20" class="text-accent shrink-0 mt-0.5" />
+        <div class="min-w-0 flex-1">
+          <h2 class="text-base sm:text-lg font-bold text-text m-0 leading-snug">{{ t("reports.initialCapitalHub") }}</h2>
           <p class="text-xs text-muted m-0">
             {{ t("reports.startingMoney", { amount: store.displayMoney(initialGlobalNZD) }) }}
             <template v-if="initialGlobalUSD">
@@ -107,11 +109,12 @@
               : 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success-colour)]'
           "
         >
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="text-xs font-medium">{{ t("reports.selectedVsInitial") }}</span>
             <Tag
               :value="t('reports.percentOfStarting', { percent: Math.round(periodBaselineComparison.spentPercent) })"
               :severity="periodBaselineComparison.isOverInitial ? 'danger' : 'success'"
+              class="shrink-0 whitespace-nowrap"
             />
           </div>
           <div class="grid gap-1">
@@ -138,11 +141,12 @@
               : 'bg-[var(--success-bg)] border-[var(--success-border)] text-[var(--success-colour)]'
           "
         >
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
             <span class="text-xs font-medium">{{ t("reports.allTimeVsInitial") }}</span>
             <Tag
               :value="`${Math.round(allTimeBaselineComparison.spentPercent)}% all-time`"
               :severity="allTimeBaselineComparison.isOverInitial ? 'danger' : 'success'"
+              class="shrink-0 whitespace-nowrap"
             />
           </div>
           <div class="grid gap-1">
@@ -163,8 +167,8 @@
     </section>
 
     <!-- Executive Summary Stats -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <Card>
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4">
+      <Card class="col-span-2 sm:col-span-1">
         <template #subtitle>{{ t("reports.totalSpent") }}</template>
         <template #content>
           <div class="grid gap-1">
@@ -179,7 +183,7 @@
         <template #subtitle>{{ t("reports.averageTransaction") }}</template>
         <template #content>
           <div class="grid gap-1">
-            <strong class="text-2xl font-bold font-heading tabular-nums">
+            <strong class="text-lg sm:text-2xl font-bold font-heading tabular-nums">
               {{ store.displayMoney(average) }}
             </strong>
             <small class="text-xs text-muted">{{ t("reports.summaryMetrics") }}</small>
@@ -190,10 +194,10 @@
         <template #subtitle>{{ t("reports.largestTransaction") }}</template>
         <template #content>
           <div class="grid gap-1">
-            <strong class="text-2xl font-bold font-heading tabular-nums">
+            <strong class="text-lg sm:text-2xl font-bold font-heading tabular-nums">
               {{ store.displayMoney(largest?.amount ?? 0) }}
             </strong>
-            <small class="text-xs text-muted">
+            <small class="text-xs text-muted break-words">
               {{ largest ? `${largest.merchant} (${store.displayMoney(largest.amount)})` : "-" }}
             </small>
           </div>

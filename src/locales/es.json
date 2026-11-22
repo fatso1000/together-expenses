@@ -15,7 +15,8 @@
     "settingsAi": "Ajustes de IA",
     "settingsData": "Datos y Copias",
     "expandSidebar": "Expandir barra lateral",
-    "collapseSidebar": "Contraer barra lateral"
+    "collapseSidebar": "Contraer barra lateral",
+    "mobileDockLabel": "Acceso rápido de herramientas"
   },
   "common": {
     "addExpense": "Cargar gasto",
@@ -118,7 +119,12 @@
     "singleTab": "Límite General Único",
     "structuredHint": "Dividí el límite semanal entre alquiler, comida, facturas, compras y salidas.",
     "totalWeeklyLimit": "Límite Semanal Total:",
-    "saveBudget": "Guardar Presupuesto"
+    "saveBudget": "Guardar Presupuesto",
+    "prevWeek": "Semana anterior",
+    "nextWeek": "Semana siguiente",
+    "currentWeek": "Semana actual",
+    "showAllCategories": "Ver todas ({count})",
+    "showFewerCategories": "Ver menos"
   },
   "frequent": {
     "title": "Facturas y Pagos Frecuentes",
@@ -167,6 +173,7 @@
     "dueOnDate": "Vence el {date}",
     "emptyPrompt": "Todavía no cargaste pagos frecuentes.",
     "emptyHint": "Cargá la luz, seguro, celular o alquiler para ver el impacto semanal y cargarlos en un clic.",
+    "confirmDelete": "¿Querés eliminar \"{name}\"?",
     "nameLabel": "Nombre del Pago",
     "frequencyLabel": "Frecuencia",
     "categoryLabel": "Rubro",
@@ -216,7 +223,10 @@
     "depositsCount": "{count} depósitos registrados",
     "newDeposit": "Nuevo depósito",
     "recordFirstDeposit": "Registrar primer depósito",
-    "noDeposits": "Todavía no hay depósitos de ahorro registrados."
+    "noDeposits": "Todavía no hay depósitos de ahorro registrados.",
+    "confirmDeleteDeposit": "¿Eliminar depósito de {amount} ({date})?",
+    "globalShort": "Global",
+    "nzShort": "Cuenta NZ"
   },
   "expenses": {
     "title": "Gastos",
@@ -227,6 +237,7 @@
     "category": "Categoría",
     "date": "Fecha",
     "notes": "Notas",
+    "confirmDelete": "¿Borrar “{merchant}” ({amount})?",
     "items": "Ítems comprados",
     "addItem": "Agregar ítem",
     "itemTitle": "Descripción del producto",
@@ -273,7 +284,8 @@
     "globalHint": "Se descuenta del capital inicial Global.",
     "nzHint": "Se descuenta de los ahorros del sueldo en NZ. No afecta el capital inicial Global.",
     "receiptStagePrompt": "Previsualización de Ticket y Transcripción",
-    "receiptStageDesc": "Escaneá o subí un ticket en papel para comparar los productos uno al lado del otro."
+    "receiptStageDesc": "Escaneá o subí un ticket en papel para comparar los productos uno al lado del otro.",
+    "filtersToggle": "Filtros"
   },
   "reports": {
     "title": "Reportes",
@@ -315,7 +327,10 @@
     "categoryBreakdownDesc": "Distribución porcentual por rubro de gasto",
     "budgetVarianceDesc": "Comparación de límites presupuestarios vs gasto real",
     "cashflowDesc": "Salidas de Cuenta Global vs ahorro en Cuenta NZ",
-    "configureLimitsPrompt": "Configurá límites por rubro en el"
+    "configureLimitsPrompt": "Configurá límites por rubro en el",
+    "donutTotal": "Total",
+    "donutOfTotal": "{percent}% del total",
+    "noExpensesPeriod": "No hay gastos registrados en este período."
   },
   "products": {
     "title": "Productos",
@@ -359,7 +374,9 @@
     "saveName": "Guardar nombre",
     "placeholder": "ej. Coto, Carrefour, Día",
     "confirmDeleteShop": "¿Querés borrar el comercio \"{name}\"?",
-    "startPurchase": "Cargar compra acá"
+    "startPurchase": "Cargar compra acá",
+    "noMatches": "Ningún comercio coincide con \"{query}\".",
+    "emptyHint": "Agregá los comercios donde comprás para cargar compras y comparar precios más rápido."
   },
   "bulk": {
     "title": "Cargar varios gastos",
@@ -465,7 +482,7 @@
     "readArea": "Leer área seleccionada"
   },
   "settings": {
-    "title": "Configuración de Datos y Cuentas",
+    "title": "Ajustes",
     "accountsSetup": "Configuración de Cuentas y Sueldo",
     "accountsDescription": "Cargá tu plata inicial en USD o NZD para ver tu ahorro y preservación de capital.",
     "globalUsd": "Plata Inicial Global · USD",

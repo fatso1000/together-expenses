@@ -1,53 +1,71 @@
 <template>
-  <div class="mb-4">
+  <div class="flex items-center justify-between gap-2 mb-3">
     <Button
       type="button"
       severity="secondary"
-      class="inline-flex items-center gap-2"
+      size="small"
+      rounded
+      class="inline-flex items-center gap-1.5"
       @click="bulk = true"
     >
-      <ClipboardList :size="18" />
+      <ClipboardList :size="16" />
       <span>{{ t("expenses.addSeveral") }}</span>
+    </Button>
+    <Button
+      type="button"
+      severity="secondary"
+      variant="outlined"
+      size="small"
+      rounded
+      class="inline-flex items-center gap-1.5"
+      @click="exportCsv"
+    >
+      <Download :size="15" />
+      <span>{{ t("expenses.export") }}</span>
     </Button>
   </div>
   <BulkEntry v-if="bulk" @close="bulk = false" />
 
-  <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-4">
-    <!-- Period Selector Switch -->
+  <section class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3.5 sm:p-5 md:p-6 shadow-sm grid gap-3.5">
+    <!-- iOS Segmented Period Selector -->
     <div
-      class="flex gap-1 p-1 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)]"
+      class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-black/30 border border-[var(--border)]"
+      role="group"
       aria-label="Filter spending period"
     >
       <Button
         type="button"
         size="small"
-        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        class="inline-flex items-center justify-center gap-1.5 text-xs! sm:text-sm!"
+        :aria-pressed="period === 'week'"
         :severity="period === 'week' ? 'primary' : 'secondary'"
         :variant="period === 'week' ? undefined : 'text'"
         @click="period = 'week'"
       >
-        <Calendar :size="15" />
-        <span>{{ t("expenses.thisWeek") }}</span>
+        <Calendar :size="14" class="hidden sm:inline" />
+        <span class="truncate">{{ t("expenses.thisWeek") }}</span>
       </Button>
       <Button
         type="button"
         size="small"
-        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        class="inline-flex items-center justify-center gap-1.5 text-xs! sm:text-sm!"
+        :aria-pressed="period === 'month'"
         :severity="period === 'month' ? 'primary' : 'secondary'"
         :variant="period === 'month' ? undefined : 'text'"
         @click="period = 'month'"
       >
-        <span>{{ t("expenses.thisMonth") }}</span>
+        <span class="truncate">{{ t("expenses.thisMonth") }}</span>
       </Button>
       <Button
         type="button"
         size="small"
-        class="flex-1 inline-flex items-center justify-center gap-1.5"
+        class="inline-flex items-center justify-center gap-1.5 text-xs! sm:text-sm!"
+        :aria-pressed="period === 'all'"
         :severity="period === 'all' ? 'primary' : 'secondary'"
         :variant="period === 'all' ? undefined : 'text'"
         @click="period = 'all'"
       >
-        <span>{{ t("expenses.allExpenses") }}</span>
+        <span class="truncate">{{ t("expenses.allExpenses") }}</span>
       </Button>
     </div>
 
@@ -64,9 +82,9 @@
       </span>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="flex flex-wrap items-center gap-2.5">
-      <IconField class="w-full sm:w-auto sm:flex-[2] min-w-[200px]">
+    <!-- Compact Mobile-First Filter Bar -->
+    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+      <IconField class="col-span-2 sm:flex-[2] min-w-[200px]">
         <InputIcon>
           <Search :size="16" />
         </InputIcon>
@@ -79,7 +97,7 @@
         />
       </IconField>
 
-      <div class="flex-1 min-w-[140px]">
+      <div class="min-w-0 sm:flex-1 sm:min-w-[140px]">
         <Select
           v-model="category"
           :options="categoryOptions"
@@ -90,7 +108,7 @@
         />
       </div>
 
-      <div class="flex-1 min-w-[140px]">
+      <div class="min-w-0 sm:flex-1 sm:min-w-[140px]">
         <Select
           v-model="account"
           :options="accountOptions"
@@ -101,7 +119,7 @@
         />
       </div>
 
-      <div class="flex-1 min-w-[150px]">
+      <div class="col-span-2 sm:flex-1 sm:min-w-[150px]">
         <Select
           v-model="sortBy"
           :options="sortOptions"
@@ -120,23 +138,12 @@
       </div>
 
       <Button
-        type="button"
-        severity="secondary"
-        variant="outlined"
-        class="inline-flex items-center gap-1.5"
-        @click="exportCsv"
-      >
-        <Download :size="16" />
-        <span>{{ t("expenses.export") }}</span>
-      </Button>
-
-      <Button
         v-if="hasActiveFilters"
         type="button"
         variant="text"
         severity="secondary"
         size="small"
-        class="inline-flex items-center gap-1.5"
+        class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1.5"
         @click="resetFilters"
       >
         <RotateCcw :size="14" />

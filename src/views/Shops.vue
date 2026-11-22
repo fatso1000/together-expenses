@@ -5,6 +5,7 @@
         <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
           <span>{{ editingShop ? t("shops.editShop") : t("shops.newShop") }}</span>
           <InputText
+            id="shop-name-input"
             v-model="name"
             maxlength="100"
             :placeholder="t('shops.placeholder')"
@@ -59,84 +60,98 @@
     </Message>
 
     <section
-      v-for="shop in filtered"
-      :key="shop.id"
-      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 md:p-6 shadow-sm grid gap-3"
+      v-if="filtered.length"
+      class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] overflow-hidden shadow-sm"
     >
-      <div class="flex items-start justify-between gap-3">
-        <h2 class="flex items-center gap-2.5 text-lg font-bold text-text m-0">
-          <Store :size="20" class="text-accent" />
-          <span>{{ shop.name }}</span>
-        </h2>
-        <div class="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="text"
-            severity="secondary"
-            rounded
-            size="small"
-            :aria-label="`Edit shop ${shop.name}`"
-            @click="
-              editingShop = shop;
-              name = shop.name;
-            "
-          >
-            <Pencil :size="18" />
-          </Button>
-          <Button
-            type="button"
-            variant="text"
-            severity="danger"
-            rounded
-            size="small"
-            :aria-label="`Remove shop ${shop.name}`"
-            @click="removing = shop.id"
-          >
-            <Trash2 :size="18" />
-          </Button>
-        </div>
-      </div>
-
       <div
-        v-if="removing === shop.id"
-        class="p-3 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] grid gap-2"
+        v-for="shop in filtered"
+        :key="shop.id"
+        class="p-3.5 sm:p-5 grid gap-2.5"
       >
-        <p class="text-xs text-text m-0">
-          {{ t("shops.confirmDeleteShop", { name: shop.name }) }}
-        </p>
-        <div class="flex items-center gap-2">
-          <Button type="button" severity="secondary" size="small" @click="removing = ''">
-            {{ t("common.cancel") }}
-          </Button>
-          <Button
-            type="button"
-            severity="danger"
-            size="small"
-            :disabled="busy"
-            @click="
-              run(async () => {
-                await store.removeShop(shop.id);
-                removing = '';
-              })
-            "
-          >
-            {{ t("common.delete") }}
-          </Button>
+        <div class="flex items-center justify-between gap-3 min-w-0">
+          <h2 class="flex items-center gap-2.5 text-base sm:text-lg font-bold text-text m-0 min-w-0">
+            <div class="w-9 h-9 rounded-xl bg-[var(--success-bg)] text-accent flex items-center justify-center shrink-0">
+              <Store :size="18" />
+            </div>
+            <span class="truncate min-w-0">{{ shop.name }}</span>
+          </h2>
+          <div class="flex items-center gap-1 shrink-0">
+            <!-- Label collapses to an icon on phones so the shop name stays readable -->
+            <Button
+              type="button"
+              severity="secondary"
+              size="small"
+              rounded
+              class="inline-flex items-center gap-1 text-xs!"
+              :aria-label="`${t('shops.startPurchase')} · ${shop.name}`"
+              :title="t('shops.startPurchase')"
+              @click="startPurchase(shop)"
+            >
+              <Plus :size="15" />
+              <span class="hidden sm:inline">{{ t("shops.startPurchase") }}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="text"
+              severity="secondary"
+              rounded
+              size="small"
+              :aria-label="`Edit shop ${shop.name}`"
+              @click="startEditing(shop)"
+            >
+              <Pencil :size="16" />
+            </Button>
+            <Button
+              type="button"
+              variant="text"
+              severity="danger"
+              rounded
+              size="small"
+              :aria-label="`Remove shop ${shop.name}`"
+              @click="removing = shop.id"
+            >
+              <Trash2 :size="16" />
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <Button
-          type="button"
-          severity="secondary"
-          class="inline-flex items-center gap-1.5"
-          @click="startPurchase(shop)"
+        <div
+          v-if="removing === shop.id"
+          class="p-3 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] grid gap-2"
         >
-          <Plus :size="18" />
-          <span>{{ t("shops.startPurchase") }}</span>
-        </Button>
+          <p class="text-xs text-text m-0">
+            {{ t("shops.confirmDeleteShop", { name: shop.name }) }}
+          </p>
+          <div class="flex items-center gap-2">
+            <Button type="button" severity="secondary" size="small" @click="removing = ''">
+              {{ t("common.cancel") }}
+            </Button>
+            <Button
+              type="button"
+              severity="danger"
+              size="small"
+              :disabled="busy"
+              @click="
+                run(async () => {
+                  await store.removeShop(shop.id);
+                  removing = '';
+                })
+              "
+            >
+              {{ t("common.delete") }}
+            </Button>
+          </div>
+        </div>
       </div>
     </section>
+
+    <p
+      v-if="store.shops.length && !filtered.length"
+      class="text-sm text-muted text-center m-0 py-6"
+      role="status"
+    >
+      {{ t("shops.noMatches", { query: query.trim() }) }}
+    </p>
 
     <section
       v-if="!store.shops.length"
@@ -144,13 +159,13 @@
     >
       <Store :size="32" />
       <h2 class="text-lg font-bold text-text m-0">{{ t("shops.title") }}</h2>
-      <p class="text-sm m-0">{{ t("common.addExpense") }}</p>
+      <p class="text-sm m-0">{{ t("shops.emptyHint") }}</p>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, nextTick, shallowRef } from "vue";
 import { Store, Plus, Pencil, Trash2, Search } from "lucide-vue-next";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -198,5 +213,21 @@ async function saveShop() {
 function startPurchase(shop: Shop) {
   store.openExpense("items");
   store.prefillShop = shop.name;
+}
+
+// The rename form lives at the top of the page; on long lists (and on phones)
+// it is offscreen, so bring it into view and focus it when editing starts.
+async function startEditing(shop: Shop) {
+  editingShop.value = shop;
+  name.value = shop.name;
+  await nextTick();
+
+  const inputElement = document.getElementById("shop-name-input");
+  if (!(inputElement instanceof HTMLInputElement)) {
+    return;
+  }
+  inputElement.scrollIntoView({ behavior: "smooth", block: "center" });
+  inputElement.focus({ preventScroll: true });
+  inputElement.select();
 }
 </script>

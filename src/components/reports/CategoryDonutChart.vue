@@ -23,25 +23,26 @@
             :r="radius"
             fill="transparent"
             :stroke="slice.color"
-            :stroke-width="hoveredCategory === slice.category ? 32 : 26"
+            :stroke-width="(hoveredCategory ?? selectedCategory) === slice.category ? 32 : 26"
             :stroke-dasharray="slice.strokeDasharray"
             :stroke-dashoffset="slice.strokeDashoffset"
             class="cursor-pointer transition-all duration-200"
             transform="rotate(-90 100 100)"
             @mouseenter="hoveredCategory = slice.category"
             @mouseleave="hoveredCategory = null"
+            @click="toggleCategory(slice.category)"
           />
         </svg>
 
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none p-2.5">
           <span class="text-xs font-semibold text-muted max-w-[110px] truncate">
-            {{ activeCategory ? activeCategory.category : "Total" }}
+            {{ activeCategory ? categoryLabel(activeCategory.category) : t("reports.donutTotal") }}
           </span>
           <strong class="text-lg font-extrabold text-text tabular-nums my-0.5">
             {{ store.displayMoney(activeCategory ? activeCategory.amount : sum) }}
           </strong>
           <span class="text-[11px] text-muted">
-            {{ activeCategory ? `${Math.round(activeCategory.percent)}% of total` : "" }}
+            {{ activeCategory ? t("reports.donutOfTotal", { percent: Math.round(activeCategory.percent) }) : "" }}
           </span>
         </div>
       </div>
@@ -51,14 +52,15 @@
           v-for="row in rows"
           :key="row.category"
           class="flex items-center gap-2.5 px-3 py-2 rounded-xl border cursor-pointer transition-all"
-          :style="categorySurfaceStyle(categoryColor(row.category), { selected: hoveredCategory === row.category })"
+          :style="categorySurfaceStyle(categoryColor(row.category), { selected: (hoveredCategory ?? selectedCategory) === row.category })"
           @mouseenter="hoveredCategory = row.category"
           @mouseleave="hoveredCategory = null"
+          @click="toggleCategory(row.category)"
         >
           <CategoryIcon :category="row.category" :size="18" bare />
           <div class="flex-1 min-w-0 grid gap-0.5">
             <div class="flex items-baseline justify-between gap-1.5">
-              <span class="text-xs font-semibold text-text truncate">{{ row.category }}</span>
+              <span class="text-xs font-semibold text-text truncate">{{ categoryLabel(row.category) }}</span>
               <span class="text-[11px] font-bold text-muted">{{ Math.round(row.percent) }}%</span>
             </div>
             <span class="text-xs text-text tabular-nums">{{ store.displayMoney(row.amount) }}</span>
@@ -68,7 +70,7 @@
     </div>
 
     <div v-else class="p-8 text-center">
-      <p class="text-sm text-muted m-0">No expenses recorded for this period.</p>
+      <p class="text-sm text-muted m-0">{{ t("reports.noExpensesPeriod") }}</p>
     </div>
   </div>
 </template>
@@ -82,6 +84,7 @@ import {
   resolveCategoryColor,
 } from "@/lib/category-style";
 import CategoryIcon from "@/components/CategoryIcon.vue";
+import { useI18n } from "@/lib/i18n";
 import type { Expense } from "@/lib/types";
 
 const props = defineProps<{
@@ -90,7 +93,13 @@ const props = defineProps<{
 }>();
 
 const store = useExpenses();
+const { t, categoryLabel } = useI18n();
 const hoveredCategory = shallowRef<string | null>(null);
+const selectedCategory = shallowRef<string | null>(null);
+
+function toggleCategory(cat: string) {
+  selectedCategory.value = selectedCategory.value === cat ? null : cat;
+}
 
 const rows = computed(() => categoryTotals(props.expenses));
 const sum = computed(() => rows.value.reduce((acc, r) => acc + r.amount, 0));
@@ -120,8 +129,9 @@ const slices = computed(() => {
 });
 
 const activeCategory = computed(() => {
-  if (hoveredCategory.value) {
-    const found = rows.value.find((r) => r.category === hoveredCategory.value);
+  const target = hoveredCategory.value ?? selectedCategory.value;
+  if (target) {
+    const found = rows.value.find((r) => r.category === target);
     if (found) return found;
   }
   return rows.value[0] ?? null;

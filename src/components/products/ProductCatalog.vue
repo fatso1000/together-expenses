@@ -71,11 +71,12 @@
         </div>
 
         <!-- Quick Measure Unit Filter Pills -->
-        <div class="flex flex-wrap gap-1.5" aria-label="Filter by unit">
+        <div class="flex flex-nowrap sm:flex-wrap overflow-x-auto pb-1 gap-1.5" aria-label="Filter by unit">
           <Button
             type="button"
             size="small"
             rounded
+            class="shrink-0"
             :severity="selectedUnit === 'all' ? 'primary' : 'secondary'"
             :variant="selectedUnit === 'all' ? undefined : 'outlined'"
             @click="selectedUnit = 'all'"
@@ -88,6 +89,7 @@
             type="button"
             size="small"
             rounded
+            class="shrink-0"
             :severity="selectedUnit === u.value ? 'primary' : 'secondary'"
             :variant="selectedUnit === u.value ? undefined : 'outlined'"
             @click="selectedUnit = u.value"
