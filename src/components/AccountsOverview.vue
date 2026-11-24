@@ -179,229 +179,229 @@
           </article>
         </div>
       </div>
-    </template>
 
-    <!-- Add / Edit Savings Deposit Drawer -->
-    <Drawer
-      v-model:visible="showDepositModal"
-      position="bottom"
-      class="w-full! max-w-full!"
-      style="height: auto; max-height: 92dvh"
-      :dismissable="!depositBusy"
-      :closeOnEscape="!depositBusy"
-    >
-      <template #header>
-        <h3 class="text-lg font-bold m-0">
-          {{ editingDepositId ? t("accounts.editDepositTitle") : t("accounts.recordDepositTitle") }}
-        </h3>
-      </template>
+      <!-- Add / Edit Savings Deposit Drawer -->
+      <Drawer
+        v-model:visible="showDepositModal"
+        position="bottom"
+        class="w-full! max-w-full!"
+        style="height: auto; max-height: 92dvh"
+        :dismissable="!depositBusy"
+        :closeOnEscape="!depositBusy"
+      >
+        <template #header>
+          <h3 class="text-lg font-bold m-0">
+            {{ editingDepositId ? t("accounts.editDepositTitle") : t("accounts.recordDepositTitle") }}
+          </h3>
+        </template>
 
-      <template #closebutton="{ closeCallback }">
-        <Button
-          type="button"
-          variant="text"
-          severity="secondary"
-          rounded
-          aria-label="Close"
-          :disabled="depositBusy"
-          @click="closeCallback"
-        >
-          <X :size="18" />
-        </Button>
-      </template>
-
-      <form class="grid gap-4 pb-2" @submit.prevent="saveDeposit">
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("accounts.depositAmount") }}</span>
-          <InputText
-            v-model="depositAmount"
-            inputmode="decimal"
-            required
-            placeholder="e.g. 1200.00"
-            autofocus
-            fluid
-          />
-        </label>
-
-        <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <label for="deposit-date-input">{{ t("accounts.depositDate") }}</label>
-          <DatePicker
-            v-model="selectedDepositDate"
-            inputId="deposit-date-input"
-            dateFormat="yy-mm-dd"
-            showIcon
-            iconDisplay="input"
-            fluid
-            required
-          />
-        </div>
-
-        <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
-          <span>{{ t("accounts.depositNote") }}</span>
-          <InputText
-            v-model="depositNote"
-            placeholder="e.g. Weekly salary deposit, Bonus"
-            fluid
-          />
-        </label>
-
-        <p class="text-xs text-muted m-0">
-          {{ t("accounts.depositHint") }}
-        </p>
-
-        <Message v-if="depositError" severity="error" :closable="false">
-          {{ depositError }}
-        </Message>
-
-        <div class="flex flex-wrap items-center gap-3 pt-1">
-          <Button type="submit" severity="primary" :disabled="depositBusy">
-            {{ editingDepositId ? t("accounts.updateDeposit") : t("accounts.saveDeposit") }}
-          </Button>
-          <Button
-            type="button"
-            severity="secondary"
-            variant="outlined"
-            @click="showDepositModal = false"
-          >
-            {{ t("common.cancel") }}
-          </Button>
-        </div>
-      </form>
-    </Drawer>
-
-    <!-- Manage Savings Deposits Drawer -->
-    <Drawer
-      v-model:visible="showManageDepositsModal"
-      position="bottom"
-      class="w-full! max-w-full!"
-      style="height: auto; max-height: 92dvh"
-    >
-      <template #header>
-        <div class="grid gap-0.5">
-          <h3 class="text-lg font-bold m-0">{{ t("accounts.depositsTitle") }}</h3>
-          <span class="text-xs text-muted">
-            {{ t("accounts.depositsCount", { count: store.savingsRecords.length }) }}
-          </span>
-        </div>
-      </template>
-
-      <template #closebutton="{ closeCallback }">
-        <div class="flex items-center gap-2">
-          <Button
-            type="button"
-            severity="secondary"
-            size="small"
-            class="inline-flex items-center gap-1"
-            @click="openAddDeposit"
-          >
-            <Plus :size="14" />
-            <span>{{ t("accounts.newDeposit") }}</span>
-          </Button>
+        <template #closebutton="{ closeCallback }">
           <Button
             type="button"
             variant="text"
             severity="secondary"
             rounded
             aria-label="Close"
+            :disabled="depositBusy"
             @click="closeCallback"
           >
             <X :size="18" />
           </Button>
-        </div>
-      </template>
+        </template>
 
-      <div class="pb-2">
-        <div
-          v-if="!store.savingsRecords.length"
-          class="flex flex-col items-center justify-center py-8 px-4 gap-3 text-muted text-center"
-        >
-          <PiggyBank :size="32" />
-          <p class="text-sm m-0">{{ t("accounts.noDeposits") }}</p>
-          <Button
-            type="button"
-            severity="secondary"
-            size="small"
-            class="inline-flex items-center gap-1.5"
-            @click="openAddDeposit"
-          >
-            <Plus :size="15" />
-            <span>{{ t("accounts.recordFirstDeposit") }}</span>
-          </Button>
-        </div>
+        <form class="grid gap-4 pt-4 pb-2" @submit.prevent="saveDeposit">
+          <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+            <span>{{ t("accounts.depositAmount") }}</span>
+            <InputText
+              v-model="depositAmount"
+              inputmode="decimal"
+              required
+              placeholder="e.g. 1200.00"
+              autofocus
+              fluid
+            />
+          </label>
 
-        <Message v-if="manageDepositsError" severity="error" :closable="false" class="mb-3">
-          {{ manageDepositsError }}
-        </Message>
+          <div class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+            <label for="deposit-date-input">{{ t("accounts.depositDate") }}</label>
+            <DatePicker
+              v-model="selectedDepositDate"
+              inputId="deposit-date-input"
+              dateFormat="yy-mm-dd"
+              showIcon
+              iconDisplay="input"
+              fluid
+              required
+            />
+          </div>
 
-        <ul v-else class="list-none m-0 p-0 grid gap-2">
-          <li
-            v-for="deposit in sortedSavingsRecords"
-            :key="deposit.id"
-            class="grid gap-2 px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <div class="grid gap-0.5 min-w-0">
-                <strong class="text-base tabular-nums text-accent">
-                  {{ store.displayMoney(deposit.amount) }}
-                </strong>
-                <span class="text-xs text-muted break-words">
-                  {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
-                </span>
-              </div>
-              <div class="flex items-center gap-1 shrink-0">
-                <Button
-                  type="button"
-                  variant="text"
-                  severity="secondary"
-                  rounded
-                  size="small"
-                  title="Edit deposit"
-                  aria-label="Edit deposit"
-                  @click="openEditDeposit(deposit)"
-                >
-                  <Pencil :size="15" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="text"
-                  severity="danger"
-                  rounded
-                  size="small"
-                  title="Delete deposit"
-                  aria-label="Delete deposit"
-                  @click="removingDepositId = deposit.id"
-                >
-                  <Trash2 :size="15" />
-                </Button>
-              </div>
-            </div>
+          <label class="flex flex-col gap-1.5 text-xs font-medium text-muted">
+            <span>{{ t("accounts.depositNote") }}</span>
+            <InputText
+              v-model="depositNote"
+              placeholder="e.g. Weekly salary deposit, Bonus"
+              fluid
+            />
+          </label>
 
-            <div
-              v-if="removingDepositId === deposit.id"
-              class="p-2.5 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-2"
+          <p class="text-xs text-muted m-0">
+            {{ t("accounts.depositHint") }}
+          </p>
+
+          <Message v-if="depositError" severity="error" :closable="false">
+            {{ depositError }}
+          </Message>
+
+          <div class="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" severity="primary" :disabled="depositBusy">
+              {{ editingDepositId ? t("accounts.updateDeposit") : t("accounts.saveDeposit") }}
+            </Button>
+            <Button
+              type="button"
+              severity="secondary"
+              variant="outlined"
+              @click="showDepositModal = false"
             >
-              <span class="text-xs text-text">
-                {{ t("accounts.confirmDeleteDeposit", { amount: store.displayMoney(deposit.amount), date: deposit.date }) }}
-              </span>
-              <div class="flex items-center gap-2 ml-auto">
-                <Button type="button" severity="secondary" size="small" @click="removingDepositId = ''">
-                  {{ t("common.cancel") }}
-                </Button>
-                <Button
-                  type="button"
-                  severity="danger"
-                  size="small"
-                  :disabled="depositBusy"
-                  @click="confirmDeleteDeposit(deposit)"
-                >
-                  {{ t("common.delete") }}
-                </Button>
+              {{ t("common.cancel") }}
+            </Button>
+          </div>
+        </form>
+      </Drawer>
+
+      <!-- Manage Savings Deposits Drawer -->
+      <Drawer
+        v-model:visible="showManageDepositsModal"
+        position="bottom"
+        class="w-full! max-w-full!"
+        style="height: auto; max-height: 92dvh"
+      >
+        <template #header>
+          <div class="grid gap-0.5">
+            <h3 class="text-lg font-bold m-0">{{ t("accounts.depositsTitle") }}</h3>
+            <span class="text-xs text-muted">
+              {{ t("accounts.depositsCount", { count: store.savingsRecords.length }) }}
+            </span>
+          </div>
+        </template>
+
+        <template #closebutton="{ closeCallback }">
+          <div class="flex items-center gap-2">
+            <Button
+              type="button"
+              severity="secondary"
+              size="small"
+              class="inline-flex items-center gap-1"
+              @click="openAddDeposit"
+            >
+              <Plus :size="14" />
+              <span>{{ t("accounts.newDeposit") }}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="text"
+              severity="secondary"
+              rounded
+              aria-label="Close"
+              @click="closeCallback"
+            >
+              <X :size="18" />
+            </Button>
+          </div>
+        </template>
+
+        <div class="pt-4 pb-2">
+          <Message v-if="manageDepositsError" severity="error" :closable="false" class="mb-3">
+            {{ manageDepositsError }}
+          </Message>
+
+          <div
+            v-if="!store.savingsRecords.length"
+            class="flex flex-col items-center justify-center py-8 px-4 gap-3 text-muted text-center"
+          >
+            <PiggyBank :size="32" />
+            <p class="text-sm m-0">{{ t("accounts.noDeposits") }}</p>
+            <Button
+              type="button"
+              severity="secondary"
+              size="small"
+              class="inline-flex items-center gap-1.5"
+              @click="openAddDeposit"
+            >
+              <Plus :size="15" />
+              <span>{{ t("accounts.recordFirstDeposit") }}</span>
+            </Button>
+          </div>
+
+          <ul v-else class="list-none m-0 p-0 grid gap-2">
+            <li
+              v-for="deposit in sortedSavingsRecords"
+              :key="deposit.id"
+              class="grid gap-2 px-4 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)]"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <div class="grid gap-0.5 min-w-0">
+                  <strong class="text-base tabular-nums text-accent">
+                    {{ store.displayMoney(deposit.amount) }}
+                  </strong>
+                  <span class="text-xs text-muted break-words">
+                    {{ deposit.date }} · {{ deposit.note || "Salary savings" }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <Button
+                    type="button"
+                    variant="text"
+                    severity="secondary"
+                    rounded
+                    size="small"
+                    title="Edit deposit"
+                    aria-label="Edit deposit"
+                    @click="openEditDeposit(deposit)"
+                  >
+                    <Pencil :size="15" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="text"
+                    severity="danger"
+                    rounded
+                    size="small"
+                    title="Delete deposit"
+                    aria-label="Delete deposit"
+                    @click="removingDepositId = deposit.id"
+                  >
+                    <Trash2 :size="15" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </Drawer>
+
+              <div
+                v-if="removingDepositId === deposit.id"
+                class="p-2.5 rounded-xl bg-[var(--pill-bg)] border border-[var(--border)] flex flex-wrap items-center justify-between gap-2"
+              >
+                <span class="text-xs text-text">
+                  {{ t("accounts.confirmDeleteDeposit", { amount: store.displayMoney(deposit.amount), date: deposit.date }) }}
+                </span>
+                <div class="flex items-center gap-2 ml-auto">
+                  <Button type="button" severity="secondary" size="small" @click="removingDepositId = ''">
+                    {{ t("common.cancel") }}
+                  </Button>
+                  <Button
+                    type="button"
+                    severity="danger"
+                    size="small"
+                    :disabled="depositBusy"
+                    @click="confirmDeleteDeposit(deposit)"
+                  >
+                    {{ t("common.delete") }}
+                  </Button>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </Drawer>
+    </template>
   </Card>
 </template>
 
@@ -508,6 +508,7 @@ const netWorthComparison = computed(() => {
 
 function openAddDeposit() {
   editingDepositId.value = null;
+  removingDepositId.value = "";
   depositAmount.value = "";
   depositDate.value = today();
   depositNote.value = "";
@@ -517,6 +518,7 @@ function openAddDeposit() {
 
 function openEditDeposit(record: SavingsRecord) {
   editingDepositId.value = record.id;
+  removingDepositId.value = "";
   depositAmount.value = (record.amount / 100).toFixed(2);
   depositDate.value = record.date;
   depositNote.value = record.note || "";
